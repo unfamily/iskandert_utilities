@@ -61,7 +61,7 @@ public record AutoShopApplyPickerSelectionC2SPacket(BlockPos pos, String entryId
             }
 
             ItemStack filterItem = ShopEntryHelper.displayStackForEntry(entry);
-            if (entry.type == ShopEntry.EntryType.ITEM && filterItem.isEmpty()) {
+            if (net.unfamily.iskautils.shop.ShopEntryTypes.isItem(entry) && filterItem.isEmpty()) {
                 return;
             }
             if (!filterItem.isEmpty()) {

@@ -2,7 +2,6 @@ package net.unfamily.iskautils.network.packet;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
@@ -25,7 +24,7 @@ public record AutoShopManualTradeC2SPacket(BlockPos pos, int quantity) implement
     public static final StreamCodec<FriendlyByteBuf, AutoShopManualTradeC2SPacket> STREAM_CODEC =
             StreamCodec.composite(
                     BlockPos.STREAM_CODEC, AutoShopManualTradeC2SPacket::pos,
-                    ByteBufCodecs.VAR_INT, AutoShopManualTradeC2SPacket::quantity,
+                    net.minecraft.network.codec.ByteBufCodecs.VAR_INT, AutoShopManualTradeC2SPacket::quantity,
                     AutoShopManualTradeC2SPacket::new);
 
     @Override
@@ -36,20 +35,21 @@ public record AutoShopManualTradeC2SPacket(BlockPos pos, int quantity) implement
     public static void handle(AutoShopManualTradeC2SPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             ServerPlayer player = (ServerPlayer) context.player();
-            var blockEntity = player.level().getBlockEntity(packet.pos());
+            var blockEntity = ((net.minecraft.server.level.ServerLevel) player.level()).getBlockEntity(packet.pos());
             if (!(blockEntity instanceof AutoShopBlockEntity autoShop) || !autoShop.canPlayerUse(player)) {
                 return;
             }
             if (autoShop.tryManualTrade(player, packet.quantity())) {
-                player.level().sendBlockUpdated(packet.pos(), blockEntity.getBlockState(),
+                ((net.minecraft.server.level.ServerLevel) player.level()).sendBlockUpdated(packet.pos(), blockEntity.getBlockState(),
                         blockEntity.getBlockState(), 3);
-                if (player.containerMenu instanceof AutoShopMenu menu
-                        && menu.getBlockPos().equals(packet.pos())) {
-                    menu.broadcastFullState();
+                if (player.containerMenu instanceof AutoShopMenu autoMenu
+                        && autoMenu.getBlockPos().equals(packet.pos())) {
+                    autoMenu.broadcastFullState();
                 }
-                player.level().playSound(
+                ((net.minecraft.server.level.ServerLevel) player.level()).playSound(
                         null, packet.pos(), SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.BLOCKS, 0.3f, 1.0f);
             }
+            ShopPurchaseLimitsS2CPacket.sendTo(player);
         });
     }
 }

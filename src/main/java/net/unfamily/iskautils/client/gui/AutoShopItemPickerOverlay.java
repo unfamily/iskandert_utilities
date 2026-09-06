@@ -2,15 +2,14 @@ package net.unfamily.iskautils.client.gui;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
@@ -20,14 +19,15 @@ import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
-import net.unfamily.iskautils.shop.ShopOtherRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypes;
 import net.unfamily.iskautils.shop.ShopLoader;
+import net.unfamily.iskautils.shop.ShopPurchaseLimitsData;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
@@ -141,6 +141,7 @@ public final class AutoShopItemPickerOverlay {
     }
 
     public void initWidgets(AutoShopScreen screen) {
+        ModMessages.requestShopPurchaseLimits();
         int leftPos = leftPosSupplier.getAsInt();
         int topPos = topPosSupplier.getAsInt();
 
@@ -155,8 +156,6 @@ public final class AutoShopItemPickerOverlay {
         searchBox.setBordered(true);
         searchBox.setHint(Component.translatable("gui.iska_utils.shop.search.placeholder"));
         searchBox.setResponder(text -> searchDebounceTicks = SEARCH_DEBOUNCE_TICKS);
-        searchBox.visible = true;
-        searchBox.active = true;
         screen.addPickerWidget(searchBox);
 
         scopeFilterButton = screen.addPickerWidget(new SymbolIconButton(
@@ -198,45 +197,8 @@ public final class AutoShopItemPickerOverlay {
             onCloseHost.run();
         }).bounds(leftPos + CLOSE_BUTTON_X, topPos + CLOSE_BUTTON_Y, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE).build());
 
-        layoutChromeWidgets();
         updateSelectButtons(screen);
         refreshFilteredLists();
-    }
-
-    /** Keep search/filter/back/close aligned after dual-layout leftPos/topPos changes. */
-    public void layoutChromeWidgets() {
-        int leftPos = leftPosSupplier.getAsInt();
-        int topPos = topPosSupplier.getAsInt();
-        if (searchBox != null) {
-            searchBox.setPosition(leftPos + ShopBrowsePanel.SEARCH_BAR_X, topPos + ShopBrowsePanel.SEARCH_BAR_Y);
-            searchBox.visible = true;
-            searchBox.active = true;
-        }
-        if (scopeFilterButton != null) {
-            scopeFilterButton.setPosition(leftPos + browsePanel.scopeButtonX(), topPos + ShopBrowsePanel.FILTER_ROW_Y);
-            scopeFilterButton.visible = true;
-            scopeFilterButton.active = true;
-        }
-        if (currencyFilterButton != null) {
-            currencyFilterButton.setPosition(leftPos + browsePanel.currencyButtonX(), topPos + ShopBrowsePanel.FILTER_ROW_Y);
-            currencyFilterButton.visible = true;
-            currencyFilterButton.active = true;
-        }
-        if (availabilityFilterButton != null) {
-            availabilityFilterButton.setPosition(
-                    leftPos + browsePanel.availabilityButtonX(), topPos + ShopBrowsePanel.FILTER_ROW_Y);
-            availabilityFilterButton.visible = true;
-            availabilityFilterButton.active = true;
-        }
-        if (backButton != null) {
-            backButton.setPosition(leftPos + BACK_BUTTON_X, topPos + BACK_BUTTON_Y);
-            backButton.visible = true;
-        }
-        if (closeButton != null) {
-            closeButton.setPosition(leftPos + CLOSE_BUTTON_X, topPos + CLOSE_BUTTON_Y);
-            closeButton.visible = true;
-            closeButton.active = true;
-        }
     }
 
     public void tick() {
@@ -252,8 +214,8 @@ public final class AutoShopItemPickerOverlay {
         int leftPos = leftPosSupplier.getAsInt();
         int topPos = topPosSupplier.getAsInt();
 
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SHOP_TEXTURE,
-                leftPos, topPos, 0.0F, 0.0F, GUI_WIDTH, GUI_HEIGHT, GUI_WIDTH, GUI_HEIGHT);
+        guiGraphics.blit(SHOP_TEXTURE,
+                leftPos, topPos, 0, 0, GUI_WIDTH, GUI_HEIGHT, GUI_WIDTH, GUI_HEIGHT);
 
         guiGraphics.fill(leftPos + 8, topPos + INVENTORY_Y - 4,
                 leftPos + GUI_WIDTH - 8, topPos + GUI_HEIGHT - 6, PANEL_COVER_COLOR);
@@ -283,11 +245,10 @@ public final class AutoShopItemPickerOverlay {
         }
     }
 
-    public boolean extractTooltips(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY,
-                                   Function<ItemStack, List<Component>> itemTooltipProvider) {
+    public void renderTooltips(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int entryIndex = getEntryUnderMouse(mouseX, mouseY);
         if (entryIndex < 0) {
-            return false;
+            return;
         }
 
         int leftPos = leftPosSupplier.getAsInt();
@@ -295,7 +256,7 @@ public final class AutoShopItemPickerOverlay {
         int startY = entryStartY();
         int row = entryIndex - scrollOffset;
         if (row < 0 || row >= visibleEntries()) {
-            return false;
+            return;
         }
         int entryX = leftPos + ENTRY_START_X;
         int entryY = topPos + startY + row * ENTRY_HEIGHT;
@@ -303,7 +264,7 @@ public final class AutoShopItemPickerOverlay {
 
         if (displayingItems()) {
             if (entryIndex >= browsePanel.getFilteredItems().size()) {
-                return false;
+                return;
             }
             ShopEntry item = browsePanel.getFilteredItems().get(entryIndex);
             int buyButtonX = entryX + PICKER_ENTRY_WIDTH - SELECT_BUTTON_WIDTH - BUTTONS_SPACING - SELECT_BUTTON_WIDTH - ENTRY_RIGHT_MARGIN;
@@ -312,87 +273,63 @@ public final class AutoShopItemPickerOverlay {
 
             if (ShopEntryHelper.isTagEntry(item)
                     && mouseX >= buyButtonX && mouseX < buyButtonX + SELECT_BUTTON_WIDTH
-                    && mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT) {
-                guiGraphics.setTooltipForNextFrame(font,
-                        List.of(Component.translatable("gui.iska_utils.shop.tag_sell_only")
-                                .getVisualOrderText()),
+                        && mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT) {
+                setTooltip(guiGraphics, font,
+                        List.of(Component.translatable("gui.iska_utils.shop.tag_sell_only")),
                         mouseX, mouseY);
-                return true;
+                return;
             }
+
             if ((item.buy > 0 || item.free)
-                    && mouseX >= buyButtonX && mouseX < buyButtonX + SELECT_BUTTON_WIDTH
+                        && mouseX >= buyButtonX && mouseX < buyButtonX + SELECT_BUTTON_WIDTH
                     && mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT) {
-                guiGraphics.setTooltipForNextFrame(font,
-                        createBuyTooltip(item).stream().map(Component::getVisualOrderText).toList(),
-                        mouseX, mouseY);
-                return true;
+                setTooltip(guiGraphics, font, createBuyTooltip(item), mouseX, mouseY);
+                return;
             }
             if (item.sell > 0
-                    && mouseX >= sellButtonX && mouseX < sellButtonX + SELECT_BUTTON_WIDTH
+                        && mouseX >= sellButtonX && mouseX < sellButtonX + SELECT_BUTTON_WIDTH
                     && mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT) {
-                guiGraphics.setTooltipForNextFrame(font,
-                        createSellTooltip(item).stream().map(Component::getVisualOrderText).toList(),
-                        mouseX, mouseY);
-                return true;
+                setTooltip(guiGraphics, font, createSellTooltip(item), mouseX, mouseY);
+                return;
             }
 
             if (ShopScreenHelper.isMouseOverEntryIcon(mouseX, mouseY, entryX, entryY)) {
-                if (ShopEntryHelper.isTagEntry(item) || item.type != ShopEntry.EntryType.ITEM) {
-                    guiGraphics.setTooltipForNextFrame(font,
-                            List.of(ShopEntryHelper.displayTooltipForEntry(item).getVisualOrderText()),
-                            mouseX, mouseY);
-                    return true;
+                if (ShopEntryHelper.isTagEntry(item) || !ShopEntryTypes.isItem(item)) {
+                    setTooltip(guiGraphics, font,
+                            List.of(ShopEntryHelper.displayTooltipForEntry(item)), mouseX, mouseY);
+                    return;
                 }
                 ItemStack stack = ShopEntryHelper.displayStackForEntry(item);
                 if (!stack.isEmpty()) {
                     stack.setCount(Math.max(1, item.amount));
-                    guiGraphics.setTooltipForNextFrame(
-                            font,
-                            itemTooltipProvider.apply(stack),
-                            stack.getTooltipImage(),
-                            stack,
-                            mouseX,
-                            mouseY,
-                            stack.get(DataComponents.TOOLTIP_STYLE));
-                    return true;
+                    setItemTooltip(guiGraphics, font, stack, mouseX, mouseY);
                 }
             }
-            return false;
+            return;
         }
 
         if (entryIndex >= browsePanel.getFilteredCategories().size()) {
-            return false;
+            return;
         }
         ShopCategory category = browsePanel.getFilteredCategories().get(entryIndex);
 
         if (ShopScreenHelper.isMouseOverEntryIcon(mouseX, mouseY, entryX, entryY)) {
             if (ShopEntryHelper.isTagSelector(category.item)) {
-                guiGraphics.setTooltipForNextFrame(font,
-                        List.of(Component.literal(category.item.trim()).getVisualOrderText()),
-                        mouseX, mouseY);
-                return true;
+                setTooltip(guiGraphics, font,
+                        List.of(Component.literal(category.item.trim())), mouseX, mouseY);
+                return;
             }
             ItemStack stack = ShopEntryHelper.displayStackForItemSelector(category.item, 1);
             if (!stack.isEmpty()) {
-                guiGraphics.setTooltipForNextFrame(
-                        font,
-                        itemTooltipProvider.apply(stack),
-                        stack.getTooltipImage(),
-                        stack,
-                        mouseX,
-                        mouseY,
-                        stack.get(DataComponents.TOOLTIP_STYLE));
-                return true;
+                setItemTooltip(guiGraphics, font, stack, mouseX, mouseY);
+                return;
             }
         }
 
         if (category.description != null && !category.description.trim().isEmpty()) {
-            guiGraphics.setTooltipForNextFrame(font,
-                    List.of(Component.translatable(category.description).getVisualOrderText()),
-                    mouseX, mouseY);
-            return true;
+            setTooltip(guiGraphics, font,
+                    List.of(Component.translatable(category.description)), mouseX, mouseY);
         }
-        return false;
     }
 
     private int getEntryUnderMouse(int mouseX, int mouseY) {
@@ -413,37 +350,40 @@ public final class AutoShopItemPickerOverlay {
     }
 
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        if (event.button() == 1) {
-            if (scopeFilterButton != null && scopeFilterButton.isMouseOver(event.x(), event.y())) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
+        if (button == 1) {
+            if (scopeFilterButton != null && scopeFilterButton.isMouseOver(mouseX, mouseY)) {
                 onScopeFilterPressed(true);
                 return true;
             }
-            if (currencyFilterButton != null && currencyFilterButton.isMouseOver(event.x(), event.y())) {
+            if (currencyFilterButton != null && currencyFilterButton.isMouseOver(mouseX, mouseY)) {
                 onCurrencyFilterPressed(true);
                 return true;
             }
-            if (availabilityFilterButton != null && availabilityFilterButton.isMouseOver(event.x(), event.y())) {
+            if (availabilityFilterButton != null && availabilityFilterButton.isMouseOver(mouseX, mouseY)) {
                 onAvailabilityFilterPressed();
                 return true;
             }
-            if (MachineGuiInput.clearEditBoxOnRightClick(event.x(), event.y(), event.button(), searchBox)) {
+            if (MachineGuiInput.clearEditBoxOnRightClick(mouseX, mouseY, button, searchBox)) {
                 return true;
             }
         }
-        if (event.button() == 0) {
-            if (handleScrollButtonClick(event.x(), event.y())) {
+        if (button == 0) {
+            if (handleScrollButtonClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();
                 return true;
             }
-            if (handleHandleClick(event.x(), event.y())) {
+            if (handleHandleClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();
                 return true;
             }
-            if (handleScrollbarClick(event.x(), event.y())) {
+            if (handleScrollbarClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();
                 return true;
             }
-            if (handleEntryClick(event.x(), event.y())) {
+            if (handleEntryClick(mouseX, mouseY)) {
                 return true;
             }
         }
@@ -451,7 +391,8 @@ public final class AutoShopItemPickerOverlay {
     }
 
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (event.button() == 0) {
+        int button = event.button();
+        if (button == 0) {
             MachineGuiInput.clearScrollbarPressed();
             if (isDraggingHandle) {
                 isDraggingHandle = false;
@@ -461,14 +402,16 @@ public final class AutoShopItemPickerOverlay {
         return false;
     }
 
-    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-        if (isDraggingHandle && event.button() == 0) {
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        double mouseY = event.y();
+        int button = event.button();
+        if (isDraggingHandle && button == 0) {
             int max = maxScrollOffset();
             if (max <= 0) {
                 return true;
             }
             int track = SCROLLBAR_HEIGHT - HANDLE_SIZE;
-            int delta = (int) event.y() - dragStartY;
+            int delta = (int) mouseY - dragStartY;
             int newOffset = dragStartScrollOffset + (int) ((double) delta / track * max);
             scrollOffset = Math.max(0, Math.min(max, newOffset));
             rebuildSelectButtons.run();
@@ -493,6 +436,18 @@ public final class AutoShopItemPickerOverlay {
 
     public boolean charTyped(CharacterEvent event) {
         return searchBox != null && searchBox.isFocused() && searchBox.charTyped(event);
+    }
+
+    private static void setTooltip(GuiGraphicsExtractor graphics, Font font, List<? extends Component> lines,
+                                   int mouseX, int mouseY) {
+        graphics.setTooltipForNextFrame(font,
+                lines.stream().map(Component::getVisualOrderText).toList(), mouseX, mouseY);
+    }
+
+    private static void setItemTooltip(GuiGraphicsExtractor graphics, Font font, ItemStack stack,
+                                       int mouseX, int mouseY) {
+        graphics.setTooltipForNextFrame(font,
+                List.of(stack.getHoverName().getVisualOrderText()), mouseX, mouseY);
     }
 
     public boolean handleEscape() {
@@ -561,10 +516,15 @@ public final class AutoShopItemPickerOverlay {
                                 button -> applySelection(item, true))
                         .bounds(buyButtonX, buttonY, SELECT_BUTTON_WIDTH, BUTTON_HEIGHT)
                         .build();
-                buyButton.active = ShopBrowsePanel.isSelectableAutoShopEntry(item, true);
+                boolean limitBlocked = ShopClientPurchaseLimits.isBlocked(
+                        item.id, ShopPurchaseLimitsData.TradeSide.BUY);
+                buyButton.active = ShopBrowsePanel.isSelectableAutoShopEntry(item, true) && !limitBlocked;
                 if (tagEntry) {
                     buyButton.setTooltip(Tooltip.create(
                             Component.translatable("gui.iska_utils.shop.tag_sell_only")));
+                } else if (limitBlocked) {
+                    buyButton.setTooltip(Tooltip.create(
+                            Component.translatable("gui.iska_utils.shop.tooltip.cannot_repeat")));
                 }
                 selectBuyButtons.add(buyButton);
                 screen.addPickerWidget(buyButton);
@@ -576,7 +536,13 @@ public final class AutoShopItemPickerOverlay {
                                 button -> applySelection(item, false))
                         .bounds(sellButtonX, buttonY, SELECT_BUTTON_WIDTH, BUTTON_HEIGHT)
                         .build();
-                sellButton.active = ShopBrowsePanel.isSelectableAutoShopEntry(item, false);
+                boolean limitBlocked = ShopClientPurchaseLimits.isBlocked(
+                        item.id, ShopPurchaseLimitsData.TradeSide.SELL);
+                sellButton.active = ShopBrowsePanel.isSelectableAutoShopEntry(item, false) && !limitBlocked;
+                if (limitBlocked) {
+                    sellButton.setTooltip(Tooltip.create(
+                            Component.translatable("gui.iska_utils.shop.tooltip.cannot_repeat")));
+                }
                 selectSellButtons.add(sellButton);
                 screen.addPickerWidget(sellButton);
             }
@@ -584,6 +550,11 @@ public final class AutoShopItemPickerOverlay {
     }
 
     private void applySelection(ShopEntry entry, boolean buyMode) {
+        ShopPurchaseLimitsData.TradeSide side = buyMode
+                ? ShopPurchaseLimitsData.TradeSide.BUY : ShopPurchaseLimitsData.TradeSide.SELL;
+        if (ShopClientPurchaseLimits.isBlocked(entry.id, side)) {
+            return;
+        }
         BlockPos pos = machinePosSupplier.get();
         if (pos.equals(BlockPos.ZERO)) {
             return;
@@ -673,7 +644,8 @@ public final class AutoShopItemPickerOverlay {
 
     private void updateScopeFilterTooltip() {
         if (scopeFilterButton != null) {
-            scopeFilterButton.setTooltip(Tooltip.create(getScopeTooltip(browsePanel.getSearchScope())));
+            scopeFilterButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                    getScopeTooltip(browsePanel.getSearchScope())));
         }
     }
 
@@ -733,7 +705,7 @@ public final class AutoShopItemPickerOverlay {
         int slotY = entryY + 3;
         int textX = slotX + 24;
         int textY = entryY + (ENTRY_HEIGHT - 8) / 2;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F, 18, 18, 18, 18);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
         ItemStack icon = ShopEntryHelper.displayStackForItemSelector(category.item, 1);
         if (!icon.isEmpty()) {
             guiGraphics.item(icon, slotX + 1, slotY + 1);
@@ -748,34 +720,28 @@ public final class AutoShopItemPickerOverlay {
         int slotY = entryY + 3;
         int textX = slotX + 24;
         int textY = entryY + (ENTRY_HEIGHT - 8) / 2;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F, 18, 18, 18, 18);
-        switch (item.type) {
-            case ITEM -> {
-                ItemStack stack = ShopEntryHelper.displayStackForEntry(item);
-                if (!stack.isEmpty()) {
-                    stack.setCount(Math.max(1, item.amount));
-                    guiGraphics.item(stack, slotX + 1, slotY + 1);
-                    guiGraphics.itemDecorations(fontSupplier.get(), stack, slotX + 1, slotY + 1);
-                }
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
+        if (ShopEntryTypes.isItem(item)) {
+            ItemStack stack = ShopEntryHelper.displayStackForEntry(item);
+            if (!stack.isEmpty()) {
+                stack.setCount(Math.max(1, item.amount));
+                guiGraphics.item(stack, slotX + 1, slotY + 1);
+                guiGraphics.itemDecorations(fontSupplier.get(), stack, slotX + 1, slotY + 1);
             }
-            case FLUID -> {
-                var fluid = ShopEntryHelper.displayFluidForEntry(item);
-                if (!fluid.isEmpty()) {
-                    GuiFluidStillBlit.blit16(guiGraphics, fluid, slotX + 1, slotY + 1);
-                }
+        } else if (ShopEntryTypes.isFluid(item)) {
+            var fluid = ShopEntryHelper.displayFluidForEntry(item);
+            if (!fluid.isEmpty()) {
+                GuiFluidStillBlit.blit16(guiGraphics, fluid, slotX + 1, slotY + 1);
             }
-            case GAS -> {
-                Object gas = ShopEntryHelper.displayGasForEntry(item);
-                if (gas != null) {
-                    GuiChemicalStillBlit.blit16(guiGraphics, gas, slotX + 1, slotY + 1);
-                }
+        } else if (ShopEntryTypes.isGas(item)) {
+            Object gas = ShopEntryHelper.displayGasForEntry(item);
+            if (gas != null) {
+                GuiChemicalStillBlit.blit16(guiGraphics, gas, slotX + 1, slotY + 1);
             }
-            case OTHER -> {
-                ShopOtherRegistry.Definition definition = ShopOtherRegistry.get(item.other);
-                if (definition != null) {
-                    guiGraphics.blit(RenderPipelines.GUI_TEXTURED, definition.icon(),
-                            slotX + 1, slotY + 1, 0.0F, 0.0F, 16, 16, 16, 16);
-                }
+        } else {
+            Identifier icon = ShopEntryTypeRegistry.require(item).guiIcon(item);
+            if (icon != null) {
+                guiGraphics.blit(icon, slotX + 1, slotY + 1, 0, 0, 16, 16, 16, 16);
             }
         }
         int buyButtonX = entryX + PICKER_ENTRY_WIDTH - SELECT_BUTTON_WIDTH - BUTTONS_SPACING - SELECT_BUTTON_WIDTH - ENTRY_RIGHT_MARGIN;
@@ -796,24 +762,24 @@ public final class AutoShopItemPickerOverlay {
         int downY = buttonDownY();
 
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE,
-                leftPos + SCROLLBAR_X, topPos + barY, 0.0F, 0.0F, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
+                leftPos + SCROLLBAR_X, topPos + barY, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
 
         boolean upHovered = mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH
                 && mouseY >= topPos + upY && mouseY < topPos + upY + HANDLE_SIZE;
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, leftPos + SCROLLBAR_X, topPos + upY,
-                (float) (SCROLLBAR_WIDTH * 2), (float) (upHovered ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+                SCROLLBAR_WIDTH * 2, upHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
 
         boolean downHovered = mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH
                 && mouseY >= topPos + downY && mouseY < topPos + downY + HANDLE_SIZE;
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, leftPos + SCROLLBAR_X, topPos + downY,
-                (float) (SCROLLBAR_WIDTH * 3), (float) (downHovered ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+                SCROLLBAR_WIDTH * 3, downHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
 
         double scrollRatio = (double) scrollOffset / maxScrollOffset();
         int handleY = topPos + barY + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
         boolean handleHovered = mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + HANDLE_SIZE
                 && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, leftPos + SCROLLBAR_X, handleY,
-                (float) SCROLLBAR_WIDTH, (float) (handleHovered ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+                SCROLLBAR_WIDTH, handleHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
     }
 
     private boolean handleEntryClick(double mouseX, double mouseY) {

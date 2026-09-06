@@ -1,25 +1,28 @@
 package net.unfamily.iskautils.client.gui;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.input.CharacterEvent;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.chat.Component;
-import com.mojang.blaze3d.platform.InputConstants;
-import org.lwjgl.glfw.GLFW;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
-import net.unfamily.iskautils.shop.ShopOtherRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypeHandler;
+import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypes;
 import net.unfamily.iskautils.shop.ShopCurrency;
+import net.unfamily.iskautils.shop.ShopPurchaseLimitsData;
+import net.unfamily.iskautils.shop.ShopTransactionManager;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
 import java.util.*;
@@ -123,6 +126,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         
         // Request team data from server
         net.unfamily.iskautils.network.ModMessages.sendShopTeamDataRequest();
+        net.unfamily.iskautils.network.ModMessages.requestShopPurchaseLimits();
     }
 
     private int entryStartY() {
@@ -158,6 +162,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         
         // Register this instance for callback
         currentInstance = this;
+        net.unfamily.iskautils.network.ModMessages.requestShopPurchaseLimits();
 
         searchBox = new EditBox(
                 font,
@@ -340,12 +345,11 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     @Override
     public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
-
         int guiX = this.leftPos;
         int guiY = this.topPos;
         
         // Main background
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, guiX, guiY, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, guiX, guiY, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         
         // Shop entries - render visible rows, even if some are empty
         int entries = visibleEntries();
@@ -356,7 +360,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             int entryY = guiY + startY + i * ENTRY_HEIGHT;
             
             // Render entry background (enrty_wide_wide_wide.png 220x24)
-            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENTRY_TEXTURE, entryX, entryY, 0.0F, 0.0F, ENTRY_WIDTH, ENTRY_HEIGHT, 220, 24);
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, ENTRY_TEXTURE, entryX, entryY, 0, 0, ENTRY_WIDTH, ENTRY_HEIGHT, 220, 24);
             
             // Render entry content only if there's data to show
             if (displayingItems()) {
@@ -380,6 +384,14 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         updateAndRenderFeedback(guiGraphics, guiX, guiY);
     }
     
+
+    @Override
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
+        renderShopTooltips(guiGraphics, mouseX, mouseY);
+        renderCurrencyTooltips(guiGraphics, mouseX, mouseY);
+    }
+
     private void renderScrollbar(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int entries = visibleEntries();
         // Only show scrollbar if there are more entries than can fit
@@ -392,21 +404,19 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int downY = buttonDownY();
         
         // Draw scrollbar background (8 pixels wide, height 34)
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + barY, 0.0F, 0.0F, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + barY, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
         
         // UP button (8x8 pixels) - above scrollbar
         boolean upButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
                                   mouseY >= guiY + upY && mouseY < guiY + upY + HANDLE_SIZE);
         int upButtonV = upButtonHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + upY,
-                (float) (SCROLLBAR_WIDTH * 2), (float) upButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + upY, SCROLLBAR_WIDTH * 2, upButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // DOWN button (8x8 pixels) - below scrollbar
         boolean downButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
                                     mouseY >= guiY + downY && mouseY < guiY + downY + HANDLE_SIZE);
         int downButtonV = downButtonHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + downY,
-                (float) (SCROLLBAR_WIDTH * 3), (float) downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + downY, SCROLLBAR_WIDTH * 3, downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         
         // Handle (8x8 pixels) - position based on scroll offset
         if (totalShopEntries > entries) {
@@ -416,62 +426,56 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             boolean handleHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE &&
                                     mouseY >= handleY && mouseY < handleY + HANDLE_SIZE);
             int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY,
-                    (float) SCROLLBAR_WIDTH, (float) handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY, SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         }
     }
     
     @Override
-    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
-        if (event.button() == 1) {
-            if (scopeFilterButton != null && scopeFilterButton.isMouseOver(event.x(), event.y())) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
+        if (button == 1) {
+            if (scopeFilterButton != null && scopeFilterButton.isMouseOver(mouseX, mouseY)) {
                 onScopeFilterPressed(true);
                 return true;
             }
-            if (currencyFilterButton != null && currencyFilterButton.isMouseOver(event.x(), event.y())) {
+            if (currencyFilterButton != null && currencyFilterButton.isMouseOver(mouseX, mouseY)) {
                 onCurrencyFilterPressed(true);
                 return true;
             }
-            if (availabilityFilterButton != null && availabilityFilterButton.isMouseOver(event.x(), event.y())) {
+            if (availabilityFilterButton != null && availabilityFilterButton.isMouseOver(mouseX, mouseY)) {
                 onAvailabilityFilterPressed();
                 return true;
             }
-            if (MachineGuiInput.clearEditBoxOnRightClick(event.x(), event.y(), event.button(), searchBox)) {
+            if (MachineGuiInput.clearEditBoxOnRightClick(mouseX, mouseY, button, searchBox)) {
                 return true;
             }
         }
-        if (event.button() == 0) { // Left click
-            // Handle scrollbar clicks first
-            if (handleScrollButtonClick(event.x(), event.y())) {
+        if (button == 0) {
+            if (handleScrollButtonClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();
                 return true;
             }
-            
-            // Handle handle drag start
-            if (handleHandleClick(event.x(), event.y())) {
+            if (handleHandleClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();
                 return true;
             }
-            
-            // Handle scrollbar area clicks
-            if (handleScrollbarClick(event.x(), event.y())) {
+            if (handleScrollbarClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();
                 return true;
             }
-            
-            // Handle entry clicks
-            if (handleEntryClick(event.x(), event.y())) {
+            if (handleEntryClick(mouseX, mouseY)) {
                 return true;
             }
         }
-        
-        // Handle vanilla buttons (including Buy/Sell) after our handlers
         return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
-        if (event.button() == 0) {
+    public boolean mouseReleased(MouseButtonEvent event) {
+        int button = event.button();
+        if (button == 0) {
             MachineGuiInput.clearScrollbarPressed();
             if (isDraggingHandle) {
                 isDraggingHandle = false;
@@ -482,7 +486,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
 
     @Override
-    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+    public boolean keyPressed(KeyEvent event) {
         if (MachineGuiInput.handleContainerKeyPressed(this, event, isDraggingHandle, searchBox)) {
             return true;
         }
@@ -498,8 +502,18 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
 
     @Override
-    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dx, double dy) {
-        return super.mouseDragged(event, dx, dy);
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        double mouseY = event.y();
+        int button = event.button();
+        if (button == 0 && isDraggingHandle && totalShopEntries > visibleEntries()) {
+            int deltaY = (int) mouseY - dragStartY;
+            float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+            int newScrollOffset = dragStartScrollOffset + (int) (scrollRatio * maxScrollOffset());
+            scrollOffset = Math.max(0, Math.min(maxScrollOffset(), newScrollOffset));
+            updateBuySellButtons();
+            return true;
+        }
+        return super.mouseDragged(event, dragX, dragY);
     }
     
     private boolean handleScrollButtonClick(double mouseX, double mouseY) {
@@ -695,7 +709,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int textX = slotX + 18 + 6;
         int textY = entryY + (ENTRY_HEIGHT - 8) / 2;
         
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F, 18, 18, 18, 18);
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
         
         ItemStack categoryIcon = ShopEntryHelper.displayStackForItemSelector(category.item, 1);
         if (!categoryIcon.isEmpty()) {
@@ -723,35 +737,30 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int textX = slotX + 18 + 6;
         int textY = entryY + (ENTRY_HEIGHT - 8) / 2;
         
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0.0F, 0.0F, 18, 18, 18, 18);
+        // Draw slot (18x18)
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
         
-        switch (item.type) {
-            case ITEM -> {
-                ItemStack itemStack = ShopEntryHelper.displayStackForEntry(item);
-                if (!itemStack.isEmpty()) {
-                    itemStack.setCount(Math.max(1, item.amount));
-                    guiGraphics.item(itemStack, slotX + 1, slotY + 1);
-                    guiGraphics.itemDecorations(this.font, itemStack, slotX + 1, slotY + 1);
-                }
+        if (ShopEntryTypes.isItem(item)) {
+            ItemStack itemStack = ShopEntryHelper.displayStackForEntry(item);
+            if (!itemStack.isEmpty()) {
+                itemStack.setCount(Math.max(1, item.amount));
+                guiGraphics.item(itemStack, slotX + 1, slotY + 1);
+                guiGraphics.itemDecorations(this.font, itemStack, slotX + 1, slotY + 1);
             }
-            case FLUID -> {
-                var fluid = ShopEntryHelper.displayFluidForEntry(item);
-                if (!fluid.isEmpty()) {
-                    GuiFluidStillBlit.blit16(guiGraphics, fluid, slotX + 1, slotY + 1);
-                }
+        } else if (ShopEntryTypes.isFluid(item)) {
+            var fluid = ShopEntryHelper.displayFluidForEntry(item);
+            if (!fluid.isEmpty()) {
+                GuiFluidStillBlit.blit16(guiGraphics, fluid, slotX + 1, slotY + 1);
             }
-            case GAS -> {
-                Object gas = ShopEntryHelper.displayGasForEntry(item);
-                if (gas != null) {
-                    GuiChemicalStillBlit.blit16(guiGraphics, gas, slotX + 1, slotY + 1);
-                }
+        } else if (ShopEntryTypes.isGas(item)) {
+            Object gas = ShopEntryHelper.displayGasForEntry(item);
+            if (gas != null) {
+                GuiChemicalStillBlit.blit16(guiGraphics, gas, slotX + 1, slotY + 1);
             }
-            case OTHER -> {
-                ShopOtherRegistry.Definition definition = ShopOtherRegistry.get(item.other);
-                if (definition != null) {
-                    guiGraphics.blit(RenderPipelines.GUI_TEXTURED, definition.icon(),
-                            slotX + 1, slotY + 1, 0.0F, 0.0F, 16, 16, 16, 16);
-                }
+        } else {
+            Identifier icon = ShopEntryTypeRegistry.require(item).guiIcon(item);
+            if (icon != null) {
+                guiGraphics.blit(icon, slotX + 1, slotY + 1, 0, 0, 16, 16, 16, 16);
             }
         }
         
@@ -866,18 +875,10 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Intentionally do not draw the "Inventory" label (vanilla would).
     }
 
-    @Override
-    protected void extractTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        if (tryShopEntryTooltip(guiGraphics, mouseX, mouseY)) {
-            return;
-        }
-        super.extractTooltip(guiGraphics, mouseX, mouseY);
-    }
-
-    private boolean tryShopEntryTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+    private void renderShopTooltips(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         int entryIndex = getEntryUnderMouse(mouseX, mouseY);
         if (entryIndex < 0) {
-            return false;
+            return;
         }
 
         int x = (this.width - this.imageWidth) / 2;
@@ -885,89 +886,67 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int startY = entryStartY();
         int row = entryIndex - scrollOffset;
         if (row < 0 || row >= visibleEntries()) {
-            return false;
+            return;
         }
         int entryX = x + ENTRY_START_X;
         int entryY = y + startY + row * ENTRY_HEIGHT;
 
         if (displayingItems()) {
             if (entryIndex >= browsePanel.getFilteredItems().size()) {
-                return false;
+                return;
             }
             ShopEntry item = browsePanel.getFilteredItems().get(entryIndex);
 
             List<Component> buttonTooltip = getButtonTooltip(mouseX, mouseY);
             if (buttonTooltip != null && !buttonTooltip.isEmpty()) {
-                guiGraphics.setTooltipForNextFrame(this.font,
-                        buttonTooltip.stream().map(Component::getVisualOrderText).toList(),
-                        mouseX, mouseY);
-                return true;
+                setTooltip(guiGraphics, this.font, buttonTooltip, mouseX, mouseY);
+                return;
             }
 
             if (isItemBlocked(item)) {
-                List<Component> blockedTooltip = createMissingStagesTooltip(item);
-                guiGraphics.setTooltipForNextFrame(this.font,
-                        blockedTooltip.stream().map(Component::getVisualOrderText).toList(),
-                        mouseX, mouseY);
-                return true;
+                setTooltip(guiGraphics, this.font, createBlockedTooltip(item), mouseX, mouseY);
+                return;
             }
 
             if (ShopScreenHelper.isMouseOverEntryIcon(mouseX, mouseY, entryX, entryY)) {
-                if (ShopEntryHelper.isTagEntry(item) || item.type != ShopEntry.EntryType.ITEM) {
-                    guiGraphics.setTooltipForNextFrame(this.font,
-                            List.of(ShopEntryHelper.displayTooltipForEntry(item).getVisualOrderText()),
-                            mouseX, mouseY);
-                    return true;
+                if (ShopEntryHelper.isTagEntry(item) || !ShopEntryTypes.isItem(item)) {
+                    setTooltip(guiGraphics, this.font,
+                            List.of(ShopEntryHelper.displayTooltipForEntry(item)), mouseX, mouseY);
+                    return;
                 }
                 ItemStack stack = ShopEntryHelper.displayStackForEntry(item);
                 if (!stack.isEmpty()) {
                     stack.setCount(Math.max(1, item.amount));
-                    renderItemStackTooltip(guiGraphics, stack, mouseX, mouseY);
-                    return true;
+                    setItemTooltip(guiGraphics, this.font, stack, mouseX, mouseY);
                 }
             }
-            return false;
+            return;
         }
 
         if (entryIndex >= browsePanel.getFilteredCategories().size()) {
-            return false;
+            return;
         }
         ShopCategory category = browsePanel.getFilteredCategories().get(entryIndex);
 
         if (ShopScreenHelper.isMouseOverEntryIcon(mouseX, mouseY, entryX, entryY)) {
             if (ShopEntryHelper.isTagSelector(category.item)) {
-                guiGraphics.setTooltipForNextFrame(this.font,
-                        List.of(Component.literal(category.item.trim()).getVisualOrderText()),
-                        mouseX, mouseY);
-                return true;
+                setTooltip(guiGraphics, this.font,
+                        List.of(Component.literal(category.item.trim())), mouseX, mouseY);
+                return;
             }
             ItemStack stack = ShopEntryHelper.displayStackForItemSelector(category.item, 1);
             if (!stack.isEmpty()) {
-                renderItemStackTooltip(guiGraphics, stack, mouseX, mouseY);
-                return true;
+                setItemTooltip(guiGraphics, this.font, stack, mouseX, mouseY);
+                return;
             }
         }
 
         if (category.description != null && !category.description.trim().isEmpty()) {
-            guiGraphics.setTooltipForNextFrame(this.font,
-                    List.of(Component.translatable(category.description).getVisualOrderText()),
-                    mouseX, mouseY);
-            return true;
+            setTooltip(guiGraphics, this.font,
+                    List.of(Component.translatable(category.description)), mouseX, mouseY);
         }
-        return false;
     }
 
-    private void renderItemStackTooltip(GuiGraphicsExtractor guiGraphics, ItemStack stack, int mouseX, int mouseY) {
-        guiGraphics.setTooltipForNextFrame(
-                this.font,
-                this.getTooltipFromContainerItem(stack),
-                stack.getTooltipImage(),
-                stack,
-                mouseX,
-                mouseY,
-                stack.get(DataComponents.TOOLTIP_STYLE));
-    }
-    
     /**
      * Buy/Sell button tooltips
      */
@@ -992,6 +971,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
 
             if ((item.buy > 0 || item.free) && mouseX >= buyButtonX && mouseX < buyButtonX + BUTTON_WIDTH
                 && mouseY >= buttonsY && mouseY < buttonsY + BUTTON_HEIGHT) {
+                if (isLimitBlocked(item, ShopPurchaseLimitsData.TradeSide.BUY)) {
+                    return createPurchaseLimitTooltip(item, ShopPurchaseLimitsData.TradeSide.BUY);
+                }
                 if (!ShopEntryHelper.isPlayerShopTradable(item)) {
                     return ShopScreenHelper.playerShopFluidGasHintTooltip(item, true, getCurrencySymbol(item.valute));
                 }
@@ -1000,6 +982,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
 
             if (item.sell > 0 && mouseX >= sellButtonX && mouseX < sellButtonX + BUTTON_WIDTH
                 && mouseY >= buttonsY && mouseY < buttonsY + BUTTON_HEIGHT) {
+                if (isLimitBlocked(item, ShopPurchaseLimitsData.TradeSide.SELL)) {
+                    return createPurchaseLimitTooltip(item, ShopPurchaseLimitsData.TradeSide.SELL);
+                }
                 if (!ShopEntryHelper.isPlayerShopTradable(item)) {
                     return ShopScreenHelper.playerShopFluidGasHintTooltip(item, false, getCurrencySymbol(item.valute));
                 }
@@ -1082,7 +1067,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             int textY = startY + lineIndex * 10;
 
             double balance = playerTeamBalances.getOrDefault(currency.id, 0.0);
-            String balanceStr = formatLargeNumber(balance);
+            String balanceStr = ShopTransactionManager.formatCompactNumber(balance);
             String balanceText = balanceStr + " " + (currency.charSymbol != null ? currency.charSymbol : currency.id);
             Component currencyText = Component.literal(balanceText);
 
@@ -1099,40 +1084,36 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             guiGraphics.text(this.font, noValutesText, textX, startY, GuiTextColors.MUTED, false);
         }
     }
-    
-    /**
-     * Format a numeric value with K/M/B abbreviations
-     * @param value value to format
-     * @return formatted string (e.g. 10K, 1.5M, 2.3B)
-     */
-    private String formatLargeNumber(double value) {
-        if (value < 10000) {
-            // Below 10_000 show plain number
-            if (value == Math.floor(value)) {
-                return String.valueOf((int)value);
-            } else {
-                return String.format("%.1f", value);
+
+    private void renderCurrencyTooltips(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        if (playerTeamName == null || availableCurrencies.isEmpty()) {
+            return;
+        }
+        int guiX = this.leftPos;
+        int startY = this.topPos + CURRENCIES_START_Y;
+        int lineIndex = 0;
+        for (ShopCurrency currency : availableCurrencies.values()) {
+            int textY = startY + lineIndex * 10;
+            int textX = guiX + CURRENCIES_AREA_LEFT;
+            double balance = playerTeamBalances.getOrDefault(currency.id, 0.0);
+            String balanceStr = ShopTransactionManager.formatCompactNumber(balance);
+            String balanceText = balanceStr + " " + (currency.charSymbol != null ? currency.charSymbol : currency.id);
+            int width = this.font.width(balanceText);
+            if (mouseX >= textX && mouseX < textX + Math.max(width, 40)
+                    && mouseY >= textY && mouseY < textY + 10) {
+                String full = ShopTransactionManager.formatFullNumber(balance);
+                String name = Component.translatable(currency.name).getString();
+                String symbol = currency.charSymbol != null ? currency.charSymbol : currency.id;
+                setTooltip(guiGraphics, this.font,
+                        List.of(Component.literal(name + " " + symbol + ": " + full)),
+                        mouseX, mouseY);
+                return;
             }
-        }
-        
-        String[] suffixes = {"", "K", "M", "B", "T", "P", "E"}; // K=migliaia, M=milioni, B=miliardi, T=trilioni
-        int suffixIndex = 0;
-        double formattedValue = value;
-        
-        // Pick magnitude suffix
-        while (formattedValue >= 1000 && suffixIndex < suffixes.length - 1) {
-            formattedValue /= 1000;
-            suffixIndex++;
-        }
-        
-        // Format with one decimal when needed
-        if (formattedValue == Math.floor(formattedValue)) {
-            return String.format("%.0f%s", formattedValue, suffixes[suffixIndex]);
-        } else {
-            return String.format("%.1f%s", formattedValue, suffixes[suffixIndex]);
+            lineIndex++;
         }
     }
-    
+
+
     /**
      * Update Back button enabled state
      */
@@ -1247,7 +1228,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             int entryY = this.topPos + startY + i * ENTRY_HEIGHT;
             
             // Buy button — fluids/gases shown disabled (catalog only; trade via AutoShop)
-            if ((item.buy > 0 || item.free) && !ShopEntryHelper.isTagEntry(item)) {
+            if (ShopEntryHelper.isBuyAllowed(item) && !ShopEntryHelper.isTagEntry(item)) {
                 int buyButtonX = this.leftPos + ENTRY_START_X + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
                 int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
                 
@@ -1316,8 +1297,11 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      * Handle buy button click
      */
     private void handleBuyButtonClick(ShopEntry item, int multiplier) {
-        if (!ShopEntryHelper.isPlayerShopTradable(item)
-                || !ShopEntryHelper.isBuyAllowed(item)) {
+        if (!ShopEntryHelper.isPlayerShopTradable(item) || !ShopEntryHelper.isBuyAllowed(item)) {
+            return;
+        }
+        if (isLimitBlocked(item, ShopPurchaseLimitsData.TradeSide.BUY)) {
+            showFeedback(Component.translatable("gui.iska_utils.shop.tooltip.cannot_repeat").getString(), 0xFF4444);
             return;
         }
         // Require player to be in a team
@@ -1330,7 +1314,14 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Check balance before sending to server (free entries cost 0)
         String valuteId = item.valute != null ? item.valute : "null_coin";
         double currentBalance = playerTeamBalances.getOrDefault(valuteId, 0.0);
-        double totalCost = item.free ? 0 : (item.buy * multiplier);
+        int effectiveMultiplier = multiplier;
+        ShopEntryTypeHandler buyHandler = ShopEntryTypeRegistry.get(item);
+        if (buyHandler != null && !buyHandler.usesBuy()) {
+            effectiveMultiplier = 1;
+        }
+        double totalCost = item.free || (buyHandler != null && !buyHandler.usesBuy())
+                ? 0
+                : (item.buy * effectiveMultiplier);
         
         if (currentBalance < totalCost) {
             String currencyName = getCurrencyName(valuteId);
@@ -1343,7 +1334,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         hideFeedback();
         
         // Send packet to server using entry id
-        net.unfamily.iskautils.network.ModMessages.sendShopBuyItemPacket(item.id, multiplier);
+        net.unfamily.iskautils.network.ModMessages.sendShopBuyItemPacket(item.id, effectiveMultiplier);
         
         playButtonSound();
     }
@@ -1352,8 +1343,11 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      * Handle sell button click
      */
     private void handleSellButtonClick(ShopEntry item, int multiplier) {
-        if (!ShopEntryHelper.isPlayerShopTradable(item)
-                || !ShopEntryHelper.isSellAllowed(item)) {
+        if (!ShopEntryHelper.isPlayerShopTradable(item) || !ShopEntryHelper.isSellAllowed(item)) {
+            return;
+        }
+        if (isLimitBlocked(item, ShopPurchaseLimitsData.TradeSide.SELL)) {
+            showFeedback(Component.translatable("gui.iska_utils.shop.tooltip.cannot_repeat").getString(), 0xFF4444);
             return;
         }
         // Require player to be in a team
@@ -1389,6 +1383,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                 currentInstance.showFeedback(message.getString(), 0xFF4444);
             } else if ("stage_requirements".equals(errorType)) {
                 Component message = Component.translatable("gui.iska_utils.shop.feedback.stage_requirements");
+                currentInstance.showFeedback(message.getString(), 0xFF4444);
+            } else if ("purchase_limit".equals(errorType)) {
+                Component message = Component.translatable("gui.iska_utils.shop.feedback.purchase_limit");
                 currentInstance.showFeedback(message.getString(), 0xFF4444);
             } else {
                 Component message = Component.translatable("gui.iska_utils.shop.feedback.transaction_error");
@@ -1458,31 +1455,34 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      * Come specificato: click normale = 1, ctrl/alt = 4, shift = 16
      */
     private int calculateMultiplier() {
-        if (isShiftDownNow()) {
+        if (isKeyDown(org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT)
+                || isKeyDown(org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT)) {
             return 16;
-        } else if (isCtrlDownNow() || isAltDownNow()) {
+        } else if (isKeyDown(org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL)
+                || isKeyDown(org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_CONTROL)
+                || isKeyDown(org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT)
+                || isKeyDown(org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_ALT)) {
             return 4;
         }
         return 1;
     }
 
-    private boolean isShiftDownNow() {
-        if (this.minecraft == null) return false;
-        var window = this.minecraft.getWindow();
-        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
+    private boolean isKeyDown(int key) {
+        return minecraft != null && com.mojang.blaze3d.platform.InputConstants.isKeyDown(minecraft.getWindow(), key);
     }
 
-    private boolean isCtrlDownNow() {
-        if (this.minecraft == null) return false;
-        var window = this.minecraft.getWindow();
-        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
+    private static void setTooltip(GuiGraphicsExtractor graphics, net.minecraft.client.gui.Font font,
+                                   List<? extends Component> lines, int mouseX, int mouseY) {
+        graphics.setTooltipForNextFrame(font,
+                lines.stream().map(Component::getVisualOrderText).toList(), mouseX, mouseY);
     }
 
-    private boolean isAltDownNow() {
-        if (this.minecraft == null) return false;
-        var window = this.minecraft.getWindow();
-        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
+    private static void setItemTooltip(GuiGraphicsExtractor graphics, net.minecraft.client.gui.Font font,
+                                       ItemStack stack, int mouseX, int mouseY) {
+        graphics.setTooltipForNextFrame(font,
+                List.of(stack.getHoverName().getVisualOrderText()), mouseX, mouseY);
     }
+
 
     /**
      * Returns stage requirements that are not satisfied: required but missing, or forbidden but present.
@@ -1495,7 +1495,43 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      * Whether an entry is locked by missing stages
      */
     private boolean isItemBlocked(ShopEntry item) {
-        return ShopClientStages.isEntryBlocked(item);
+        return ShopClientStages.isEntryBlocked(item)
+                || isLimitBlocked(item, ShopPurchaseLimitsData.TradeSide.BUY)
+                || isLimitBlocked(item, ShopPurchaseLimitsData.TradeSide.SELL);
+    }
+
+    private boolean isLimitBlocked(ShopEntry item, ShopPurchaseLimitsData.TradeSide side) {
+        return ShopClientPurchaseLimits.isBlocked(item.id, side);
+    }
+
+    private List<Component> createBlockedTooltip(ShopEntry item) {
+        List<Component> tooltip = createMissingStagesTooltip(item);
+        for (ShopPurchaseLimitsData.TradeSide side : ShopPurchaseLimitsData.TradeSide.values()) {
+            if (!isLimitBlocked(item, side)) {
+                continue;
+            }
+            if (!tooltip.isEmpty()) {
+                tooltip.add(Component.empty());
+            }
+            tooltip.addAll(createPurchaseLimitTooltip(item, side));
+        }
+        return tooltip;
+    }
+
+    private List<Component> createPurchaseLimitTooltip(ShopEntry item, ShopPurchaseLimitsData.TradeSide side) {
+        List<Component> tooltip = new ArrayList<>();
+        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.purchase_limit",
+                side.id().toUpperCase(Locale.ROOT)));
+        long reset = ShopClientPurchaseLimits.nextResetEpochMs(item.id, side);
+        if (reset > 0) {
+            String formatted = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+                    .withZone(java.time.ZoneId.systemDefault())
+                    .format(java.time.Instant.ofEpochMilli(reset));
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.resets_at", formatted));
+        } else {
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.cannot_repeat"));
+        }
+        return tooltip;
     }
     
     /**

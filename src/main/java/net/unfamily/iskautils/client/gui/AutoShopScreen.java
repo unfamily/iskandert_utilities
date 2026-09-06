@@ -28,8 +28,9 @@ import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
+import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypes;
 import net.unfamily.iskautils.shop.ShopLoader;
-import net.unfamily.iskautils.shop.ShopOtherRegistry;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -120,9 +121,6 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     @Override
     public void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         repositionLayout();
-        if (subView == SubView.ITEM_PICKER) {
-            itemPicker.layoutChromeWidgets();
-        }
         super.extractContents(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -461,7 +459,8 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
 
     @Override
     protected void extractTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        if (subView == SubView.ITEM_PICKER && itemPicker.extractTooltips(guiGraphics, mouseX, mouseY, this::getTooltipFromContainerItem)) {
+        if (subView == SubView.ITEM_PICKER) {
+            itemPicker.renderTooltips(guiGraphics, mouseX, mouseY);
             return;
         }
         super.extractTooltip(guiGraphics, mouseX, mouseY);
@@ -558,24 +557,24 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
             return;
         }
         ShopEntry bound = getBoundShopEntry();
-        if (bound != null && bound.type == ShopEntry.EntryType.FLUID) {
+        if (ShopEntryTypes.isFluid(bound)) {
             var fluid = ShopEntryHelper.displayFluidForEntry(bound);
             if (!fluid.isEmpty()) {
                 GuiFluidStillBlit.blit16(guiGraphics, fluid, leftPos + filterSlot.x, topPos + filterSlot.y);
             }
             return;
         }
-        if (bound != null && bound.type == ShopEntry.EntryType.GAS) {
+        if (ShopEntryTypes.isGas(bound)) {
             Object gas = ShopEntryHelper.displayGasForEntry(bound);
             if (gas != null) {
                 GuiChemicalStillBlit.blit16(guiGraphics, gas, leftPos + filterSlot.x, topPos + filterSlot.y);
             }
             return;
         }
-        if (bound != null && bound.type == ShopEntry.EntryType.OTHER) {
-            ShopOtherRegistry.Definition definition = ShopOtherRegistry.get(bound.other);
-            if (definition != null) {
-                guiGraphics.blit(RenderPipelines.GUI_TEXTURED, definition.icon(),
+        if (bound != null && !ShopEntryTypes.isItem(bound)) {
+            Identifier icon = ShopEntryTypeRegistry.require(bound).guiIcon(bound);
+            if (icon != null) {
+                guiGraphics.blit(RenderPipelines.GUI_TEXTURED, icon,
                         leftPos + filterSlot.x, topPos + filterSlot.y, 0.0F, 0.0F, 16, 16, 16, 16);
             }
             return;
@@ -602,7 +601,7 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
         }
         if (minecraft.level.getBlockEntity(pos) instanceof AutoShopBlockEntity autoShop) {
             ShopEntry bound = autoShop.getBoundEntry();
-            if (bound != null && bound.type == ShopEntry.EntryType.ITEM) {
+            if (ShopEntryTypes.isItem(bound)) {
                 ItemStack display = ShopEntryHelper.displayStackForEntry(bound);
                 if (!display.isEmpty()) {
                     return display;

@@ -17,13 +17,17 @@ import net.unfamily.iskautils.client.gui.ShopEditScreen;
 import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
+import net.unfamily.iskautils.shop.ShopEntryHelper;
+import net.unfamily.iskautils.shop.ShopEntryTypeHandler;
+import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypes;
+import net.unfamily.iskautils.shop.ShopRepeatableRule;
 import net.unfamily.iskautils.shop.ShopStage;
 import net.unfamily.iskautils.shop.edit.ShopEditWorkspace;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /** Server → client full workspace snapshot for the shop editor. */
@@ -76,18 +80,10 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
             JsonObject o = new JsonObject();
             o.addProperty("id", e.id);
             o.addProperty("in_category", e.inCategory);
-            o.addProperty("type", (e.type != null ? e.type : ShopEntry.EntryType.ITEM).name().toLowerCase(Locale.ROOT));
-            if (e.item != null) {
-                o.addProperty("item", e.item);
-            }
-            if (e.fluid != null) {
-                o.addProperty("fluid", e.fluid);
-            }
-            if (e.gas != null) {
-                o.addProperty("gas", e.gas);
-            }
-            if (e.other != null) {
-                o.addProperty("other", e.other);
+            o.addProperty("type", ShopEntryHelper.typeIdString(e));
+            ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(e);
+            if (handler != null) {
+                handler.writeExtras(o, e);
             }
             o.addProperty("amount", e.amount);
             o.addProperty("currency", e.currency);
@@ -95,6 +91,7 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
             o.addProperty("sell", e.sell);
             o.addProperty("priority", e.priority);
             o.addProperty("free", e.free);
+            ShopRepeatableRule.writeEntryRules(o, e);
             if (e.stages != null && e.stages.length > 0) {
                 JsonArray stages = new JsonArray();
                 for (ShopStage st : e.stages) {
@@ -147,17 +144,12 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
                 ShopEntry e = new ShopEntry();
                 e.id = o.get("id").getAsString();
                 e.inCategory = o.has("in_category") ? o.get("in_category").getAsString() : "000_default";
-                String type = o.has("type") ? o.get("type").getAsString() : "item";
-                e.type = switch (type.toLowerCase(Locale.ROOT)) {
-                    case "fluid" -> ShopEntry.EntryType.FLUID;
-                    case "gas" -> ShopEntry.EntryType.GAS;
-                    case "other" -> ShopEntry.EntryType.OTHER;
-                    default -> ShopEntry.EntryType.ITEM;
-                };
-                e.item = o.has("item") ? o.get("item").getAsString() : null;
-                e.fluid = o.has("fluid") ? o.get("fluid").getAsString() : null;
-                e.gas = o.has("gas") ? o.get("gas").getAsString() : null;
-                e.other = o.has("other") ? o.get("other").getAsString() : null;
+                String type = o.has("type") ? o.get("type").getAsString() : ShopEntryTypes.ITEM.toString();
+                e.typeId = ShopEntryHelper.parseType(type);
+                ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(e.typeId);
+                if (handler != null) {
+                    handler.readExtras(o, e);
+                }
                 e.amount = o.has("amount") ? o.get("amount").getAsInt() : 1;
                 e.itemCount = e.amount;
                 e.currency = o.has("currency") ? o.get("currency").getAsString() : "null_coin";
@@ -166,6 +158,7 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
                 e.sell = o.has("sell") ? o.get("sell").getAsDouble() : 0;
                 e.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
                 e.free = o.has("free") && o.get("free").getAsBoolean();
+                ShopRepeatableRule.readEntryRules(o, e);
                 if (o.has("stages") && o.get("stages").isJsonArray()) {
                     List<ShopStage> stages = new ArrayList<>();
                     for (var se : o.getAsJsonArray("stages")) {

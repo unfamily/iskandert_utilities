@@ -4,8 +4,8 @@ import net.unfamily.iskautils.util.ModLogger;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
-import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskalib.item.ItemConverter;
+import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskalib.team.ShopTeamManager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Inventory;
@@ -23,6 +23,12 @@ public class ShopTransactionManager {
      * @param entryId The unique ID of the ShopEntry (not the itemId)
      */
     public static boolean buyItem(ServerPlayer player, String entryId, int quantity) {
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(((net.minecraft.server.level.ServerLevel) player.level()));
+        return buyItem(player, entryId, quantity, player.getUUID(), teamManager.getPlayerTeam(player));
+    }
+
+    public static boolean buyItem(ServerPlayer player, String entryId, int quantity,
+                                  java.util.UUID limitPlayerId, String limitTeamKey) {
         // Find entry by unique ID
         ShopEntry entry = ShopLoader.getEntryById(entryId);
         if (entry == null) {
@@ -31,7 +37,8 @@ public class ShopTransactionManager {
             return false;
         }
         
-        if (entry.type != ShopEntry.EntryType.ITEM || ShopEntryHelper.isTagEntry(entry) || !ShopEntryHelper.isBuyAllowed(entry)) {
+        if (!ShopEntryHelper.isPlayerShopTradable(entry) || ShopEntryHelper.isTagEntry(entry)
+                || !ShopEntryHelper.isBuyAllowed(entry)) {
             sendTransactionErrorToClient(player, "cannot_buy", entryId, null);
             return false;
         }
@@ -42,22 +49,32 @@ public class ShopTransactionManager {
             sendTransactionErrorToClient(player, "stage_requirements", entryId, null);
             return false;
         }
+
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.require(entry);
+        int deliverQty = handler.scalesWithBuyQuantity() ? quantity : 1;
+        ShopPurchaseLimitsData limits = ShopPurchaseLimitsData.get(((net.minecraft.server.level.ServerLevel) player.level()));
         
         String valuteId = entry.valute != null ? entry.valute : "null_coin";
-        double totalCost = entry.free ? 0 : (entry.buy * quantity);
+        double totalCost = entry.free ? 0 : (entry.buy * deliverQty);
         
         // Check if player is in a team
-        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamKey = teamManager.getPlayerTeamKey(player);
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(((net.minecraft.server.level.ServerLevel) player.level()));
+        String teamName = teamManager.getPlayerTeam(player);
         
-        if (teamKey == null) {
+        if (teamName == null) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "no_team", entryId, valuteId);
             return false;
         }
+        if (!limits.canTrade(((net.minecraft.server.level.ServerLevel) player.level()), limitPlayerId, limitTeamKey, entry,
+                ShopPurchaseLimitsData.TradeSide.BUY, deliverQty)) {
+            sendTransactionErrorToClient(player, "purchase_limit", entryId, valuteId);
+            net.unfamily.iskautils.network.packet.ShopPurchaseLimitsS2CPacket.sendTo(player);
+            return false;
+        }
         
         // Check team balance
-        double teamBalance = teamManager.getTeamValuteBalance(teamKey, valuteId);
+        double teamBalance = teamManager.getTeamValuteBalance(teamName, valuteId);
         if (teamBalance < totalCost) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "insufficient_funds", entryId, valuteId);
@@ -65,20 +82,26 @@ public class ShopTransactionManager {
         }
         
         // Remove currency from team
-        if (!teamManager.removeTeamValutes(teamKey, valuteId, totalCost)) {
+        if (!teamManager.removeTeamValutes(teamName, valuteId, totalCost)) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "transaction_failed", entryId, valuteId);
             return false;
         }
-        
-        // Give item to player - now uses the exact item from the entry
-        if (!giveItemToPlayer(player, entry, entry.amount * quantity)) {
-            // If we can't give the item, refund the money
-            teamManager.addTeamValutes(teamKey, valuteId, totalCost);
-            // Send error to client instead of chat
+
+        boolean delivered;
+        if (ShopEntryTypes.isItem(entry)) {
+            delivered = giveItemToPlayer(player, entry, entry.amount * deliverQty);
+        } else {
+            delivered = handler.onBuy(player, entry, deliverQty);
+        }
+        if (!delivered) {
+            teamManager.addTeamValutes(teamName, valuteId, totalCost);
             sendTransactionErrorToClient(player, "give_item_failed", entryId, valuteId);
             return false;
         }
+        limits.recordTrade(((net.minecraft.server.level.ServerLevel) player.level()), limitPlayerId, limitTeamKey, entry,
+                ShopPurchaseLimitsData.TradeSide.BUY, deliverQty);
+        net.unfamily.iskautils.network.packet.ShopPurchaseLimitsS2CPacket.sendTo(player);
         
         // Send success to client instead of chat
         sendTransactionSuccessToClient(player);
@@ -93,6 +116,12 @@ public class ShopTransactionManager {
      * @param entryId The unique ID of the ShopEntry (not the itemId)
      */
     public static boolean sellItem(ServerPlayer player, String entryId, int quantity) {
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(((net.minecraft.server.level.ServerLevel) player.level()));
+        return sellItem(player, entryId, quantity, player.getUUID(), teamManager.getPlayerTeam(player));
+    }
+
+    public static boolean sellItem(ServerPlayer player, String entryId, int quantity,
+                                   java.util.UUID limitPlayerId, String limitTeamKey) {
         // Find entry by unique ID
         ShopEntry entry = ShopLoader.getEntryById(entryId);
         if (entry == null) {
@@ -101,7 +130,7 @@ public class ShopTransactionManager {
             return false;
         }
         
-        if (entry.type != ShopEntry.EntryType.ITEM || !ShopEntryHelper.isSellAllowed(entry)) {
+        if (!ShopEntryTypes.isItem(entry) || !ShopEntryHelper.isSellAllowed(entry)) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "cannot_sell", entryId, null);
             return false;
@@ -118,12 +147,20 @@ public class ShopTransactionManager {
         double totalReward = entry.sell * quantity;
         
         // Check if player is in a team
-        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamKey = teamManager.getPlayerTeamKey(player);
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(((net.minecraft.server.level.ServerLevel) player.level()));
+        String teamName = teamManager.getPlayerTeam(player);
         
-        if (teamKey == null) {
+        if (teamName == null) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "no_team", entryId, valuteId);
+            return false;
+        }
+
+        ShopPurchaseLimitsData limits = ShopPurchaseLimitsData.get(((net.minecraft.server.level.ServerLevel) player.level()));
+        if (!limits.canTrade(((net.minecraft.server.level.ServerLevel) player.level()), limitPlayerId, limitTeamKey, entry,
+                ShopPurchaseLimitsData.TradeSide.SELL, quantity)) {
+            sendTransactionErrorToClient(player, "purchase_limit", entryId, valuteId);
+            net.unfamily.iskautils.network.packet.ShopPurchaseLimitsS2CPacket.sendTo(player);
             return false;
         }
         
@@ -135,11 +172,14 @@ public class ShopTransactionManager {
         }
         
         // Add currency to team
-        if (!teamManager.addTeamValutes(teamKey, valuteId, totalReward)) {
+        if (!teamManager.addTeamValutes(teamName, valuteId, totalReward)) {
             // Send error to client instead of chat
             sendTransactionErrorToClient(player, "transaction_failed", entryId, valuteId);
             return false;
         }
+        limits.recordTrade(((net.minecraft.server.level.ServerLevel) player.level()), limitPlayerId, limitTeamKey, entry,
+                ShopPurchaseLimitsData.TradeSide.SELL, quantity);
+        net.unfamily.iskautils.network.packet.ShopPurchaseLimitsS2CPacket.sendTo(player);
         
         // Send success to client instead of chat
         sendTransactionSuccessToClient(player);
@@ -157,7 +197,7 @@ public class ShopTransactionManager {
             return true; // No stage requirements
         }
         
-        StageRegistry registry = StageRegistry.getInstance(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
+        StageRegistry registry = StageRegistry.getInstance(player.level().getServer());
         if (registry == null) {
             LOGGER.warn("StageRegistry not available for player {}", player.getName().getString());
             return false;
@@ -244,14 +284,14 @@ public class ShopTransactionManager {
      * Gets the current team balance for a player
      */
     public static double getPlayerTeamBalance(ServerPlayer player, String valuteId) {
-        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamKey = teamManager.getPlayerTeamKey(player);
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(((net.minecraft.server.level.ServerLevel) player.level()));
+        String teamName = teamManager.getPlayerTeam(player);
         
-        if (teamKey == null) {
+        if (teamName == null) {
             return 0.0;
         }
         
-        return teamManager.getTeamValuteBalance(teamKey, valuteId);
+        return teamManager.getTeamValuteBalance(teamName, valuteId);
     }
     
     /**
@@ -265,26 +305,59 @@ public class ShopTransactionManager {
      * Shows the current team balance to a player
      */
     public static void showTeamBalance(ServerPlayer player) {
-        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamKey = teamManager.getPlayerTeamKey(player);
+        showTeamBalance(player, false);
+    }
+
+    /**
+     * @param extended when true, print full balance numbers; otherwise compact (K/M/B…).
+     */
+    public static void showTeamBalance(ServerPlayer player, boolean extended) {
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(((net.minecraft.server.level.ServerLevel) player.level()));
+        String teamName = teamManager.getPlayerTeam(player);
         
-        if (teamKey == null) {
+        if (teamName == null) {
             player.sendSystemMessage(Component.literal("§cYou are not in a team"));
             return;
         }
         
         player.sendSystemMessage(Component.literal("§6=== Team Balance ==="));
-        String displayName = teamManager.getTeamDisplayName(teamKey);
-        player.sendSystemMessage(Component.literal("§eTeam: " + (displayName != null ? displayName : teamKey)));
+        player.sendSystemMessage(Component.literal("§eTeam: " + teamName));
         
-        // Show all available currencies with localized names and symbols
         Map<String, ShopCurrency> allCurrencies = ShopLoader.getCurrencies();
         for (ShopCurrency currency : ShopCurrency.sorted(allCurrencies.values())) {
-            double balance = teamManager.getTeamValuteBalance(teamKey, currency.id);
+            double balance = teamManager.getTeamValuteBalance(teamName, currency.id);
             String localizedName = Component.translatable(currency.name).getString();
             String formattedName = localizedName + " " + currency.charSymbol;
-            player.sendSystemMessage(Component.literal("§a" + formattedName + ": " + balance));
+            String value = extended ? formatFullNumber(balance) : formatCompactNumber(balance);
+            player.sendSystemMessage(Component.literal("§a" + formattedName + ": " + value));
         }
+    }
+
+    public static String formatCompactNumber(double value) {
+        if (Math.abs(value) < 10_000) {
+            if (value == Math.rint(value)) {
+                return String.valueOf((long) value);
+            }
+            return String.format(java.util.Locale.ROOT, "%.1f", value);
+        }
+        String[] suffixes = {"", "K", "M", "B", "T", "P", "E"};
+        int suffix = 0;
+        double scaled = value;
+        while (Math.abs(scaled) >= 1000 && suffix < suffixes.length - 1) {
+            scaled /= 1000.0;
+            suffix++;
+        }
+        if (scaled == Math.rint(scaled)) {
+            return ((long) scaled) + suffixes[suffix];
+        }
+        return String.format(java.util.Locale.ROOT, "%.1f%s", scaled, suffixes[suffix]);
+    }
+
+    public static String formatFullNumber(double value) {
+        if (value == Math.rint(value)) {
+            return String.valueOf((long) value);
+        }
+        return String.valueOf(value);
     }
     
     /**
@@ -340,11 +413,11 @@ public class ShopTransactionManager {
                     totalCount += stack.getCount();
                 }
             }
-
+            
             if (totalCount < count) {
                 return false;
             }
-
+            
             int remainingToRemove = count;
             for (int i = 0; i < inventory.getContainerSize() && remainingToRemove > 0; i++) {
                 ItemStack stack = inventory.getItem(i);
@@ -374,8 +447,8 @@ public class ShopTransactionManager {
      * Updates team data in the player's client
      */
     private static void updatePlayerTeamDataInClient(ServerPlayer player) {
-        ShopTeamManager teamManager = ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
-        String teamKey = teamManager.getPlayerTeamKey(player);
+        ShopTeamManager teamManager = ShopTeamManager.getInstance(((net.minecraft.server.level.ServerLevel) player.level()));
+        String teamKey = teamManager.getPlayerTeam(player);
         
         if (teamKey != null) {
             // Get all team balances
@@ -390,7 +463,7 @@ public class ShopTransactionManager {
             
             // Send updated data to client
             String displayName = teamManager.getTeamDisplayName(teamKey);
-            net.unfamily.iskautils.network.ModMessages.sendShopTeamDataToClient(player, displayName != null ? displayName : teamKey, teamBalances);
+            net.unfamily.iskautils.network.ModMessages.sendShopTeamDataToClient(player, displayName, teamBalances);
         }
     }
     

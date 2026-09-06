@@ -49,7 +49,7 @@ public class ItemIconButton extends Button {
     @Override
     protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         extractDefaultSprite(graphics);
-        int iconSize = 12;
+        int iconSize = Math.min(16, Math.max(8, getWidth() - 2));
         int ix = getX() + (getWidth() - iconSize) / 2;
         int iy = getY() + (getHeight() - iconSize) / 2;
         Identifier texture = overlayTexture != null ? overlayTexture.get() : null;

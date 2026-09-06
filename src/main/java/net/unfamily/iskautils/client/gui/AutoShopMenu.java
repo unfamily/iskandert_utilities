@@ -70,7 +70,8 @@ public class AutoShopMenu extends AbstractContainerMenu {
                     case GAS_CAPACITY_LOW_INDEX -> (int) blockEntity.getGasCapacity();
                     case GAS_CAPACITY_HIGH_INDEX -> (int) (blockEntity.getGasCapacity() >>> 32);
                     case GAS_ID_LENGTH_INDEX -> Math.min(blockEntity.getGasId().length(), GAS_ID_PACKED_INTS * 2);
-                    case ENTRY_TYPE_INDEX -> blockEntity.getSelectedEntryType().ordinal();
+                    case ENTRY_TYPE_INDEX -> net.unfamily.iskautils.shop.ShopEntryTypeRegistry.syncIndex(
+                            blockEntity.getSelectedTypeId());
                     case ENERGY_STORED_INDEX -> blockEntity.getEnergyStored();
                     case ENERGY_CAPACITY_INDEX -> blockEntity.getEnergyCapacity();
                     default -> index >= GAS_ID_START_INDEX && index < ENTRY_TYPE_INDEX
@@ -230,10 +231,9 @@ public class AutoShopMenu extends AbstractContainerMenu {
         return value.toString();
     }
 
-    public net.unfamily.iskautils.shop.ShopEntry.EntryType getSelectedEntryType() {
-        int index = containerData.get(ENTRY_TYPE_INDEX);
-        var values = net.unfamily.iskautils.shop.ShopEntry.EntryType.values();
-        return index >= 0 && index < values.length ? values[index] : values[0];
+    public net.minecraft.resources.Identifier getSelectedTypeId() {
+        return net.unfamily.iskautils.shop.ShopEntryTypeRegistry.idBySyncIndex(
+                containerData.get(ENTRY_TYPE_INDEX));
     }
 
     public int getEnergyStored() {

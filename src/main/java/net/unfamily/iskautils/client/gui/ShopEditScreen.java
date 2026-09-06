@@ -2,8 +2,10 @@ package net.unfamily.iskautils.client.gui;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
@@ -11,15 +13,11 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.fluids.FluidStack;
-import org.lwjgl.glfw.GLFW;
 import net.unfamily.iskalib.item.ItemConverter;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.integration.jei.ghost.IIskaUtilsGhostTarget;
@@ -29,7 +27,11 @@ import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
-import net.unfamily.iskautils.shop.ShopOtherRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypeHandler;
+import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypes;
+import net.unfamily.iskautils.shop.ShopGuiIcons;
+import net.unfamily.iskautils.shop.ShopRepeatableRule;
 import net.unfamily.iskautils.shop.ShopStage;
 import net.unfamily.iskautils.shop.edit.ShopEditResourceFormats;
 import net.unfamily.iskautils.shop.edit.ShopEditSession;
@@ -39,7 +41,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Single-screen shop JSON editor with sub-views (no nested screens).
@@ -47,7 +48,10 @@ import java.util.Locale;
 public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implements IIskaUtilsGhostTarget {
 
     private enum SubView {
-        CATEGORIES, CATEGORY_EDIT, ENTRIES, ENTRY_EDIT, ENTRY_STAGES, CURRENCIES, CURRENCY_EDIT
+        CATEGORIES, CATEGORY_EDIT, ENTRIES, ENTRY_EDIT, ENTRY_RULES,
+        ENTRY_REPEATABLE_BUY, ENTRY_REPEATABLE_SELL,
+        ENTRY_STAGES, ENTRY_STAGE_REWARDS, ENTRY_STRING_LIST,
+        CURRENCIES, CURRENCY_EDIT
     }
 
     private enum Dialog {
@@ -139,7 +143,10 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private ShopEntry draftEntry;
     private String draftEntryOldId;
     private final List<ShopStage> draftStages = new ArrayList<>();
+    private final List<ShopStage> draftStageRewards = new ArrayList<>();
+    private final List<String> draftCommands = new ArrayList<>();
     private int editingStageIndex = -1;
+    private int editingStringIndex = -1;
 
     private String pendingDeleteKind;
     private String pendingDeleteId;
@@ -167,12 +174,21 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private EditBox sellBox;
     private EditBox priorityBox;
     private EditBox stageNameBox;
+    private EditBox displayBox;
+    private EditBox stringValueBox;
+    private EditBox repeatTimeBox;
+    private EditBox repeatDayBox;
+    private EditBox repeatMonthBox;
+    private EditBox repeatCountBox;
     private Button freeButton;
     private Button typeButton;
     private Button currencyButton;
     private Button stageTypeButton;
     private Button stageIsButton;
     private Button stageAddButton;
+    private Button repeatScopeButton;
+    private Button repeatWhenButton;
+    private Button iconCycleButton;
 
     private String stageTypeDraft = "world";
     private boolean stageIsDraft = true;
@@ -225,8 +241,10 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         formLabels.clear();
         listRowVisuals.clear();
         idBox = nameBox = descBox = resourceBox = symbolBox = null;
-        amountBox = buyBox = sellBox = priorityBox = stageNameBox = null;
+        amountBox = buyBox = sellBox = priorityBox = stageNameBox = displayBox = stringValueBox = null;
+        repeatTimeBox = repeatDayBox = repeatMonthBox = repeatCountBox = null;
         freeButton = typeButton = currencyButton = stageTypeButton = stageIsButton = stageAddButton = null;
+        repeatScopeButton = repeatWhenButton = iconCycleButton = null;
         if (subView != SubView.CATEGORY_EDIT && subView != SubView.ENTRY_EDIT) {
             menu.clearGhostStack();
         }
@@ -239,6 +257,10 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
 
     private void addLabel(int x, int y, String langKey) {
         formLabels.add(new FormLabel(x, y, Component.translatable(langKey)));
+    }
+
+    private void addLabel(int x, int y, Component text) {
+        formLabels.add(new FormLabel(x, y, text));
     }
 
     private EditBox addBox(int x, int y, int w, int h, String value, int maxLen) {
@@ -373,7 +395,11 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             case CATEGORY_EDIT -> buildCategoryEdit();
             case ENTRIES -> buildEntries();
             case ENTRY_EDIT -> buildEntryEdit();
+            case ENTRY_RULES -> buildEntryRules();
+            case ENTRY_REPEATABLE_BUY, ENTRY_REPEATABLE_SELL -> buildEntryRepeatable();
             case ENTRY_STAGES -> buildEntryStages();
+            case ENTRY_STAGE_REWARDS -> buildEntryStages();
+            case ENTRY_STRING_LIST -> buildEntryStringList();
             case CURRENCIES -> buildCurrencies();
             case CURRENCY_EDIT -> buildCurrencyEdit();
         }
@@ -479,6 +505,30 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 flushFormToDraft();
                 autosaveCurrentForm(true);
                 editingStageIndex = -1;
+                subView = SubView.ENTRY_RULES;
+                rebuild();
+            }
+            case ENTRY_STAGE_REWARDS -> {
+                flushFormToDraft();
+                autosaveCurrentForm(true);
+                editingStageIndex = -1;
+                subView = SubView.ENTRY_EDIT;
+                rebuild();
+            }
+            case ENTRY_RULES -> {
+                subView = SubView.ENTRY_EDIT;
+                rebuild();
+            }
+            case ENTRY_REPEATABLE_BUY, ENTRY_REPEATABLE_SELL -> {
+                flushFormToDraft();
+                autosaveCurrentForm(true);
+                subView = SubView.ENTRY_RULES;
+                rebuild();
+            }
+            case ENTRY_STRING_LIST -> {
+                flushFormToDraft();
+                autosaveCurrentForm(true);
+                editingStringIndex = -1;
                 subView = SubView.ENTRY_EDIT;
                 rebuild();
             }
@@ -669,7 +719,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             draftEntry = new ShopEntry();
             draftEntry.id = "new_entry";
             draftEntry.inCategory = selectedCategoryId != null ? selectedCategoryId : "000_default";
-            draftEntry.type = ShopEntry.EntryType.ITEM;
+            draftEntry.typeId = ShopEntryTypes.ITEM;
             draftEntry.item = "minecraft:stone";
             draftEntry.amount = 1;
             draftEntry.currency = firstCurrencyId();
@@ -686,44 +736,142 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         typeButton = addDyn(Button.builder(Component.literal(typeLabel()), b -> cycleType())
                 .bounds(leftPos + formColX(1, 2), topPos + 30, formColW(1, 2), 12).build());
 
-        addLabel(FORM_LEFT, 44, "gui.iska_utils.shop_edit.field.resource");
-        addResourceSelectorRow(54, resourceString(draftEntry), true);
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.require(draftEntry);
+        if (handler.usesDisplayAndIcon()) {
+            addLabel(FORM_LEFT, 44, "gui.iska_utils.shop_edit.field.display");
+            int iconSize = 18;
+            int displayW = FORM_WIDTH - iconSize - FORM_GAP;
+            displayBox = addBox(FORM_LEFT, 54, displayW, 12, nullSafe(draftEntry.display), 256);
+            iconCycleButton = addDyn(new ItemIconButton(
+                    leftPos + FORM_LEFT + displayW + FORM_GAP,
+                    topPos + 51,
+                    iconSize,
+                    b -> cycleEntryIcon(),
+                    () -> ItemStack.EMPTY,
+                    () -> ShopEntryTypeRegistry.require(draftEntry).guiIcon(draftEntry),
+                    Component.translatable("gui.iska_utils.shop_edit.cycle_icon")));
+        } else if (handler.usesResourceSelector()) {
+            addLabel(FORM_LEFT, 44, "gui.iska_utils.shop_edit.field.resource");
+            addResourceSelectorRow(54, resourceString(draftEntry), true);
+        }
 
-        addLabel(formColX(0, 4), 76, "gui.iska_utils.shop_edit.field.amount");
-        amountBox = addBox(formColX(0, 4), 86, formColW(0, 4), 12, String.valueOf(draftEntry.amount), 16);
-        addLabel(formColX(1, 4), 76, "gui.iska_utils.shop_edit.field.buy");
-        buyBox = addBox(formColX(1, 4), 86, formColW(1, 4), 12, formatNum(draftEntry.buy), 24);
-        addLabel(formColX(2, 4), 76, "gui.iska_utils.shop_edit.field.sell");
-        sellBox = addBox(formColX(2, 4), 86, formColW(2, 4), 12, formatNum(draftEntry.sell), 24);
-        addLabel(formColX(3, 4), 76, "gui.iska_utils.shop_edit.field.priority");
-        priorityBox = addBox(formColX(3, 4), 86, formColW(3, 4), 12, String.valueOf(draftEntry.priority), 16);
+        int fieldRowY = handler.usesDisplayAndIcon() ? 76 : 76;
+        int fieldBoxY = fieldRowY + 10;
+        int col = 0;
+        int colCount = 1
+                + (handler.usesAmount() ? 1 : 0)
+                + (handler.usesBuy() ? 1 : 0)
+                + (handler.usesSell() ? 1 : 0);
+        if (handler.usesAmount()) {
+            addLabel(formColX(col, colCount), fieldRowY, "gui.iska_utils.shop_edit.field.amount");
+            amountBox = addBox(formColX(col, colCount), fieldBoxY, formColW(col, colCount), 12,
+                    String.valueOf(draftEntry.amount), 16);
+            col++;
+        }
+        if (handler.usesBuy()) {
+            addLabel(formColX(col, colCount), fieldRowY, "gui.iska_utils.shop_edit.field.buy");
+            buyBox = addBox(formColX(col, colCount), fieldBoxY, formColW(col, colCount), 12,
+                    formatNum(draftEntry.buy), 24);
+            col++;
+        }
+        if (handler.usesSell()) {
+            addLabel(formColX(col, colCount), fieldRowY, "gui.iska_utils.shop_edit.field.sell");
+            sellBox = addBox(formColX(col, colCount), fieldBoxY, formColW(col, colCount), 12,
+                    formatNum(draftEntry.sell), 24);
+            col++;
+        }
+        addLabel(formColX(col, colCount), fieldRowY, "gui.iska_utils.shop_edit.field.priority");
+        priorityBox = addBox(formColX(col, colCount), fieldBoxY, formColW(col, colCount), 12,
+                String.valueOf(draftEntry.priority), 16);
 
-        addLabel(formColX(0, 3), 102, "gui.iska_utils.shop_edit.field.currency");
+        int actionRowY = 102;
+        int actionBoxY = actionRowY + 10;
+        int actionColumns = 2 + (handler.usesBuy() ? 1 : 0) + (handler.usesResultButton() ? 1 : 0);
+        int actionCol = 0;
+        addLabel(formColX(actionCol, actionColumns), actionRowY, "gui.iska_utils.shop_edit.field.currency");
         currencyButton = addDyn(Button.builder(Component.literal(nullSafe(draftEntry.currency)), b -> cycleCurrency())
-                .bounds(leftPos + formColX(0, 3), topPos + 112, formColW(0, 3), 12).build());
-        freeButton = addDyn(Button.builder(Component.translatable(
-                draftEntry.free ? "gui.iska_utils.shop_edit.field.free_on" : "gui.iska_utils.shop_edit.field.free_off"), b -> {
-            flushFormToDraft();
-            draftEntry.free = !draftEntry.free;
-            freeButton.setMessage(Component.translatable(
-                    draftEntry.free ? "gui.iska_utils.shop_edit.field.free_on" : "gui.iska_utils.shop_edit.field.free_off"));
-            autosaveCurrentForm(true);
-        }).bounds(leftPos + formColX(1, 3), topPos + 112, formColW(1, 3), 12).build());
-        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.stages_button", draftStages.size()), b -> {
+                .bounds(leftPos + formColX(actionCol, actionColumns), topPos + actionBoxY,
+                        formColW(actionCol, actionColumns), 12).build());
+        actionCol++;
+        if (handler.usesBuy()) {
+            freeButton = addDyn(Button.builder(Component.translatable(
+                    draftEntry.free ? "gui.iska_utils.shop_edit.field.free_on" : "gui.iska_utils.shop_edit.field.free_off"), b -> {
+                flushFormToDraft();
+                draftEntry.free = !draftEntry.free;
+                freeButton.setMessage(Component.translatable(
+                        draftEntry.free ? "gui.iska_utils.shop_edit.field.free_on" : "gui.iska_utils.shop_edit.field.free_off"));
+                autosaveCurrentForm(true);
+            }).bounds(leftPos + formColX(actionCol, actionColumns), topPos + actionBoxY,
+                    formColW(actionCol, actionColumns), 12).build());
+            actionCol++;
+        }
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.rules"), b -> {
             flushFormToDraft();
             editingStageIndex = -1;
             stageScrollOffset = 0;
-            subView = SubView.ENTRY_STAGES;
+            subView = SubView.ENTRY_RULES;
             rebuild();
-        }).bounds(leftPos + formColX(2, 3), topPos + 112, formColW(2, 3), 12)
-                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.stages")))
+        }).bounds(leftPos + formColX(actionCol, actionColumns), topPos + actionBoxY,
+                formColW(actionCol, actionColumns), 12)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.rules")))
                 .build());
+        actionCol++;
+        if (handler.usesResultButton()) {
+            int resultCount = handler.usesStageRewards() ? draftStageRewards.size() : activeDraftStringList().size();
+            addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.result", resultCount), b -> {
+                flushFormToDraft();
+                editingStringIndex = -1;
+                editingStageIndex = -1;
+                stageScrollOffset = 0;
+                subView = handler.usesStageRewards()
+                        ? SubView.ENTRY_STAGE_REWARDS : SubView.ENTRY_STRING_LIST;
+                rebuild();
+            }).bounds(leftPos + formColX(actionCol, actionColumns), topPos + actionBoxY,
+                    formColW(actionCol, actionColumns), 12).build());
+        }
+    }
+
+    private void cycleEntryIcon() {
+        if (draftEntry == null) {
+            return;
+        }
+        flushFormToDraft();
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.require(draftEntry);
+        Identifier next = ShopGuiIcons.cycleNext(
+                draftEntry.icon, handler.guiIcon(), minecraft.getResourceManager());
+        draftEntry.icon = ShopGuiIcons.isDefaultIcon(next.toString(), handler.guiIcon())
+                ? null
+                : ShopGuiIcons.toStoredValue(next);
+        autosaveCurrentForm(true);
+        rebuild();
+    }
+
+    /** Icon slot Y in entry edit (resource types only; command/stage have no slot). */
+    private int entryIconSlotY() {
+        return 53;
     }
 
     /** Live warning under currency/free/stages row while editing an entry. */
     @Nullable
     private Component entryEditWarning() {
         if (subView != SubView.ENTRY_EDIT || draftEntry == null || dialog != Dialog.NONE) {
+            return null;
+        }
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.require(draftEntry);
+        if (handler.usesResultButton()) {
+            String display = displayBox != null ? displayBox.getValue().trim() : nullSafe(draftEntry.display);
+            if (display.isBlank()) {
+                return Component.translatable("gui.iska_utils.shop_edit.warn.missing_display");
+            }
+            if (handler.usesStageRewards() && draftStageRewards.isEmpty()) {
+                return Component.translatable("gui.iska_utils.shop_edit.warn.empty_stage_rewards");
+            }
+            if (handler.usesStageRewards()) {
+                return null;
+            }
+            if (activeDraftStringList().isEmpty()) {
+                return Component.translatable("gui.iska_utils.shop_edit.warn.empty_string_list", handler.editorLabel());
+            }
             return null;
         }
         String resource = resourceBox != null ? resourceBox.getValue().trim() : resourceString(draftEntry).trim();
@@ -740,19 +888,126 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         return null;
     }
 
+    private void buildEntryRules() {
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.stages_rules"), b -> {
+            editingStageIndex = -1;
+            stageScrollOffset = 0;
+            subView = SubView.ENTRY_STAGES;
+            rebuild();
+        }).bounds(leftPos + FORM_LEFT, topPos + 58, FORM_WIDTH, 20).build());
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.repeatable_buy"), b -> {
+            subView = SubView.ENTRY_REPEATABLE_BUY;
+            rebuild();
+        }).bounds(leftPos + FORM_LEFT, topPos + 86, FORM_WIDTH, 20).build());
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.repeatable_sell"), b -> {
+            subView = SubView.ENTRY_REPEATABLE_SELL;
+            rebuild();
+        }).bounds(leftPos + FORM_LEFT, topPos + 114, FORM_WIDTH, 20).build());
+    }
+
+    private void buildEntryRepeatable() {
+        ShopRepeatableRule rule = activeRepeatableRule();
+        addLabel(formColX(0, 2), 28, "gui.iska_utils.shop_edit.repeatable.scope");
+        repeatScopeButton = addDyn(Button.builder(Component.literal(nullSafe(rule.scope)), b -> {
+            rule.scope = nextValue(rule.scope, ShopRepeatableRule.SCOPE_TEAM,
+                    ShopRepeatableRule.SCOPE_PLAYER, ShopRepeatableRule.SCOPE_ALL);
+            repeatScopeButton.setMessage(Component.literal(rule.scope));
+            autosaveCurrentForm(true);
+        }).bounds(leftPos + formColX(0, 2), topPos + 38, formColW(0, 2), 12).build());
+        addLabel(formColX(1, 2), 28, "gui.iska_utils.shop_edit.repeatable.when");
+        repeatWhenButton = addDyn(Button.builder(Component.literal(nullSafe(rule.when)), b -> {
+            flushFormToDraft();
+            rule.when = nextValue(rule.when, ShopRepeatableRule.WHEN_ALWAYS, ShopRepeatableRule.WHEN_DAILY,
+                    ShopRepeatableRule.WHEN_WEEKLY, ShopRepeatableRule.WHEN_MONTHLY,
+                    ShopRepeatableRule.WHEN_YEARLY, ShopRepeatableRule.WHEN_ONLY);
+            setActiveRepeatableRule(rule);
+            autosaveCurrentForm(true);
+            rebuild();
+        }).bounds(leftPos + formColX(1, 2), topPos + 38, formColW(1, 2), 12).build());
+
+        String when = rule.when != null ? rule.when.toLowerCase() : ShopRepeatableRule.WHEN_ALWAYS;
+        boolean time = !ShopRepeatableRule.WHEN_ALWAYS.equals(when) && !ShopRepeatableRule.WHEN_ONLY.equals(when);
+        boolean day = ShopRepeatableRule.WHEN_WEEKLY.equals(when)
+                || ShopRepeatableRule.WHEN_MONTHLY.equals(when) || ShopRepeatableRule.WHEN_YEARLY.equals(when);
+        boolean month = ShopRepeatableRule.WHEN_YEARLY.equals(when);
+        boolean count = !ShopRepeatableRule.WHEN_ALWAYS.equals(when);
+        int columns = (time ? 1 : 0) + (day ? 1 : 0) + (month ? 1 : 0) + (count ? 1 : 0);
+        int column = 0;
+        if (time) {
+            addLabel(formColX(column, columns), 60, "gui.iska_utils.shop_edit.repeatable.time");
+            repeatTimeBox = addBox(formColX(column, columns), 70, formColW(column, columns), 12,
+                    ShopRepeatableRule.normalizeTime(rule.resetTime), 5);
+            column++;
+        }
+        if (day) {
+            addLabel(formColX(column, columns), 60, "gui.iska_utils.shop_edit.repeatable.day");
+            repeatDayBox = addBox(formColX(column, columns), 70, formColW(column, columns), 12,
+                    String.valueOf(rule.resetDay), 2);
+            column++;
+        }
+        if (month) {
+            addLabel(formColX(column, columns), 60, "gui.iska_utils.shop_edit.repeatable.month");
+            repeatMonthBox = addBox(formColX(column, columns), 70, formColW(column, columns), 12,
+                    String.valueOf(rule.resetMonth), 2);
+            column++;
+        }
+        if (count) {
+            addLabel(formColX(column, columns), 60, "gui.iska_utils.shop_edit.repeatable.count");
+            repeatCountBox = addBox(formColX(column, columns), 70, formColW(column, columns), 12,
+                    String.valueOf(rule.count), 9);
+        }
+    }
+
+    private ShopRepeatableRule activeRepeatableRule() {
+        boolean buy = subView == SubView.ENTRY_REPEATABLE_BUY;
+        ShopRepeatableRule rule = buy ? draftEntry.repeatableBuy : draftEntry.repeatableSell;
+        if (rule == null) {
+            rule = ShopRepeatableRule.defaults();
+            if (buy) {
+                draftEntry.repeatableBuy = rule;
+            } else {
+                draftEntry.repeatableSell = rule;
+            }
+        }
+        return rule;
+    }
+
+    private void setActiveRepeatableRule(ShopRepeatableRule rule) {
+        if (subView == SubView.ENTRY_REPEATABLE_BUY) {
+            draftEntry.repeatableBuy = rule;
+        } else {
+            draftEntry.repeatableSell = rule;
+        }
+    }
+
+    private static String nextValue(String current, String... values) {
+        for (int i = 0; i < values.length; i++) {
+            if (values[i].equalsIgnoreCase(current)) {
+                return values[(i + 1) % values.length];
+            }
+        }
+        return values[0];
+    }
+
+    private boolean isKeyDown(int key) {
+        return minecraft != null && com.mojang.blaze3d.platform.InputConstants.isKeyDown(minecraft.getWindow(), key);
+    }
+
     private void buildEntryStages() {
-        addLabel(FORM_LEFT, STAGE_LIST_Y - 24, "gui.iska_utils.shop_edit.stages");
+        List<ShopStage> stages = activeDraftStages();
+        addLabel(FORM_LEFT, STAGE_LIST_Y - 24, subView == SubView.ENTRY_STAGE_REWARDS
+                ? "gui.iska_utils.shop_edit.stage_rewards" : "gui.iska_utils.shop_edit.stages");
         int toolbarY = STAGE_LIST_Y - 14;
         stageNameBox = addBox(formColX(0, 4), toolbarY, formColW(0, 4), 12,
-                editingStageIndex >= 0 && editingStageIndex < draftStages.size()
-                        ? nullSafe(draftStages.get(editingStageIndex).stage) : "", 128);
+                editingStageIndex >= 0 && editingStageIndex < stages.size()
+                        ? nullSafe(stages.get(editingStageIndex).stage) : "", 128);
         stageTypeButton = addDyn(Button.builder(Component.literal(stageTypeDraft), b -> {
             stageTypeDraft = nextStageType(stageTypeDraft);
             stageTypeButton.setMessage(Component.literal(stageTypeDraft));
         }).bounds(leftPos + formColX(1, 4), topPos + toolbarY, formColW(1, 4), 12).build());
-        stageIsButton = addDyn(Button.builder(Component.literal(stageIsDraft ? "is" : "!is"), b -> {
+        stageIsButton = addDyn(Button.builder(stageModeLabel(stageIsDraft), b -> {
             stageIsDraft = !stageIsDraft;
-            stageIsButton.setMessage(Component.literal(stageIsDraft ? "is" : "!is"));
+            stageIsButton.setMessage(stageModeLabel(stageIsDraft));
         }).bounds(leftPos + formColX(2, 4), topPos + toolbarY, formColW(2, 4), 12).build());
         stageAddButton = addDyn(Button.builder(Component.literal(editingStageIndex >= 0 ? "A" : "+"), b -> applyStageDraft())
                 .bounds(leftPos + formColX(3, 4), topPos + toolbarY, formColW(3, 4), 12)
@@ -761,18 +1016,23 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 .build());
 
         ensureStageScroll();
-        int visible = Math.min(MAX_VISIBLE_STAGES, draftStages.size());
+        int visible = Math.min(MAX_VISIBLE_STAGES, stages.size());
         int actionW = 16;
         int labelW = STAGE_LIST_WIDTH - actionW * 2 - FORM_GAP * 2;
         for (int i = 0; i < visible; i++) {
             int idx = stageScrollOffset + i;
-            if (idx >= draftStages.size()) {
+            if (idx >= stages.size()) {
                 break;
             }
-            ShopStage st = draftStages.get(idx);
+            ShopStage st = stages.get(idx);
             final int stageIndex = idx;
             int stageY = STAGE_LIST_Y + i * STAGE_ROW_HEIGHT;
-            String label = (st.is ? "" : "!") + nullSafe(st.stageType) + ":" + nullSafe(st.stage);
+            String mode = Component.translatable(subView == SubView.ENTRY_STAGE_REWARDS
+                    ? (st.is ? "gui.iska_utils.shop_edit.stage.mode_add"
+                            : "gui.iska_utils.shop_edit.stage.mode_remove")
+                    : (st.is ? "gui.iska_utils.shop_edit.stage.is_true"
+                            : "gui.iska_utils.shop_edit.stage.is_false")).getString();
+            String label = mode + " " + nullSafe(st.stageType) + ":" + nullSafe(st.stage);
             addDyn(Button.builder(Component.literal(truncate(label, 36)), b -> {})
                     .bounds(leftPos + STAGE_LIST_X, topPos + stageY, labelW, STAGE_ROW_HEIGHT - 2).build());
             addDyn(Button.builder(Component.literal("✎"), b -> beginEditStage(stageIndex))
@@ -780,7 +1040,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                     .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.edit")))
                     .build());
             addDyn(Button.builder(Component.literal("D"), b -> {
-                draftStages.remove(stageIndex);
+                stages.remove(stageIndex);
                 if (editingStageIndex == stageIndex) {
                     editingStageIndex = -1;
                 } else if (editingStageIndex > stageIndex) {
@@ -795,14 +1055,23 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private void beginEditStage(int index) {
-        if (index < 0 || index >= draftStages.size()) {
+        List<ShopStage> stages = activeDraftStages();
+        if (index < 0 || index >= stages.size()) {
             return;
         }
-        ShopStage st = draftStages.get(index);
+        ShopStage st = stages.get(index);
         editingStageIndex = index;
         stageTypeDraft = st.stageType != null ? st.stageType : "world";
         stageIsDraft = st.is;
         rebuild();
+    }
+
+    private Component stageModeLabel(boolean value) {
+        return Component.translatable(subView == SubView.ENTRY_STAGE_REWARDS
+                ? (value ? "gui.iska_utils.shop_edit.stage.mode_add"
+                        : "gui.iska_utils.shop_edit.stage.mode_remove")
+                : (value ? "gui.iska_utils.shop_edit.stage.is_true"
+                        : "gui.iska_utils.shop_edit.stage.is_false"));
     }
 
     private void applyStageDraft() {
@@ -813,8 +1082,9 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         if (stage.isEmpty()) {
             return;
         }
-        if (editingStageIndex >= 0 && editingStageIndex < draftStages.size()) {
-            ShopStage st = draftStages.get(editingStageIndex);
+        List<ShopStage> stages = activeDraftStages();
+        if (editingStageIndex >= 0 && editingStageIndex < stages.size()) {
+            ShopStage st = stages.get(editingStageIndex);
             st.stage = stage;
             st.stageType = stageTypeDraft;
             st.is = stageIsDraft;
@@ -824,10 +1094,91 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             st.stage = stage;
             st.stageType = stageTypeDraft;
             st.is = stageIsDraft;
-            draftStages.add(st);
+            stages.add(st);
         }
         autosaveCurrentForm(true);
         rebuild();
+    }
+
+    private List<ShopStage> activeDraftStages() {
+        return subView == SubView.ENTRY_STAGE_REWARDS ? draftStageRewards : draftStages;
+    }
+
+    private void buildEntryStringList() {
+        List<String> values = activeDraftStringList();
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.require(draftEntry);
+        addLabel(FORM_LEFT, STAGE_LIST_Y - 24, Component.literal(handler.editorLabel() + " values"));
+        int toolbarY = STAGE_LIST_Y - 14;
+        stringValueBox = addBox(FORM_LEFT, toolbarY, FORM_WIDTH - 36, 12,
+                editingStringIndex >= 0 && editingStringIndex < values.size()
+                        ? values.get(editingStringIndex) : "", 512);
+        addDyn(Button.builder(Component.literal(editingStringIndex >= 0 ? "A" : "+"),
+                        b -> applyStringDraft())
+                .bounds(leftPos + FORM_RIGHT - 32, topPos + toolbarY, 32, 12).build());
+
+        ensureStageScroll();
+        int visible = Math.min(MAX_VISIBLE_STAGES, values.size());
+        int actionW = 16;
+        int labelW = STAGE_LIST_WIDTH - actionW * 2 - FORM_GAP * 2;
+        for (int i = 0; i < visible; i++) {
+            int idx = stageScrollOffset + i;
+            if (idx >= values.size()) {
+                break;
+            }
+            final int valueIndex = idx;
+            int rowY = STAGE_LIST_Y + i * STAGE_ROW_HEIGHT;
+            addDyn(Button.builder(Component.literal(truncate(values.get(idx), 42)), b -> {})
+                    .bounds(leftPos + STAGE_LIST_X, topPos + rowY, labelW, STAGE_ROW_HEIGHT - 2).build());
+            addDyn(Button.builder(Component.literal("✎"), b -> {
+                editingStringIndex = valueIndex;
+                rebuild();
+            }).bounds(leftPos + STAGE_LIST_X + labelW + FORM_GAP, topPos + rowY,
+                    actionW, STAGE_ROW_HEIGHT - 2).build());
+            addDyn(Button.builder(Component.literal("D"), b -> {
+                values.remove(valueIndex);
+                if (editingStringIndex == valueIndex) {
+                    editingStringIndex = -1;
+                } else if (editingStringIndex > valueIndex) {
+                    editingStringIndex--;
+                }
+                syncDraftStringList();
+                autosaveCurrentForm(true);
+                rebuild();
+            }).bounds(leftPos + STAGE_LIST_X + labelW + FORM_GAP + actionW + FORM_GAP,
+                    topPos + rowY, actionW, STAGE_ROW_HEIGHT - 2)
+                    .tooltip(deleteButtonTooltip()).build());
+        }
+    }
+
+    private void applyStringDraft() {
+        if (stringValueBox == null) {
+            return;
+        }
+        String value = stringValueBox.getValue().trim();
+        if (value.isEmpty()) {
+            return;
+        }
+        List<String> values = activeDraftStringList();
+        if (editingStringIndex >= 0 && editingStringIndex < values.size()) {
+            values.set(editingStringIndex, value);
+            editingStringIndex = -1;
+        } else {
+            values.add(value);
+        }
+        syncDraftStringList();
+        autosaveCurrentForm(true);
+        rebuild();
+    }
+
+    private List<String> activeDraftStringList() {
+        return draftCommands;
+    }
+
+    private void syncDraftStringList() {
+        if (draftEntry == null) {
+            return;
+        }
+        draftEntry.commands = new ArrayList<>(draftCommands);
     }
 
     private void ensureScroll(int total) {
@@ -838,7 +1189,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private void ensureStageScroll() {
-        int max = Math.max(0, draftStages.size() - MAX_VISIBLE_STAGES);
+        int max = Math.max(0, activeSubListSize() - MAX_VISIBLE_STAGES);
         if (stageScrollOffset > max) {
             stageScrollOffset = max;
         }
@@ -852,7 +1203,14 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private int maxStageScroll() {
-        return Math.max(0, draftStages.size() - MAX_VISIBLE_STAGES);
+        return Math.max(0, activeSubListSize() - MAX_VISIBLE_STAGES);
+    }
+
+    private int activeSubListSize() {
+        if (subView == SubView.ENTRY_STRING_LIST) {
+            return activeDraftStringList().size();
+        }
+        return activeDraftStages().size();
     }
 
     private void openCategoryEdit(@Nullable String id) {
@@ -904,11 +1262,13 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
 
     private void openEntryEdit(@Nullable String id) {
         draftStages.clear();
+        draftStageRewards.clear();
+        draftCommands.clear();
         if (id == null) {
             draftEntry = new ShopEntry();
             draftEntry.id = uniqueId("entry");
             draftEntry.inCategory = selectedCategoryId != null ? selectedCategoryId : "000_default";
-            draftEntry.type = ShopEntry.EntryType.ITEM;
+            draftEntry.typeId = ShopEntryTypes.ITEM;
             draftEntry.item = "minecraft:stone";
             draftEntry.amount = 1;
             draftEntry.currency = firstCurrencyId();
@@ -920,6 +1280,20 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             ShopEntry src = menu.getData().entries.get(id);
             draftEntry = src != null ? ShopEditSession.copyEntry(src) : new ShopEntry();
             draftEntryOldId = draftEntry.id;
+            if (draftEntry.commands != null) {
+                draftCommands.addAll(draftEntry.commands);
+            }
+            if (draftEntry.stageRewards != null) {
+                for (ShopStage st : draftEntry.stageRewards) {
+                    if (st != null) {
+                        ShopStage copy = new ShopStage();
+                        copy.stage = st.stage;
+                        copy.stageType = st.stageType;
+                        copy.is = st.is;
+                        draftStageRewards.add(copy);
+                    }
+                }
+            }
             if (draftEntry.stages != null) {
                 for (ShopStage st : draftEntry.stages) {
                     if (st != null) {
@@ -936,11 +1310,15 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         scrollOffset = 0;
         stageScrollOffset = 0;
         editingStageIndex = -1;
+        editingStringIndex = -1;
         rebuild();
     }
 
     private void confirmDelete(String kind, String id) {
-        if (isCtrlOrAltDownNow()) {
+        if (isKeyDown(org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL)
+                || isKeyDown(org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_CONTROL)
+                || isKeyDown(org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT)
+                || isKeyDown(org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_ALT)) {
             sendAction("delete_" + kind, obj -> obj.addProperty("id", id));
             rebuild();
             return;
@@ -949,17 +1327,6 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         pendingDeleteId = id;
         dialog = Dialog.DELETE_CONFIRM;
         rebuild();
-    }
-
-    private boolean isCtrlOrAltDownNow() {
-        if (this.minecraft == null) {
-            return false;
-        }
-        var window = this.minecraft.getWindow();
-        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL)
-                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL)
-                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT)
-                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
     }
 
     private static Tooltip deleteButtonTooltip() {
@@ -1054,9 +1421,37 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             if (sellBox != null) draftEntry.sell = parseDouble(sellBox.getValue(), 0);
             if (priorityBox != null) draftEntry.priority = parseInt(priorityBox.getValue(), 0);
             if (resourceBox != null) applyResourceString(resourceBox.getValue().trim());
+            if (displayBox != null) draftEntry.display = displayBox.getValue().trim();
+            ShopEntryTypeHandler flushHandler = ShopEntryTypeRegistry.require(draftEntry);
+            if (!flushHandler.usesBuy()) {
+                draftEntry.buy = 0;
+                draftEntry.free = true;
+            }
+            if (!flushHandler.usesSell()) {
+                draftEntry.sell = 0;
+            }
+            syncDraftStringList();
             draftEntry.stages = draftStages.toArray(new ShopStage[0]);
+            draftEntry.stageRewards = draftStageRewards.toArray(new ShopStage[0]);
         } else if (subView == SubView.ENTRY_STAGES && draftEntry != null) {
             draftEntry.stages = draftStages.toArray(new ShopStage[0]);
+        } else if (subView == SubView.ENTRY_STAGE_REWARDS && draftEntry != null) {
+            draftEntry.stageRewards = draftStageRewards.toArray(new ShopStage[0]);
+        } else if ((subView == SubView.ENTRY_REPEATABLE_BUY || subView == SubView.ENTRY_REPEATABLE_SELL)
+                && draftEntry != null) {
+            boolean buy = subView == SubView.ENTRY_REPEATABLE_BUY;
+            ShopRepeatableRule rule = activeRepeatableRule();
+            if (repeatTimeBox != null) rule.resetTime = ShopRepeatableRule.normalizeTime(repeatTimeBox.getValue());
+            if (repeatDayBox != null) rule.resetDay = Math.max(1, parseInt(repeatDayBox.getValue(), 1));
+            if (repeatMonthBox != null) rule.resetMonth = Math.max(1, parseInt(repeatMonthBox.getValue(), 1));
+            if (repeatCountBox != null) rule.count = Math.max(1, parseInt(repeatCountBox.getValue(), 1));
+            if (buy) {
+                draftEntry.repeatableBuy = rule.isDefault() ? null : rule;
+            } else {
+                draftEntry.repeatableSell = rule.isDefault() ? null : rule;
+            }
+        } else if (subView == SubView.ENTRY_STRING_LIST && draftEntry != null) {
+            syncDraftStringList();
         }
     }
 
@@ -1068,7 +1463,10 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             sendUpsertCategory(null);
         } else if (subView == SubView.CURRENCY_EDIT) {
             sendUpsertCurrency(null);
-        } else if (subView == SubView.ENTRY_EDIT || subView == SubView.ENTRY_STAGES) {
+        } else if (subView == SubView.ENTRY_EDIT || subView == SubView.ENTRY_STAGES
+                || subView == SubView.ENTRY_STAGE_REWARDS
+                || subView == SubView.ENTRY_REPEATABLE_BUY || subView == SubView.ENTRY_REPEATABLE_SELL
+                || subView == SubView.ENTRY_STRING_LIST) {
             sendUpsertEntry();
         }
     }
@@ -1142,18 +1540,21 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             o.addProperty("old_id", draftEntryOldId);
             o.addProperty("id", draftEntry.id);
             o.addProperty("in_category", nullSafe(draftEntry.inCategory));
-            o.addProperty("type", (draftEntry.type != null ? draftEntry.type : ShopEntry.EntryType.ITEM)
-                    .name().toLowerCase(Locale.ROOT));
-            if (draftEntry.item != null) o.addProperty("item", draftEntry.item);
-            if (draftEntry.fluid != null) o.addProperty("fluid", draftEntry.fluid);
-            if (draftEntry.gas != null) o.addProperty("gas", draftEntry.gas);
-            if (draftEntry.other != null) o.addProperty("other", draftEntry.other);
-            o.addProperty("amount", Math.max(1, draftEntry.amount));
+            o.addProperty("type", draftEntry.typeId != null
+                    ? draftEntry.typeId.toString() : ShopEntryTypes.ITEM.toString());
+            ShopEntryTypeHandler handler = ShopEntryTypeRegistry.require(draftEntry);
+            handler.writeExtras(o, draftEntry);
+            if (handler.usesAmount()) {
+                o.addProperty("amount", Math.max(1, draftEntry.amount));
+            }
             o.addProperty("currency", nullSafe(draftEntry.currency));
             o.addProperty("buy", draftEntry.buy);
-            o.addProperty("sell", draftEntry.sell);
+            if (handler.usesSell()) {
+                o.addProperty("sell", draftEntry.sell);
+            }
             o.addProperty("priority", draftEntry.priority);
             o.addProperty("free", draftEntry.free);
+            ShopRepeatableRule.writeEntryRules(o, draftEntry);
             JsonArray stages = new JsonArray();
             for (ShopStage st : draftStages) {
                 JsonObject so = new JsonObject();
@@ -1176,16 +1577,11 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private void setupResourceVariants(@Nullable String current) {
         resourceVariants.clear();
         if (subView == SubView.ENTRY_EDIT && draftEntry != null) {
-            ShopEntry.EntryType type = draftEntry.type != null ? draftEntry.type : ShopEntry.EntryType.ITEM;
-            if (type == ShopEntry.EntryType.FLUID) {
+            if (ShopEntryTypes.isFluid(draftEntry)) {
                 resourceVariants.addAll(ShopEditResourceFormats.variantsFromFluid(current));
-            } else if (type == ShopEntry.EntryType.GAS) {
+            } else if (ShopEntryTypes.isGas(draftEntry)) {
                 resourceVariants.addAll(ShopEditResourceFormats.variantsFromGas(current));
-            } else if (type == ShopEntry.EntryType.OTHER) {
-                resourceVariants.addAll(ShopOtherRegistry.all().stream()
-                        .map(ShopOtherRegistry.Definition::id)
-                        .toList());
-            } else {
+            } else if (ShopEntryTypes.isItem(draftEntry)) {
                 addItemResourceVariants(current);
             }
         } else {
@@ -1227,47 +1623,30 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         if (subView == SubView.CATEGORY_EDIT && draftCategory != null) {
             draftCategory.item = value;
         } else if (subView == SubView.ENTRY_EDIT && draftEntry != null) {
-            ShopEntry.EntryType type = draftEntry.type != null ? draftEntry.type : ShopEntry.EntryType.ITEM;
-            switch (type) {
-                case FLUID -> {
-                    draftEntry.fluid = value;
-                    draftEntry.item = null;
-                    draftEntry.gas = null;
-                    draftEntry.other = null;
-                }
-                case GAS -> {
-                    draftEntry.gas = value;
-                    draftEntry.item = null;
-                    draftEntry.fluid = null;
-                    draftEntry.other = null;
-                }
-                case OTHER -> {
-                    draftEntry.other = value;
-                    draftEntry.item = null;
-                    draftEntry.fluid = null;
-                    draftEntry.gas = null;
-                }
-                case ITEM -> {
-                    draftEntry.item = value;
-                    draftEntry.fluid = null;
-                    draftEntry.gas = null;
-                    draftEntry.other = null;
-                }
+            if (ShopEntryTypes.isFluid(draftEntry)) {
+                draftEntry.fluid = value;
+                draftEntry.item = null;
+                draftEntry.gas = null;
+            } else if (ShopEntryTypes.isGas(draftEntry)) {
+                draftEntry.gas = value;
+                draftEntry.item = null;
+                draftEntry.fluid = null;
+            } else if (ShopEntryTypes.isItem(draftEntry)) {
+                draftEntry.item = value;
+                draftEntry.fluid = null;
+                draftEntry.gas = null;
             }
         }
     }
 
     private String resourceString(ShopEntry e) {
-        if (e.type == ShopEntry.EntryType.FLUID) {
+        if (ShopEntryTypes.isFluid(e)) {
             return nullSafe(e.fluid);
         }
-        if (e.type == ShopEntry.EntryType.GAS) {
+        if (ShopEntryTypes.isGas(e)) {
             return nullSafe(e.gas);
         }
-        if (e.type == ShopEntry.EntryType.OTHER) {
-            return nullSafe(e.other);
-        }
-        return nullSafe(e.item);
+        return ShopEntryTypes.isItem(e) ? nullSafe(e.item) : "";
     }
 
     private void syncGhostFromResource(@Nullable String resource) {
@@ -1275,12 +1654,11 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             menu.setGhostStack(ItemStack.EMPTY);
             return;
         }
-        if (subView == SubView.ENTRY_EDIT && draftEntry != null && draftEntry.type == ShopEntry.EntryType.FLUID) {
+        if (subView == SubView.ENTRY_EDIT && ShopEntryTypes.isFluid(draftEntry)) {
             menu.setGhostStack(ItemStack.EMPTY);
             return;
         }
-        if (subView == SubView.ENTRY_EDIT && draftEntry != null
-                && (draftEntry.type == ShopEntry.EntryType.GAS || draftEntry.type == ShopEntry.EntryType.OTHER)) {
+        if (subView == SubView.ENTRY_EDIT && draftEntry != null && !ShopEntryTypes.isItem(draftEntry)) {
             menu.setGhostStack(ItemStack.EMPTY);
             return;
         }
@@ -1300,11 +1678,10 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         FluidStack fluid = ShopEntryHelper.normalizeFluidIngredient(ShopEntryHelper.fluidContainedInItem(stack));
         if (!fluid.isEmpty() && fluid.getFluid() != Fluids.EMPTY) {
             Identifier id = BuiltInRegistries.FLUID.getKey(fluid.getFluid());
-            draftEntry.type = ShopEntry.EntryType.FLUID;
+            draftEntry.typeId = ShopEntryTypes.FLUID;
             draftEntry.fluid = id != null ? id.toString() : "minecraft:water";
             draftEntry.item = null;
             draftEntry.gas = null;
-            draftEntry.other = null;
             if (draftEntry.amount < 1000) {
                 draftEntry.amount = 1000;
             }
@@ -1316,11 +1693,10 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             Object gas = MekChemicalHelper.sampleFromItemStack(stack);
             String gasId = MekChemicalHelper.getRegistryName(gas);
             if (gasId != null && !gasId.isBlank()) {
-                draftEntry.type = ShopEntry.EntryType.GAS;
+                draftEntry.typeId = ShopEntryTypes.GAS;
                 draftEntry.gas = gasId;
                 draftEntry.item = null;
                 draftEntry.fluid = null;
-                draftEntry.other = null;
                 if (draftEntry.amount < 1000) {
                     draftEntry.amount = 1000;
                 }
@@ -1335,17 +1711,18 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             return;
         }
         flushFormToDraft();
-        ShopEntry.EntryType cur = draftEntry.type != null ? draftEntry.type : ShopEntry.EntryType.ITEM;
-        draftEntry.type = switch (cur) {
-            case ITEM -> ShopEntry.EntryType.FLUID;
-            case FLUID -> MekChemicalHelper.isGasSupportEnabled() ? ShopEntry.EntryType.GAS : ShopEntry.EntryType.OTHER;
-            case GAS -> ShopEntry.EntryType.OTHER;
-            case OTHER -> ShopEntry.EntryType.ITEM;
-        };
-        if (draftEntry.type == ShopEntry.EntryType.OTHER
-                && (draftEntry.other == null || draftEntry.other.isBlank())) {
-            draftEntry.other = ShopOtherRegistry.RF_ID;
+        List<ShopEntryTypeHandler> types = ShopEntryTypeRegistry.availableOrdered();
+        if (types.isEmpty()) {
+            return;
         }
+        int current = 0;
+        for (int i = 0; i < types.size(); i++) {
+            if (types.get(i).id().equals(draftEntry.typeId)) {
+                current = i;
+                break;
+            }
+        }
+        draftEntry.typeId = types.get((current + 1) % types.size()).id();
         applyResourceString(resourceString(draftEntry));
         if (typeButton != null) {
             typeButton.setMessage(Component.literal(typeLabel()));
@@ -1355,8 +1732,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private String typeLabel() {
-        ShopEntry.EntryType t = draftEntry != null && draftEntry.type != null ? draftEntry.type : ShopEntry.EntryType.ITEM;
-        return t.name();
+        return ShopEntryTypeRegistry.require(draftEntry).editorLabel();
     }
 
     private void cycleCurrency() {
@@ -1457,44 +1833,45 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractBackground(graphics, mouseX, mouseY, partialTick);
-        graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, leftPos, topPos, 0.0F, 0.0F, GUI_WIDTH, GUI_HEIGHT, GUI_WIDTH, GUI_HEIGHT);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, leftPos, topPos, 0, 0, GUI_WIDTH, GUI_HEIGHT, GUI_WIDTH, GUI_HEIGHT);
         if (dialog == Dialog.NONE && isListView()) {
             renderListScrollbar(graphics, mouseX, mouseY);
             renderListRowVisuals(graphics);
         }
-        if ((subView == SubView.CATEGORY_EDIT || subView == SubView.ENTRY_EDIT) && dialog == Dialog.NONE) {
-            int slotY = subView == SubView.ENTRY_EDIT ? 53 : 133;
+        boolean entryHasIconSlot = subView == SubView.ENTRY_EDIT && draftEntry != null
+                && !ShopEntryTypeRegistry.require(draftEntry).usesDisplayAndIcon();
+        if ((subView == SubView.CATEGORY_EDIT || entryHasIconSlot) && dialog == Dialog.NONE) {
+            int slotY = subView == SubView.ENTRY_EDIT ? entryIconSlotY() : 133;
             int slotX = leftPos + resourceSlotX();
             int iconY = topPos + slotY + 1;
-            graphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX - 1, topPos + slotY, 0.0F, 0.0F, 18, 18, 18, 18);
-            if (subView == SubView.ENTRY_EDIT && draftEntry != null
-                    && draftEntry.type == ShopEntry.EntryType.FLUID) {
+            graphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, slotX - 1, topPos + slotY, 0, 0, 18, 18, 18, 18);
+            if (subView == SubView.ENTRY_EDIT && ShopEntryTypes.isFluid(draftEntry)) {
                 FluidStack fluid = ShopEntryHelper.displayFluidForEntry(draftEntry);
                 if (!fluid.isEmpty()) {
                     GuiFluidStillBlit.blit16(graphics, fluid, slotX, iconY);
                 }
-            } else if (subView == SubView.ENTRY_EDIT && draftEntry != null
-                    && draftEntry.type == ShopEntry.EntryType.GAS) {
+            } else if (subView == SubView.ENTRY_EDIT && ShopEntryTypes.isGas(draftEntry)) {
                 Object gas = ShopEntryHelper.displayGasForEntry(draftEntry);
                 if (gas != null) {
                     GuiChemicalStillBlit.blit16(graphics, gas, slotX, iconY);
                 }
             } else if (subView == SubView.ENTRY_EDIT && draftEntry != null
-                    && draftEntry.type == ShopEntry.EntryType.OTHER) {
-                ShopOtherRegistry.Definition definition = ShopOtherRegistry.get(draftEntry.other);
-                if (definition != null) {
-                    graphics.blit(RenderPipelines.GUI_TEXTURED, definition.icon(),
-                            slotX, iconY, 0.0F, 0.0F, 16, 16, 16, 16);
+                    && !ShopEntryTypes.isItem(draftEntry)) {
+                Identifier icon = ShopEntryTypeRegistry.require(draftEntry).guiIcon(draftEntry);
+                if (icon != null) {
+                    graphics.blit(icon, slotX, iconY, 0, 0, 16, 16, 16, 16);
                 }
             } else {
                 ItemStack ghost = menu.getGhostStack();
                 if (!ghost.isEmpty()) {
                     graphics.item(ghost, slotX, iconY);
-                    graphics.itemDecorations(this.font, ghost, slotX, iconY);
+                    graphics.itemDecorations(font, ghost, slotX, iconY);
                 }
             }
         }
-        if (subView == SubView.ENTRY_STAGES && dialog == Dialog.NONE) {
+        if ((subView == SubView.ENTRY_STAGES || subView == SubView.ENTRY_STAGE_REWARDS
+                || subView == SubView.ENTRY_STRING_LIST)
+                && dialog == Dialog.NONE) {
             renderStageScrollbar(graphics, mouseX, mouseY);
         }
     }
@@ -1508,7 +1885,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 renderSymbolCell(graphics, x, y, visual.symbol());
                 continue;
             }
-            graphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, x, y, 0.0F, 0.0F, LIST_ICON_SIZE, LIST_ICON_SIZE, LIST_ICON_SIZE, LIST_ICON_SIZE);
+            graphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT_TEXTURE, x, y, 0, 0, LIST_ICON_SIZE, LIST_ICON_SIZE, LIST_ICON_SIZE, LIST_ICON_SIZE);
             int iconX = x + 1;
             int iconY = y + 1;
             if (visual.kind() == ListRowKind.ENTRY_SLOT && visual.entry() != null) {
@@ -1517,45 +1894,39 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 ItemStack icon = ShopEntryHelper.displayStackForItemSelector(visual.itemSelector(), 1);
                 if (!icon.isEmpty()) {
                     graphics.item(icon, iconX, iconY);
-                    graphics.itemDecorations(this.font, icon, iconX, iconY);
+                    graphics.itemDecorations(font, icon, iconX, iconY);
                 }
             } else {
                 ItemStack icon = visual.icon();
                 if (icon != null && !icon.isEmpty()) {
                     graphics.item(icon, iconX, iconY);
-                    graphics.itemDecorations(this.font, icon, iconX, iconY);
+                    graphics.itemDecorations(font, icon, iconX, iconY);
                 }
             }
         }
     }
 
     private void renderEntryListIcon(GuiGraphicsExtractor graphics, ShopEntry entry, int iconX, int iconY) {
-        switch (entry.type != null ? entry.type : ShopEntry.EntryType.ITEM) {
-            case ITEM -> {
-                ItemStack stack = ShopEntryHelper.displayStackForEntry(entry);
-                if (!stack.isEmpty()) {
-                    graphics.item(stack, iconX, iconY);
-                    graphics.itemDecorations(this.font, stack, iconX, iconY);
-                }
+        if (ShopEntryTypes.isItem(entry)) {
+            ItemStack stack = ShopEntryHelper.displayStackForEntry(entry);
+            if (!stack.isEmpty()) {
+                graphics.item(stack, iconX, iconY);
+                graphics.itemDecorations(font, stack, iconX, iconY);
             }
-            case FLUID -> {
-                FluidStack fluid = ShopEntryHelper.displayFluidForEntry(entry);
-                if (!fluid.isEmpty()) {
-                    GuiFluidStillBlit.blit16(graphics, fluid, iconX, iconY);
-                }
+        } else if (ShopEntryTypes.isFluid(entry)) {
+            FluidStack fluid = ShopEntryHelper.displayFluidForEntry(entry);
+            if (!fluid.isEmpty()) {
+                GuiFluidStillBlit.blit16(graphics, fluid, iconX, iconY);
             }
-            case GAS -> {
-                Object gas = ShopEntryHelper.displayGasForEntry(entry);
-                if (gas != null) {
-                    GuiChemicalStillBlit.blit16(graphics, gas, iconX, iconY);
-                }
+        } else if (ShopEntryTypes.isGas(entry)) {
+            Object gas = ShopEntryHelper.displayGasForEntry(entry);
+            if (gas != null) {
+                GuiChemicalStillBlit.blit16(graphics, gas, iconX, iconY);
             }
-            case OTHER -> {
-                ShopOtherRegistry.Definition definition = ShopOtherRegistry.get(entry.other);
-                if (definition != null) {
-                    graphics.blit(RenderPipelines.GUI_TEXTURED, definition.icon(),
-                            iconX, iconY, 0.0F, 0.0F, 16, 16, 16, 16);
-                }
+        } else {
+            Identifier icon = ShopEntryTypeRegistry.require(entry).guiIcon(entry);
+            if (icon != null) {
+                graphics.blit(icon, iconX, iconY, 0, 0, 16, 16, 16, 16);
             }
         }
     }
@@ -1574,7 +1945,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         }
         Component label = Component.literal(shortSymbolLabel(symbol));
         int lw = font.width(label);
-        graphics.text(this.font, label, x + (LIST_ICON_SIZE - lw) / 2, y + (LIST_ICON_SIZE - 8) / 2, 0xFFFFFFFF, false);
+        graphics.text(font, label, x + (LIST_ICON_SIZE - lw) / 2, y + (LIST_ICON_SIZE - 8) / 2, 0xFFFFFFFF, false);
     }
 
     private static String shortSymbolLabel(String symbol) {
@@ -1590,22 +1961,25 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         int barY = ENTRY_START_Y + HANDLE_SIZE;
         int downY = barY + SCROLLBAR_HEIGHT;
         int sx = leftPos + SCROLLBAR_X;
-        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + barY, 0.0F, 0.0F, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + barY, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
         boolean upHover = mouseX >= sx && mouseX < sx + SCROLLBAR_WIDTH
                 && mouseY >= topPos + upY && mouseY < topPos + upY + HANDLE_SIZE;
-        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + upY, (float)(SCROLLBAR_WIDTH * 2), (float)(upHover ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + upY, SCROLLBAR_WIDTH * 2, upHover ? HANDLE_SIZE : 0,
+                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         boolean downHover = mouseX >= sx && mouseX < sx + SCROLLBAR_WIDTH
                 && mouseY >= topPos + downY && mouseY < topPos + downY + HANDLE_SIZE;
-        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + downY, (float)(SCROLLBAR_WIDTH * 3), (float)(downHover ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + downY, SCROLLBAR_WIDTH * 3, downHover ? HANDLE_SIZE : 0,
+                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         double ratio = maxListScroll() == 0 ? 0 : (double) scrollOffset / maxListScroll();
         int handleY = topPos + barY + (int) (ratio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
         boolean handleHover = mouseX >= sx && mouseX < sx + HANDLE_SIZE
                 && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, handleY, (float)SCROLLBAR_WIDTH, (float)(handleHover ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, handleY, SCROLLBAR_WIDTH, handleHover ? HANDLE_SIZE : 0,
+                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
     }
 
     private void renderStageScrollbar(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        if (draftStages.size() <= MAX_VISIBLE_STAGES) {
+        if (activeSubListSize() <= MAX_VISIBLE_STAGES) {
             return;
         }
         int stageBarH = Math.max(HANDLE_SIZE, MAX_VISIBLE_STAGES * STAGE_ROW_HEIGHT - HANDLE_SIZE * 2);
@@ -1613,18 +1987,21 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         int barY = STAGE_LIST_Y + HANDLE_SIZE;
         int downY = barY + stageBarH;
         int sx = leftPos + STAGE_SCROLLBAR_X;
-        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + barY, 0.0F, 0.0F, SCROLLBAR_WIDTH, Math.min(SCROLLBAR_HEIGHT, stageBarH), 32, 34);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + barY, 0, 0, SCROLLBAR_WIDTH, Math.min(SCROLLBAR_HEIGHT, stageBarH), 32, 34);
         boolean upHover = mouseX >= sx && mouseX < sx + SCROLLBAR_WIDTH
                 && mouseY >= topPos + upY && mouseY < topPos + upY + HANDLE_SIZE;
-        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + upY, (float)(SCROLLBAR_WIDTH * 2), (float)(upHover ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + upY, SCROLLBAR_WIDTH * 2, upHover ? HANDLE_SIZE : 0,
+                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         boolean downHover = mouseX >= sx && mouseX < sx + SCROLLBAR_WIDTH
                 && mouseY >= topPos + downY && mouseY < topPos + downY + HANDLE_SIZE;
-        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + downY, (float)(SCROLLBAR_WIDTH * 3), (float)(downHover ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, topPos + downY, SCROLLBAR_WIDTH * 3, downHover ? HANDLE_SIZE : 0,
+                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
         double ratio = maxStageScroll() == 0 ? 0 : (double) stageScrollOffset / maxStageScroll();
         int handleY = topPos + barY + (int) (ratio * Math.max(1, stageBarH - HANDLE_SIZE));
         boolean handleHover = mouseX >= sx && mouseX < sx + HANDLE_SIZE
                 && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, handleY, (float)SCROLLBAR_WIDTH, (float)(handleHover ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sx, handleY, SCROLLBAR_WIDTH, handleHover ? HANDLE_SIZE : 0,
+                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
     }
 
     private int listTotalCount() {
@@ -1648,7 +2025,12 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 case ENTRIES -> Component.translatable("gui.iska_utils.shop_edit.entries",
                         selectedCategoryId != null ? selectedCategoryId : "");
                 case ENTRY_EDIT -> Component.translatable("gui.iska_utils.shop_edit.entry_edit");
+                case ENTRY_RULES -> Component.translatable("gui.iska_utils.shop_edit.rules");
+                case ENTRY_REPEATABLE_BUY -> Component.translatable("gui.iska_utils.shop_edit.repeatable_buy");
+                case ENTRY_REPEATABLE_SELL -> Component.translatable("gui.iska_utils.shop_edit.repeatable_sell");
                 case ENTRY_STAGES -> Component.translatable("gui.iska_utils.shop_edit.stages_edit");
+                case ENTRY_STAGE_REWARDS -> Component.translatable("gui.iska_utils.shop_edit.stage_rewards");
+                case ENTRY_STRING_LIST -> Component.literal(typeLabel() + " values");
                 case CURRENCIES -> Component.translatable("gui.iska_utils.shop_edit.currencies_title");
                 case CURRENCY_EDIT -> Component.translatable("gui.iska_utils.shop_edit.currency_edit");
             };
@@ -1659,29 +2041,30 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         Component title = currentTitle();
         int titleX = (GUI_WIDTH - font.width(title)) / 2;
-        graphics.text(this.font, title, titleX, 6, GuiTextColors.TITLE, false);
+        graphics.text(font, title, titleX, 6, 0x404040, false);
         if (dialog == Dialog.CLOSE_HINT) {
             Component hint = Component.translatable("gui.iska_utils.shop_edit.close_reload_hint");
             int y = 50;
             for (var line : font.split(hint, GUI_WIDTH - 40)) {
-                graphics.text(this.font, line, 20, y, GuiTextColors.BODY, false);
+                graphics.text(font, line, 20, y, 0x404040, false);
                 y += 12;
             }
             return;
         }
         for (FormLabel label : formLabels) {
-            graphics.text(this.font, label.text(), label.x(), label.y(), GuiTextColors.BODY, false);
+            graphics.text(font, label.text(), label.x(), label.y(), 0x404040, false);
         }
         Component warning = entryEditWarning();
         if (warning != null) {
-            int warnY = 128;
+            int warnY = draftEntry != null
+                    && ShopEntryTypeRegistry.require(draftEntry).usesResultButton() ? 128 : 128;
             for (String part : warning.getString().split("\n", -1)) {
                 if (part.isEmpty()) {
                     warnY += 10;
                     continue;
                 }
                 for (var line : font.split(Component.literal(part), FORM_WIDTH)) {
-                    graphics.text(this.font, line, FORM_LEFT, warnY, GuiTextColors.ERROR, false);
+                    graphics.text(font, line, FORM_LEFT, warnY, GuiTextColors.ERROR, false);
                     warnY += 10;
                 }
             }
@@ -1689,8 +2072,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     @Override
-    protected void extractTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        super.extractTooltip(graphics, mouseX, mouseY);
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
@@ -1702,7 +2085,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 rebuild();
                 return true;
             }
-            if (subView == SubView.ENTRY_STAGES
+            if ((subView == SubView.ENTRY_STAGES || subView == SubView.ENTRY_STAGE_REWARDS
+                    || subView == SubView.ENTRY_STRING_LIST)
                     && mouseX >= leftPos + STAGE_LIST_X
                     && mouseX < leftPos + STAGE_SCROLLBAR_X + SCROLLBAR_WIDTH
                     && mouseY >= topPos + STAGE_LIST_Y - 14
@@ -1738,16 +2122,20 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 MachineGuiInput.markScrollbarPressed();
                 return true;
             }
-            if (subView == SubView.ENTRY_STAGES && handleStageScrollbarClick(mouseX, mouseY)) {
+            if ((subView == SubView.ENTRY_STAGES || subView == SubView.ENTRY_STAGE_REWARDS
+                    || subView == SubView.ENTRY_STRING_LIST)
+                    && handleStageScrollbarClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();
                 return true;
             }
-            if ((subView == SubView.CATEGORY_EDIT || subView == SubView.ENTRY_EDIT)) {
-                int slotY = subView == SubView.ENTRY_EDIT ? 54 : 134;
+            boolean entryIconActive = subView == SubView.ENTRY_EDIT && draftEntry != null
+                    && !ShopEntryTypeRegistry.require(draftEntry).usesDisplayAndIcon();
+            if (subView == SubView.CATEGORY_EDIT || entryIconActive) {
+                int slotY = entryIconActive ? entryIconSlotY() + 1 : 134;
                 int sx = leftPos + resourceSlotX();
                 int sy = topPos + slotY;
                 if (mouseX >= sx && mouseX < sx + 16 && mouseY >= sy && mouseY < sy + 16) {
-                    ItemStack carried = this.menu.getCarried();
+                    ItemStack carried = minecraft.player.containerMenu.getCarried();
                     if (!carried.isEmpty()) {
                         acceptGhostItem(carried.copyWithCount(1));
                         return true;
@@ -1769,7 +2157,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (event.button() == 0) {
+        int button = event.button();
+        if (button == 0) {
             isDraggingHandle = false;
             isDraggingStageHandle = false;
             MachineGuiInput.clearScrollbarPressed();
@@ -1870,8 +2259,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             resourceBox.setValue(preferred);
         }
         if (subView == SubView.ENTRY_EDIT && draftEntry != null
-                && draftEntry.type != ShopEntry.EntryType.ITEM) {
-            draftEntry.type = ShopEntry.EntryType.ITEM;
+                && !ShopEntryTypes.isItem(draftEntry)) {
+            draftEntry.typeId = ShopEntryTypes.ITEM;
         }
         applyResourceString(preferred);
         autosaveCurrentForm(true);
@@ -1912,7 +2301,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 } else if (ingredient instanceof FluidStack fluid && draftEntry != null) {
                     FluidStack norm = ShopEntryHelper.normalizeFluidIngredient(fluid);
                     Identifier id = BuiltInRegistries.FLUID.getKey(norm.getFluid());
-                    draftEntry.type = ShopEntry.EntryType.FLUID;
+                    draftEntry.typeId = ShopEntryTypes.FLUID;
                     draftEntry.fluid = id != null ? id.toString() : "minecraft:water";
                     draftEntry.item = null;
                     draftEntry.gas = null;
@@ -1922,7 +2311,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                         && draftEntry != null) {
                     String gasId = MekChemicalHelper.getRegistryName(ingredient);
                     if (gasId != null) {
-                        draftEntry.type = ShopEntry.EntryType.GAS;
+                        draftEntry.typeId = ShopEntryTypes.GAS;
                         draftEntry.gas = gasId;
                         draftEntry.item = null;
                         draftEntry.fluid = null;
@@ -1939,8 +2328,9 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         if (dialog != Dialog.NONE) {
             return null;
         }
-        if (subView == SubView.ENTRY_EDIT) {
-            return new Rect2i(leftPos + resourceSlotX() - 1, topPos + 53, 18, 18);
+        if (subView == SubView.ENTRY_EDIT && draftEntry != null
+                && !ShopEntryTypeRegistry.require(draftEntry).usesDisplayAndIcon()) {
+            return new Rect2i(leftPos + resourceSlotX() - 1, topPos + entryIconSlotY(), 18, 18);
         }
         if (subView == SubView.CATEGORY_EDIT) {
             return new Rect2i(leftPos + resourceSlotX() - 1, topPos + 133, 18, 18);
@@ -1969,6 +2359,10 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
 
     /** Item/fluid/gas id or tag shown in the entries list (not the shop entry id). */
     private static String entryContentLabel(ShopEntry entry) {
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(entry);
+        if (handler != null && handler.usesDisplayAndIcon()) {
+            return handler.displayName(entry).getString();
+        }
         String selector = ShopEntryHelper.resourceSelector(entry);
         return selector != null ? selector.trim() : "";
     }

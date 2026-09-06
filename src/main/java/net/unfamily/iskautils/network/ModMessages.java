@@ -3,9 +3,11 @@ package net.unfamily.iskautils.network;
 import net.unfamily.iskautils.util.ModLogger;
 
 import net.minecraft.resources.Identifier;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
@@ -36,7 +38,16 @@ import net.minecraft.core.BlockPos;
 import com.mojang.math.Transformation;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import net.unfamily.iskautils.network.packet.AutoShopRedstoneModeC2SPacket;
+import net.unfamily.iskautils.network.packet.AutoShopCycleCurrencyC2SPacket;
+import net.unfamily.iskautils.network.packet.AutoShopSetModeC2SPacket;
 import net.unfamily.iskautils.network.packet.AutoShopSetEncapsulatedC2SPacket;
+import net.unfamily.iskautils.network.packet.AutoShopSetSelectedItemC2SPacket;
+import net.unfamily.iskautils.network.packet.BurningBrazierToggleC2SPacket;
+import net.unfamily.iskautils.network.packet.GauntletClimbingToggleC2SPacket;
+import net.unfamily.iskautils.network.packet.GhostBrazierToggleC2SPacket;
+import net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket;
+import net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.function.BiConsumer;
@@ -116,35 +127,30 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.FanPushTypeC2SPacket::handle
         );
 
-        // Register Fan Push/Pull Set C2S Packet (Client to Server)
         registrar.playToServer(
             net.unfamily.iskautils.network.packet.FanPushPullSetC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.FanPushPullSetC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.FanPushPullSetC2SPacket::handle
         );
 
-        // Register Fan Target Type Set C2S Packet (Client to Server)
         registrar.playToServer(
             net.unfamily.iskautils.network.packet.FanTargetTypeSetC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.FanTargetTypeSetC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.FanTargetTypeSetC2SPacket::handle
         );
 
-        // Register Mob Reaper Target Type C2S Packet (Client to Server)
         registrar.playToServer(
             net.unfamily.iskautils.network.packet.MobReaperTargetTypeC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.MobReaperTargetTypeC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.MobReaperTargetTypeC2SPacket::handle
         );
 
-        // Register Mob Reaper Redstone Mode C2S Packet (Client to Server)
         registrar.playToServer(
             net.unfamily.iskautils.network.packet.MobReaperRedstoneModeC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.MobReaperRedstoneModeC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.MobReaperRedstoneModeC2SPacket::handle
         );
 
-        // Register Mob Reaper Age Filter C2S Packet (Client to Server)
         registrar.playToServer(
             net.unfamily.iskautils.network.packet.MobReaperAgeFilterC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.MobReaperAgeFilterC2SPacket.STREAM_CODEC,
@@ -187,6 +193,124 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.SmartTimerRedstoneModeC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.SmartTimerRedstoneModeC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.SmartTimerRedstoneModeC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            AutoShopRedstoneModeC2SPacket.TYPE,
+            AutoShopRedstoneModeC2SPacket.STREAM_CODEC,
+            AutoShopRedstoneModeC2SPacket::handle
+        );
+        registrar.playToServer(
+            AutoShopCycleCurrencyC2SPacket.TYPE,
+            AutoShopCycleCurrencyC2SPacket.STREAM_CODEC,
+            AutoShopCycleCurrencyC2SPacket::handle
+        );
+        registrar.playToServer(
+            AutoShopSetModeC2SPacket.TYPE,
+            AutoShopSetModeC2SPacket.STREAM_CODEC,
+            AutoShopSetModeC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.ShopEditActionC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.ShopEditActionC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.ShopEditActionC2SPacket::handle
+        );
+        registrar.playToClient(
+            net.unfamily.iskautils.network.packet.ShopEditSyncS2CPacket.TYPE,
+            net.unfamily.iskautils.network.packet.ShopEditSyncS2CPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.ShopEditSyncS2CPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.ShopPurchaseLimitsRequestC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.ShopPurchaseLimitsRequestC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.ShopPurchaseLimitsRequestC2SPacket::handle
+        );
+        registrar.playToClient(
+            net.unfamily.iskautils.network.packet.ShopPurchaseLimitsS2CPacket.TYPE,
+            net.unfamily.iskautils.network.packet.ShopPurchaseLimitsS2CPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.ShopPurchaseLimitsS2CPacket::handle
+        );
+        registrar.playToServer(
+            AutoShopSetEncapsulatedC2SPacket.TYPE,
+            AutoShopSetEncapsulatedC2SPacket.STREAM_CODEC,
+            AutoShopSetEncapsulatedC2SPacket::handle
+        );
+        registrar.playToServer(
+            AutoShopSetSelectedItemC2SPacket.TYPE,
+            AutoShopSetSelectedItemC2SPacket.STREAM_CODEC,
+            AutoShopSetSelectedItemC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AutoShopApplyPickerSelectionC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AutoShopApplyPickerSelectionC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AutoShopApplyPickerSelectionC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AutoShopDumpTankC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AutoShopDumpTankC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AutoShopDumpTankC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AutoShopConvertSelectedC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AutoShopConvertSelectedC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AutoShopConvertSelectedC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.AutoShopManualTradeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.AutoShopManualTradeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.AutoShopManualTradeC2SPacket::handle
+        );
+        registrar.playToServer(
+            GhostBrazierToggleC2SPacket.TYPE,
+            GhostBrazierToggleC2SPacket.STREAM_CODEC,
+            GhostBrazierToggleC2SPacket::handle
+        );
+        registrar.playToServer(
+            BurningBrazierToggleC2SPacket.TYPE,
+            BurningBrazierToggleC2SPacket.STREAM_CODEC,
+            BurningBrazierToggleC2SPacket::handle
+        );
+        registrar.playToServer(
+            GauntletClimbingToggleC2SPacket.TYPE,
+            GauntletClimbingToggleC2SPacket.STREAM_CODEC,
+            GauntletClimbingToggleC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorRedstoneModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorRedstoneModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorRedstoneModeC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorListLogicToggleC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorListLogicToggleC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorListLogicToggleC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterPanelC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterPanelC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterPanelC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterUpdateC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterUpdateC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterUpdateC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorInvertedFiltersC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorInvertedFiltersC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorInvertedFiltersC2SPacket::handle
+        );
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket::handle
         );
 
         // Register Sound Muffler Volume C2S Packet (Client to Server)
@@ -242,57 +366,17 @@ public class ModMessages {
         );
 
         registrar.playToServer(
-            PortableDislocatorC2SPacket.TYPE,
-            PortableDislocatorC2SPacket.STREAM_CODEC,
-            PortableDislocatorC2SPacket::handle
+            FactorySelectColorC2SPacket.TYPE,
+            FactorySelectColorC2SPacket.STREAM_CODEC,
+            FactorySelectColorC2SPacket::handle
         );
 
         registrar.playToServer(
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterUpdateC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterUpdateC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterUpdateC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorInvertedFiltersC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorInvertedFiltersC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorInvertedFiltersC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorRedstoneModeC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorRedstoneModeC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorRedstoneModeC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorListLogicToggleC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorListLogicToggleC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorListLogicToggleC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterPanelC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterPanelC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorFilterPanelC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket::handle
+            FactoryScrollC2SPacket.TYPE,
+            FactoryScrollC2SPacket.STREAM_CODEC,
+            FactoryScrollC2SPacket::handle
         );
 
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket::handle
-        );
         registrar.playToServer(
             net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket.STREAM_CODEC,
@@ -395,77 +479,6 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.LabelingMachineLoreC2SPacket::handle
         );
 
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.AutoShopRedstoneModeC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.AutoShopRedstoneModeC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.AutoShopRedstoneModeC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.AutoShopCycleCurrencyC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.AutoShopCycleCurrencyC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.AutoShopCycleCurrencyC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.AutoShopSetModeC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.AutoShopSetModeC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.AutoShopSetModeC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.ShopEditActionC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.ShopEditActionC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.ShopEditActionC2SPacket::handle
-        );
-        registrar.playToClient(
-            net.unfamily.iskautils.network.packet.ShopEditSyncS2CPacket.TYPE,
-            net.unfamily.iskautils.network.packet.ShopEditSyncS2CPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.ShopEditSyncS2CPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.AutoShopSetEncapsulatedC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.AutoShopSetEncapsulatedC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.AutoShopSetEncapsulatedC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.AutoShopSetSelectedItemC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.AutoShopSetSelectedItemC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.AutoShopSetSelectedItemC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.AutoShopApplyPickerSelectionC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.AutoShopApplyPickerSelectionC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.AutoShopApplyPickerSelectionC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.AutoShopDumpTankC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.AutoShopDumpTankC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.AutoShopDumpTankC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.AutoShopConvertSelectedC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.AutoShopConvertSelectedC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.AutoShopConvertSelectedC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.AutoShopManualTradeC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.AutoShopManualTradeC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.AutoShopManualTradeC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.GhostBrazierToggleC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.GhostBrazierToggleC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.GhostBrazierToggleC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.BurningBrazierToggleC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.BurningBrazierToggleC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.BurningBrazierToggleC2SPacket::handle
-        );
-        registrar.playToServer(
-            net.unfamily.iskautils.network.packet.GauntletClimbingToggleC2SPacket.TYPE,
-            net.unfamily.iskautils.network.packet.GauntletClimbingToggleC2SPacket.STREAM_CODEC,
-            net.unfamily.iskautils.network.packet.GauntletClimbingToggleC2SPacket::handle
-        );
-        
     }
     
     /**
@@ -486,71 +499,167 @@ public class ModMessages {
      * Sends a Portable Dislocator packet to the server
      */
     public static void sendPortableDislocatorPacket(int targetX, int targetZ) {
-        try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                new PortableDislocatorC2SPacket(targetX, targetZ));
-        } catch (Exception e) {
-            LOGGER.warn("Failed to send Portable Dislocator packet: {}", e.getMessage());
-        }
+        // Simplified implementation for single player compatibility
     }
 
+    @net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
     public static void sendFactorySelectColor(net.minecraft.core.BlockPos pos, int index) {
+        var packet = new net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket(pos, index);
         try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.FactorySelectColorC2SPacket(pos, index));
-        } catch (Exception e) {
-            LOGGER.warn("Failed to send Factory select color packet: {}", e.getMessage());
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty()
+                            ? null : server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.FactoryBlockEntity factory) {
+                            factory.setSelectedColorIndex(index);
+                        }
+                    }
+                });
+                return;
+            }
+        } catch (Exception ignored) {
         }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
+    @net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
     public static void sendFactoryScroll(net.minecraft.core.BlockPos pos, int offset) {
+        var packet = new net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket(pos, offset);
         try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.FactoryScrollC2SPacket(pos, offset));
-        } catch (Exception e) {
-            LOGGER.warn("Failed to send Factory scroll packet: {}", e.getMessage());
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty()
+                            ? null : server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.FactoryBlockEntity factory) {
+                            factory.setScrollOffset(offset);
+                        }
+                    }
+                });
+                return;
+            }
+        } catch (Exception ignored) {
         }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendFactoryRedstoneMode(net.minecraft.core.BlockPos pos, boolean backward) {
+        var packet = new net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket(pos, backward);
         try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.FactoryRedstoneModeC2SPacket(pos, backward));
-        } catch (Exception e) {
-            LOGGER.warn("Failed to send Factory redstone mode packet: {}", e.getMessage());
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty()
+                            ? null : server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.FactoryBlockEntity factory) {
+                            if (backward) {
+                                factory.cycleRedstoneModeBackward();
+                            } else {
+                                factory.cycleRedstoneMode();
+                            }
+                        }
+                    }
+                });
+                return;
+            }
+        } catch (Exception ignored) {
         }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendEntropicSpawnerRedstoneMode(net.minecraft.core.BlockPos pos, boolean backward) {
+        var packet = new net.unfamily.iskautils.network.packet.EntropicSpawnerRedstoneModeC2SPacket(pos, backward);
         try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.EntropicSpawnerRedstoneModeC2SPacket(pos, backward));
-        } catch (Exception e) {
-            LOGGER.warn("Failed to send Entropic Spawner redstone mode packet: {}", e.getMessage());
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty()
+                            ? null : server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.EntropicSpawnerBlockEntity spawner) {
+                            if (backward) {
+                                spawner.cycleRedstoneModeBackward();
+                            } else {
+                                spawner.cycleRedstoneMode();
+                            }
+                        }
+                    }
+                });
+                return;
+            }
+        } catch (Exception ignored) {
         }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendAncientTableScroll(net.minecraft.core.BlockPos pos, int side, int offset) {
+        var packet = new net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket(pos, side, offset);
         try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket(pos, side, offset));
-        } catch (Exception e) {
-            LOGGER.warn("Failed to send Ancient Table scroll packet: {}", e.getMessage());
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty()
+                            ? null : server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.AncientTableBlockEntity table) {
+                            if (side == net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket.SIDE_OUTPUT) {
+                                table.setOutputScrollOffset(offset);
+                            } else {
+                                table.setInputScrollOffset(offset);
+                            }
+                        }
+                    }
+                });
+                return;
+            }
+        } catch (Exception ignored) {
         }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendAncientTableRedstoneMode(net.minecraft.core.BlockPos pos, boolean backward) {
+        var packet = new net.unfamily.iskautils.network.packet.AncientTableRedstoneModeC2SPacket(pos, backward);
         try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.AncientTableRedstoneModeC2SPacket(pos, backward));
-        } catch (Exception e) {
-            LOGGER.warn("Failed to send Ancient Table redstone mode packet: {}", e.getMessage());
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    ServerPlayer player = server.getPlayerList().getPlayers().isEmpty()
+                            ? null : server.getPlayerList().getPlayers().get(0);
+                    if (player != null) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = player.level().getBlockEntity(pos);
+                        if (be instanceof net.unfamily.iskautils.block.entity.AncientTableBlockEntity table) {
+                            if (backward) {
+                                table.cycleRedstoneModeBackward();
+                            } else {
+                                table.cycleRedstoneMode();
+                            }
+                        }
+                    }
+                });
+                return;
+            }
+        } catch (Exception ignored) {
         }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
-
+    
     /**
      * Sends a Structure Undo packet to the server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructureUndoPacket() {
         // Simplified implementation for single player compatibility
         try {
@@ -602,26 +711,6 @@ public class ModMessages {
         }
     }
 
-    public static void sendAddBillboardPacket(ServerPlayer player, BlockPos pos, int color, int durationTicks) {
-        try {
-            ClientRuntimeAccess.runOnClientThread(() -> {
-                ClientEventsAccess.handleAddBillboard(pos, color, durationTicks);
-            });
-        } catch (Exception e) {
-            // Ignore errors when running on dedicated server
-        }
-    }
-
-    public static void sendAddBillboardWithNamePacket(ServerPlayer player, BlockPos pos, int color, int durationTicks, String name) {
-        try {
-            ClientRuntimeAccess.runOnClientThread(() -> {
-                ClientEventsAccess.handleAddBillboardWithName(pos, color, durationTicks, name);
-            });
-        } catch (Exception e) {
-            // Ignore errors when running on dedicated server
-        }
-    }
-
     /** S2C: footprint preview marker owned by a machine block (toggle only). */
     public static void sendPreviewMarker(ServerPlayer player, BlockPos builderOrigin, BlockPos pos, int color, int durationTicks) {
         sendPreviewMarker(player, builderOrigin, pos, color, durationTicks, 0);
@@ -633,6 +722,7 @@ public class ModMessages {
                 new PreviewMarkerS2CPayload(builderOrigin, pos, color, durationTicks, footprintGeneration));
     }
 
+    /** S2C: clear footprint preview markers for one builder (toggle off). */
     public static void clearPreviewForBuilder(ServerPlayer player, BlockPos builderOrigin) {
         clearPreviewForBuilder(player, builderOrigin, true, 0);
     }
@@ -651,6 +741,26 @@ public class ModMessages {
                 color,
                 durationTicks,
                 PreviewMarkerS2CPayload.EPHEMERAL_FOOTPRINT_GENERATION));
+    }
+
+    public static void sendAddBillboardPacket(ServerPlayer player, BlockPos pos, int color, int durationTicks) {
+        try {
+            ClientRuntimeAccess.runOnClientThread(() -> {
+                ClientEventsAccess.handleAddBillboard(pos, color, durationTicks);
+            });
+        } catch (Exception e) {
+            // Ignore errors when running on dedicated server
+        }
+    }
+
+    public static void sendAddBillboardWithNamePacket(ServerPlayer player, BlockPos pos, int color, int durationTicks, String name) {
+        try {
+            ClientRuntimeAccess.runOnClientThread(() -> {
+                ClientEventsAccess.handleAddBillboardWithName(pos, color, durationTicks, name);
+            });
+        } catch (Exception e) {
+            // Ignore errors when running on dedicated server
+        }
     }
     
     /**
@@ -671,6 +781,7 @@ public class ModMessages {
     /**
      * Sends a shop team data request to the server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendShopTeamDataRequest() {
         // Simplified implementation - directly handle on the server side
         try {
@@ -725,6 +836,7 @@ public class ModMessages {
      * Sends a Structure Placer save packet to the server
      * This simulates a client-to-server packet for saving the selected structure
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerSavePacket(String structureId) {
 
         // Simplified implementation - directly handle on the server side
@@ -776,6 +888,7 @@ public class ModMessages {
      * Sends a Structure Placer Machine Rotate packet to the server
      * This simulates a client-to-server packet for rotating the structure
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineRotatePacket(BlockPos machinePos) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -799,7 +912,7 @@ public class ModMessages {
                                 int newRotation = (currentRotation + 90) % 360;
                                 machine.setRotation(newRotation);
                                 if (machine.isShowPreview()) {
-                                    sendStructurePlacerMachineFootprint(player, (ServerLevel) player.level(), machinePos, machine);
+                                    sendStructurePlacerMachineFootprint(player, ((net.minecraft.server.level.ServerLevel) player.level()), machinePos, machine);
                                 }
                                 
                                 // Get translated direction text
@@ -828,54 +941,120 @@ public class ModMessages {
     /**
      * Sends an Auto Shop Redstone Mode packet to the server (cycle mode on button click)
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopRedstoneModePacket(BlockPos machinePos, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                new net.unfamily.iskautils.network.packet.AutoShopRedstoneModeC2SPacket(machinePos, backward));
+                new AutoShopRedstoneModeC2SPacket(machinePos, backward));
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopCycleCurrencyPacket(BlockPos machinePos, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                new net.unfamily.iskautils.network.packet.AutoShopCycleCurrencyC2SPacket(machinePos, backward));
+                new AutoShopCycleCurrencyC2SPacket(machinePos, backward));
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopSetModePacket(BlockPos machinePos, boolean buyMode, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                new net.unfamily.iskautils.network.packet.AutoShopSetModeC2SPacket(machinePos, buyMode, backward));
+                new AutoShopSetModeC2SPacket(machinePos, buyMode, backward));
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendShopEditActionPacket(String action, String payloadJson) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.ShopEditActionC2SPacket(action, payloadJson));
     }
 
+    @OnlyIn(Dist.CLIENT)
+    public static void requestShopPurchaseLimits() {
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.ShopPurchaseLimitsRequestC2SPacket());
+    }
+
     /**
      * Sends a Structure Placer Machine Redstone Mode packet to the server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineRedstoneModePacket(BlockPos machinePos, boolean backward) {
         try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket(machinePos, backward));
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    try {
+                        net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                        if (player != null) {
+                            net.minecraft.server.level.ServerLevel level = ((net.minecraft.server.level.ServerLevel) player.level());
+                            net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
+                            if (blockEntity instanceof StructurePlacerMachineBlockEntity machine) {
+                                net.unfamily.iskautils.block.entity.StructurePlacerRedstoneMode currentMode =
+                                        net.unfamily.iskautils.block.entity.StructurePlacerRedstoneMode.fromValue(machine.getRedstoneMode());
+                                net.unfamily.iskautils.block.entity.StructurePlacerRedstoneMode newMode =
+                                        backward ? currentMode.previous() : currentMode.next();
+                                machine.setRedstoneMode(newMode.getValue());
+                                float pitch = backward ? 0.82f : 1.0f;
+                                level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
+                                        net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, pitch);
+                                machine.setChanged();
+                            }
+                        }
+                    } catch (Exception e) {
+                        LOGGER.error("Error handling Structure Placer Machine redstone mode packet: {}", e.getMessage());
+                    }
+                });
+                return;
+            }
         } catch (Exception e) {
-            LOGGER.error("Could not send Structure Placer Machine redstone mode packet: {}", e.getMessage(), e);
+            LOGGER.error("Structure Placer redstone SP path failed: {}", e.getMessage(), e);
         }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.StructurePlacerMachineRedstoneModeC2SPacket(machinePos, backward));
     }
     
     /**
      * Sends a Deep Drawer Extractor Redstone Mode packet to the server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorRedstoneModePacket(BlockPos machinePos, boolean backward) {
         try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.DeepDrawerExtractorRedstoneModeC2SPacket(machinePos, backward));
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    try {
+                        net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                        if (player != null) {
+                            net.minecraft.server.level.ServerLevel level = ((net.minecraft.server.level.ServerLevel) player.level());
+                            net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
+                            if (blockEntity instanceof net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity extractor) {
+                                int oldMode = extractor.getRedstoneMode();
+                                net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity.RedstoneMode currentMode =
+                                        net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity.RedstoneMode.fromValue(oldMode);
+                                net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity.RedstoneMode newMode =
+                                        backward ? currentMode.previous() : currentMode.next();
+                                extractor.setRedstoneMode(newMode.getValue());
+                                float pitch = backward ? 0.82f : 1.0f;
+                                level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
+                                        net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, pitch);
+                                extractor.setChanged();
+                            }
+                        }
+                    } catch (Exception e) {
+                        LOGGER.error("Error handling Deep Drawer Extractor redstone mode packet: {}", e.getMessage());
+                    }
+                });
+                return;
+            }
         } catch (Exception e) {
-            LOGGER.error("Could not send Deep Drawer Extractor redstone mode packet: {}", e.getMessage(), e);
+            LOGGER.error("Deep Drawer Extractor redstone SP path failed: {}", e.getMessage(), e);
         }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.DeepDrawerExtractorRedstoneModeC2SPacket(machinePos, backward));
     }
     
     /**
      * Sends a Structure Placer Machine Set Inventory packet to the server
      * Mode: 0 = normal, 1 = shift+click, 2 = ctrl/alt+click
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineSetInventoryPacket(BlockPos machinePos, int mode) {
         // Simplified implementation - directly handle on the server side
         try {
@@ -891,7 +1070,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel world = (net.minecraft.server.level.ServerLevel) player.level();
+                        net.minecraft.server.level.ServerLevel world = ((net.minecraft.server.level.ServerLevel) player.level());
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = world.getBlockEntity(machinePos);
                         
                         if (blockEntity instanceof StructurePlacerMachineBlockEntity machine) {
@@ -931,6 +1110,9 @@ public class ModMessages {
         }
     }
     
+    /**
+     * Sends structure footprint preview markers to the opening player (persistent until toggled off).
+     */
     public static void sendStructurePlacerMachineFootprint(
             ServerPlayer player,
             ServerLevel world,
@@ -1055,12 +1237,9 @@ public class ModMessages {
         if (structure.getCanReplace() != null) {
             for (String replaceableBlock : structure.getCanReplace()) {
                 try {
-                    Identifier blockLocation = Identifier.tryParse(replaceableBlock);
-                    if (blockLocation == null) {
-                        continue;
-                    }
-                    net.minecraft.world.level.block.Block allowedBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(blockLocation).orElse(null);
-                    if (allowedBlock != null && block == allowedBlock) {
+                    net.minecraft.resources.Identifier blockLocation = net.minecraft.resources.Identifier.parse(replaceableBlock);
+                    net.minecraft.world.level.block.Block allowedBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getValue(blockLocation);
+                    if (block == allowedBlock) {
                         return true;
                     }
                 } catch (Exception e) {
@@ -1076,6 +1255,7 @@ public class ModMessages {
      * Sends a Structure Placer Machine save packet to the server
      * This simulates a client-to-server packet for saving the selected structure in the machine
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructurePlacerMachineSavePacket(String structureId, BlockPos machinePos) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1126,7 +1306,7 @@ public class ModMessages {
     public static void sendStructureSyncPacket(ServerPlayer player) {
         try {
             // Check if we're in singleplayer mode
-            boolean isSingleplayer = ((net.minecraft.server.level.ServerLevel) player.level()).getServer().isSingleplayer();
+            boolean isSingleplayer = player.level().getServer().isSingleplayer();
             
             if (isSingleplayer) {
                 return; // In singleplayer, the client already has its local structures
@@ -1168,6 +1348,7 @@ public class ModMessages {
     /**
      * Sends a Structure Saver Machine recalculate packet to the server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructureSaverMachineRecalculatePacket(BlockPos machinePos) {
 
         // Simplified implementation for single player compatibility
@@ -1190,6 +1371,7 @@ public class ModMessages {
      * Sends a Structure Saver Machine save packet to the server
      * This simulates a client-to-server packet for saving a structure from the machine
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructureSaverMachineSavePacket(String structureName, String structureId, BlockPos machinePos, boolean slower, boolean placeAsPlayer) {
         sendStructureSaverMachineSavePacket(structureName, structureId, machinePos, slower, placeAsPlayer, null);
     }
@@ -1198,6 +1380,7 @@ public class ModMessages {
      * Sends a Structure Saver Machine save/modify packet to the server
      * This simulates a client-to-server packet for saving or modifying a structure from the machine
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendStructureSaverMachineSavePacket(String structureName, String structureId, BlockPos machinePos, boolean slower, boolean placeAsPlayer, String oldStructureId) {
 
 
@@ -1246,6 +1429,7 @@ public class ModMessages {
     /**
      * Sends a shop buy item packet to the server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendShopBuyItemPacket(String entryId, int quantity) {
         // Simplified implementation for single player compatibility
         try {
@@ -1273,6 +1457,7 @@ public class ModMessages {
     /**
      * Sends a shop sell item packet to the server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendShopSellItemPacket(String entryId, int quantity) {
         // Simplified implementation for single player compatibility
         try {
@@ -1300,20 +1485,21 @@ public class ModMessages {
     /**
      * Invia il packet per settare lo slot encapsulato dell'Auto Shop
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopSetEncapsulatedPacket(BlockPos pos) {
-        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                new AutoShopSetEncapsulatedC2SPacket(pos));
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new AutoShopSetEncapsulatedC2SPacket(pos));
     }
 
     /**
      * Invia il packet per settare lo slot selectedItem dell'Auto Shop
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopSelectedItemPacket(BlockPos pos, ItemStack stack) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                new net.unfamily.iskautils.network.packet.AutoShopSetSelectedItemC2SPacket(
-                        pos, stack == null ? ItemStack.EMPTY : stack));
+                new AutoShopSetSelectedItemC2SPacket(pos, stack == null ? ItemStack.EMPTY : stack));
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopApplyPickerSelectionPacket(BlockPos pos, String entryId, boolean buyMode) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.AutoShopApplyPickerSelectionC2SPacket(pos, entryId, buyMode));
@@ -1324,6 +1510,7 @@ public class ModMessages {
                 new net.unfamily.iskautils.network.packet.AutoShopDumpTankC2SPacket(pos, gas));
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendAutoShopConvertSelectedPacket(BlockPos pos) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.AutoShopConvertSelectedC2SPacket(pos));
@@ -1338,6 +1525,7 @@ public class ModMessages {
      * Sends a Deep Drawers scroll packet to the server
      * Updates the scroll offset for the Deep Drawers GUI
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawersSearchStatePacket(BlockPos pos, String query, int filterScrollOffset) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1358,6 +1546,7 @@ public class ModMessages {
         }
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawersScrollPacket(BlockPos pos, int scrollOffset) {
         // Simplified implementation for single player compatibility
         try {
@@ -1405,15 +1594,16 @@ public class ModMessages {
      * Sends a Burning Brazier toggle packet to the server
      * This toggles the auto-placement state for the Burning Brazier item
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendBurningBrazierTogglePacket() {
-        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                new net.unfamily.iskautils.network.packet.BurningBrazierToggleC2SPacket());
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new BurningBrazierToggleC2SPacket());
     }
 
     /**
      * Sends a Scanner range cycle packet to the server
      * This cycles through the available scan range options
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendScannerRangeCyclePacket() {
         // Simplified implementation for single player compatibility
         try {
@@ -1451,23 +1641,24 @@ public class ModMessages {
      * Sends a Gauntlet of Climbing toggle packet to the server
      * This toggles the climbing ability on/off
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendGauntletClimbingTogglePacket(boolean enabled) {
-        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                new net.unfamily.iskautils.network.packet.GauntletClimbingToggleC2SPacket(enabled));
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new GauntletClimbingToggleC2SPacket(enabled));
     }
 
     /**
      * Sends a Ghost Brazier toggle packet to the server
      * This toggles the game mode between Survival and Spectator
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendGhostBrazierTogglePacket() {
-        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                new net.unfamily.iskautils.network.packet.GhostBrazierToggleC2SPacket());
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new GhostBrazierToggleC2SPacket());
     }
 
     /**
      * Invia il packet per aggiornare i parametri del timer
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerUpdatePacket(BlockPos pos, boolean isCooldown, int deltaTicks) {
         // Simplified implementation for single player compatibility
         try {
@@ -1495,6 +1686,7 @@ public class ModMessages {
     /**
      * Sends packet to update fan range parameters
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendFanRangeUpdatePacket(BlockPos pos, net.unfamily.iskautils.network.packet.FanRangeUpdateC2SPacket.RangeType rangeType, int delta) {
         // Simplified implementation for single player compatibility
         try {
@@ -1522,6 +1714,7 @@ public class ModMessages {
     /**
      * Sends filter update packet to server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorFilterUpdatePacket(
             BlockPos pos, java.util.Map<Integer, String> filterMap,
             java.util.Map<Integer, Integer> concatMap, boolean isWhitelistMode) {
@@ -1537,6 +1730,7 @@ public class ModMessages {
     /**
      * Sends inverted filter update packet to server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorInvertedFilterUpdatePacket(
             BlockPos pos, java.util.Map<Integer, String> invertedFilterMap,
             java.util.Map<Integer, Integer> concatMap) {
@@ -1549,6 +1743,7 @@ public class ModMessages {
         }
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorSettingsCopierPacket(BlockPos pos, int action, int allowDeny) {
         if (pos == null || pos.equals(BlockPos.ZERO)) {
             return;
@@ -1561,6 +1756,7 @@ public class ModMessages {
      * Sends a Deep Drawer Extractor Mode Toggle packet to the server
      * Toggles between whitelist and blacklist mode (like rotation in Structure Placer)
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorModeTogglePacket(BlockPos machinePos) {
         if (machinePos == null || machinePos.equals(BlockPos.ZERO)) {
             return;
@@ -1569,6 +1765,7 @@ public class ModMessages {
                 new net.unfamily.iskautils.network.packet.DeepDrawerExtractorListLogicToggleC2SPacket(machinePos));
     }
     
+    @OnlyIn(Dist.CLIENT)
     public static void sendDeepDrawerExtractorFilterPanelPacket(BlockPos machinePos, int panel) {
         if (machinePos == null || machinePos.equals(BlockPos.ZERO)) {
             return;
@@ -1580,6 +1777,7 @@ public class ModMessages {
     /**
      * Invia il packet per ciclare il tipo I/O di una faccia del timer
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerIoConfigCyclePacket(BlockPos machinePos, net.minecraft.core.Direction direction) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1593,7 +1791,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
+                        net.minecraft.server.level.ServerLevel level = ((net.minecraft.server.level.ServerLevel) player.level());
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
@@ -1619,6 +1817,7 @@ public class ModMessages {
     /**
      * Invia il packet per resettare tutte le facce I/O del timer
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerIoConfigResetPacket(BlockPos machinePos) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1632,7 +1831,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
+                        net.minecraft.server.level.ServerLevel level = ((net.minecraft.server.level.ServerLevel) player.level());
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
@@ -1660,6 +1859,7 @@ public class ModMessages {
      * @param machinePos Posizione del blocco
      * @param action Tipo di azione: 0=increase, 1=decrease, 2=increaseBy5, 3=decreaseBy5, 4=max, 5=min, 6=default
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerAccelerationChangePacket(BlockPos machinePos, int action) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1673,7 +1873,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
+                        net.minecraft.server.level.ServerLevel level = ((net.minecraft.server.level.ServerLevel) player.level());
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity overclocker) {
@@ -1707,21 +1907,17 @@ public class ModMessages {
     /**
      * Invia il packet per cambiare il redstone mode del Temporal Overclocker
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerRedstoneModePacket(BlockPos machinePos, boolean backward) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
-            if (server == null) {
-                LOGGER.error("Singleplayer server is null!");
-                return;
-            }
-            
-            // Execute on server thread
+            if (server == null) return;
+
             server.execute(() -> {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
-                        
+                        net.minecraft.server.level.ServerLevel level = ((net.minecraft.server.level.ServerLevel) player.level());
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(machinePos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity overclocker) {
                             int currentMode = overclocker.getRedstoneMode();
@@ -1744,11 +1940,9 @@ public class ModMessages {
                                 }
                             }
                             overclocker.setRedstoneMode(nextMode);
-                            
                             float pitch = backward ? 0.82f : 1.0f;
-                            level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 
-                                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, pitch);
-                            
+                            level.playSound(null, machinePos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
+                                    net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, pitch);
                             overclocker.setChanged();
                         }
                     }
@@ -1756,7 +1950,6 @@ public class ModMessages {
                     LOGGER.error("Error handling Temporal Overclocker redstone mode packet: {}", e.getMessage());
                 }
             });
-            
         } catch (Exception e) {
             LOGGER.error("Could not send Temporal Overclocker redstone mode packet: {}", e.getMessage(), e);
         }
@@ -1765,6 +1958,7 @@ public class ModMessages {
     /**
      * Invia il packet per fare toggle della modalità persistente del Temporal Overclocker
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerTogglePersistentPacket(BlockPos overclockerPos) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1796,6 +1990,7 @@ public class ModMessages {
     /**
      * Invia il packet per evidenziare un blocco collegato nel mondo (crea un marker di 5 secondi)
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerHighlightBlockPacket(BlockPos blockPos) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1827,6 +2022,7 @@ public class ModMessages {
     /**
      * Invia il packet per rimuovere un blocco collegato dal Temporal Overclocker
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendTemporalOverclockerRemoveLinkPacket(BlockPos overclockerPos, BlockPos linkedPos) {
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
@@ -1840,7 +2036,7 @@ public class ModMessages {
                 try {
                     net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
                     if (player != null) {
-                        net.minecraft.server.level.ServerLevel level = (net.minecraft.server.level.ServerLevel) player.level();
+                        net.minecraft.server.level.ServerLevel level = ((net.minecraft.server.level.ServerLevel) player.level());
                         
                         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(overclockerPos);
                         if (blockEntity instanceof net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity overclocker) {
@@ -1858,33 +2054,55 @@ public class ModMessages {
         }
     }
     
-    /**
-     * Sends Fan Redstone Mode packet to the server
-     */
+    @OnlyIn(Dist.CLIENT)
     public static void sendFanRedstoneModePacket(BlockPos pos, boolean backward) {
-        try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.FanRedstoneModeC2SPacket(pos, backward));
-        } catch (Exception e) {
-            LOGGER.error("Could not send Fan redstone mode packet: {}", e.getMessage(), e);
-        }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.FanRedstoneModeC2SPacket(pos, backward));
     }
     
     /**
      * Sends Smart Timer Redstone Mode packet to the server
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendSmartTimerRedstoneModePacket(BlockPos pos, boolean backward) {
         try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.SmartTimerRedstoneModeC2SPacket(pos, backward));
+            MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> {
+                    try {
+                        net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+                        if (player != null) {
+                            net.minecraft.server.level.ServerLevel level = ((net.minecraft.server.level.ServerLevel) player.level());
+                            net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+                            if (blockEntity instanceof net.unfamily.iskautils.block.entity.SmartTimerBlockEntity timer) {
+                                if (backward) {
+                                    timer.cycleRedstoneModeBackward();
+                                } else {
+                                    timer.cycleRedstoneMode();
+                                }
+                                float pitch = backward ? 0.82f : 1.0f;
+                                level.playSound(null, pos, net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
+                                        net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, pitch);
+                                timer.setChanged();
+                            }
+                        }
+                    } catch (Exception e) {
+                        LOGGER.error("Error handling Smart Timer redstone mode packet: {}", e.getMessage());
+                    }
+                });
+                return;
+            }
         } catch (Exception e) {
-            LOGGER.error("Could not send Smart Timer redstone mode packet: {}", e.getMessage(), e);
+            LOGGER.error("Smart Timer redstone SP path failed: {}", e.getMessage(), e);
         }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.SmartTimerRedstoneModeC2SPacket(pos, backward));
     }
 
     /**
      * Sends Sound Muffler volume change to the server (client-only).
      */
+    @OnlyIn(Dist.CLIENT)
     public static void sendSoundMufflerVolumePacket(BlockPos pos, int categoryIndex, int delta) {
         var packet = new net.unfamily.iskautils.network.packet.SoundMufflerVolumeC2SPacket(pos, categoryIndex, delta);
         try {
@@ -1903,10 +2121,12 @@ public class ModMessages {
                 return;
             }
         } catch (Exception ignored) {}
-        // TODO(neoforge-26): replace with new client->server sender API
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendSoundMufflerRangePacket(BlockPos pos, int range) {
+        var packet = new net.unfamily.iskautils.network.packet.SoundMufflerRangeC2SPacket(pos, range);
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server != null) {
@@ -1923,10 +2143,12 @@ public class ModMessages {
                 return;
             }
         } catch (Exception ignored) {}
-        // TODO(neoforge-26): replace with new client->server sender API
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendSoundMufflerModeTogglePacket(BlockPos pos) {
+        var packet = new net.unfamily.iskautils.network.packet.SoundMufflerModeToggleC2SPacket(pos);
         try {
             MinecraftServer server = ClientRuntimeAccess.getSingleplayerServer();
             if (server != null) {
@@ -1943,9 +2165,10 @@ public class ModMessages {
                 return;
             }
         } catch (Exception ignored) {}
-        // TODO(neoforge-26): replace with new client->server sender API
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendSoundMufflerFilterUpdatePacket(BlockPos pos, java.util.List<String> filterSoundIds) {
         var packet = new net.unfamily.iskautils.network.packet.SoundMufflerFilterUpdateC2SPacket(pos, filterSoundIds != null ? new java.util.ArrayList<>(filterSoundIds) : new java.util.ArrayList<>());
         try {
@@ -1964,99 +2187,58 @@ public class ModMessages {
                 return;
             }
         } catch (Exception ignored) {}
-        // TODO(neoforge-26): replace with new client->server sender API
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
     }
 
-    /**
-     * Sends Fan Push/Pull packet to the server
-     */
-    public static void sendFanPushPullPacket(BlockPos pos, boolean backward) {
-        try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.FanPushPullC2SPacket(pos, backward));
-        } catch (Exception e) {
-            LOGGER.error("Could not send Fan push/pull packet: {}", e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Sends Fan Push Type packet to the server
-     */
-    public static void sendFanPushTypePacket(BlockPos pos, boolean backward) {
-        try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.FanPushTypeC2SPacket(pos, backward));
-        } catch (Exception e) {
-            LOGGER.error("Could not send Fan push type packet: {}", e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Sends Fan Push/Pull set packet to the server
-     */
+    @OnlyIn(Dist.CLIENT)
     public static void sendFanPushPullSetPacket(BlockPos pos, boolean pull) {
-        try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.FanPushPullSetC2SPacket(pos, pull));
-        } catch (Exception e) {
-            LOGGER.error("Could not send Fan push/pull set packet: {}", e.getMessage(), e);
-        }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.FanPushPullSetC2SPacket(pos, pull));
     }
 
-    /**
-     * Sends Fan target type set packet to the server
-     */
+    @OnlyIn(Dist.CLIENT)
     public static void sendFanTargetTypeSetPacket(BlockPos pos, int typeId) {
-        try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.FanTargetTypeSetC2SPacket(pos, typeId));
-        } catch (Exception e) {
-            LOGGER.error("Could not send Fan target type set packet: {}", e.getMessage(), e);
-        }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.FanTargetTypeSetC2SPacket(pos, typeId));
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendMobReaperTargetTypePacket(BlockPos pos, boolean backward) {
-        try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.MobReaperTargetTypeC2SPacket(pos, backward));
-        } catch (Exception e) {
-            LOGGER.error("Could not send Mob Reaper target type packet: {}", e.getMessage(), e);
-        }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.MobReaperTargetTypeC2SPacket(pos, backward));
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendMobReaperRedstoneModePacket(BlockPos pos, boolean backward) {
-        try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.MobReaperRedstoneModeC2SPacket(pos, backward));
-        } catch (Exception e) {
-            LOGGER.error("Could not send Mob Reaper redstone mode packet: {}", e.getMessage(), e);
-        }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.MobReaperRedstoneModeC2SPacket(pos, backward));
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendMobReaperAgeFilterPacket(BlockPos pos, boolean backward) {
-        try {
-            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.MobReaperAgeFilterC2SPacket(pos, backward));
-        } catch (Exception e) {
-            LOGGER.error("Could not send Mob Reaper age filter packet: {}", e.getMessage(), e);
-        }
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.MobReaperAgeFilterC2SPacket(pos, backward));
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendCollectingCrateModePacket(BlockPos pos, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.CollectingCrateModeC2SPacket(pos, backward));
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendCollectingCrateRedstoneModePacket(BlockPos pos, boolean backward) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.CollectingCrateRedstoneModeC2SPacket(pos, backward));
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendCollectingCrateXpCollectPacket(BlockPos pos) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.CollectingCrateXpCollectC2SPacket(pos));
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendCollectingCrateXpDepositPacket(BlockPos pos) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.CollectingCrateXpDepositC2SPacket(pos));
@@ -2072,20 +2254,41 @@ public class ModMessages {
                 new net.unfamily.iskautils.network.packet.CollectingCratePreviewToggleC2SPacket(pos, enable));
     }
 
+    /**
+     * Sends Fan Push/Pull packet to the server
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendFanPushPullPacket(BlockPos pos, boolean backward) {
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.FanPushPullC2SPacket(pos, backward));
+    }
+
+    /**
+     * Sends Fan Push Type packet to the server
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void sendFanPushTypePacket(BlockPos pos, boolean backward) {
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.FanPushTypeC2SPacket(pos, backward));
+    }
+
+    @OnlyIn(Dist.CLIENT)
     public static void sendEtherealFrameFilterUpdatePacket(BlockPos pos, java.util.List<String> entityTypeIds) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.EtherealFrameFilterUpdateC2SPacket(pos,
                         entityTypeIds != null ? new java.util.ArrayList<>(entityTypeIds) : new java.util.ArrayList<>()));
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendEtherealFrameModeTogglePacket(BlockPos pos) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.EtherealFrameModeToggleC2SPacket(pos));
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static void sendEtherealFrameLightTogglePacket(BlockPos pos) {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.EtherealFrameLightToggleC2SPacket(pos));
     }
-    
+
 } 

@@ -1,9 +1,10 @@
 package net.unfamily.iskautils.block.entity;
 
+import net.unfamily.iskautils.util.ModLogger;
+
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -17,25 +18,25 @@ import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.transfer.ResourceHandler;
-import net.neoforged.neoforge.transfer.ResourceHandlerUtil;
 import net.neoforged.neoforge.transfer.fluid.FluidResource;
 import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
 import net.unfamily.iskalib.transfer.LegacyIFluidHandlerResourceHandler;
 import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
-import net.unfamily.iskautils.shop.ShopOtherRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypes;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import net.minecraft.world.entity.player.Player;
 import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 
 /**
  * Block Entity for Auto Shop Block
@@ -44,6 +45,8 @@ import net.minecraft.world.entity.player.Player;
 public class AutoShopBlockEntity extends BlockEntity {
     /** Tank capacity equals one shop unit ({@link ShopEntry#amount}); buy only when empty. */
     public static final int DEFAULT_TANK_MB = 1000;
+    
+    private static final ModLogger LOGGER = ModLogger.of(AutoShopBlockEntity.class);
     
     // Custom slot for encapsulated function (1 slot) - exposed for automatic extraction
     private final ItemStackHandler encapsulatedSlot = new ItemStackHandler(1) {
@@ -62,15 +65,12 @@ public class AutoShopBlockEntity extends BlockEntity {
         }
     };
 
-    private final ResourceHandler<ItemResource> itemTransferHandler = LegacyItemHandlerResourceHandler.wrap(encapsulatedSlot);
     private final FluidTank fluidTank = new FluidTank(DEFAULT_TANK_MB, this::isFluidValidForSelection) {
         @Override
         protected void onContentsChanged() {
             setChanged();
         }
     };
-    private final ResourceHandler<FluidResource> fluidTransferHandler =
-            LegacyIFluidHandlerResourceHandler.wrap(fluidTank);
     private Object gasTank;
     private String pendingGasId = "";
     private long pendingGasAmount;
@@ -79,8 +79,58 @@ public class AutoShopBlockEntity extends BlockEntity {
     /** Gas buffer capacity (independent from fluid). */
     private int gasCapacity = DEFAULT_TANK_MB;
     private final ResizableEnergyStorage energyStorage = new ResizableEnergyStorage();
-    private final net.neoforged.neoforge.transfer.energy.EnergyHandler energyHandler = new EnergyHandlerImpl();
+    private final ResourceHandler<ItemResource> itemTransferHandler =
+            LegacyItemHandlerResourceHandler.wrap(encapsulatedSlot);
+    private final ResourceHandler<FluidResource> fluidTransferHandler =
+            LegacyIFluidHandlerResourceHandler.wrap(fluidTank);
+    private final net.neoforged.neoforge.transfer.energy.EnergyHandler energyHandler26 = new EnergyHandlerImpl();
 
+    private final class EnergyHandlerImpl
+            extends net.neoforged.neoforge.transfer.transaction.SnapshotJournal<Integer>
+            implements net.neoforged.neoforge.transfer.energy.EnergyHandler {
+        @Override
+        protected Integer createSnapshot() {
+            return energyStorage.getEnergyStored();
+        }
+
+        @Override
+        protected void revertToSnapshot(Integer snapshot) {
+            energyStorage.setEnergy(snapshot);
+        }
+
+        @Override
+        public long getAmountAsLong() {
+            return energyStorage.getEnergyStored();
+        }
+
+        @Override
+        public long getCapacityAsLong() {
+            return energyStorage.getMaxEnergyStored();
+        }
+
+        @Override
+        public int insert(int amount,
+                          net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
+            if (amount == 0) {
+                return 0;
+            }
+            updateSnapshots(transaction);
+            return energyStorage.receiveEnergy(amount, false);
+        }
+
+        @Override
+        public int extract(int amount,
+                           net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
+            if (amount == 0) {
+                return 0;
+            }
+            updateSnapshots(transaction);
+            return energyStorage.extractEnergy(amount, false);
+        }
+    }
+    
     /** Read-only handler for the filter slot display (ghost slot: no insert/extract). */
     private final IItemHandler filterDisplayHandler = new IItemHandler() {
         @Override
@@ -120,7 +170,7 @@ public class AutoShopBlockEntity extends BlockEntity {
     private UUID placedByPlayer = null; // UUID of the player who placed the Auto Shop
     private ItemStack selectedItem = ItemStack.EMPTY; // Selected item for encapsulated slot
     private String selectedShopEntryId = ""; // Bound shop entry from picker (optional)
-    private ShopEntry.EntryType selectedEntryType = ShopEntry.EntryType.ITEM;
+    private Identifier selectedTypeId = ShopEntryTypes.ITEM;
     private boolean autoBuyMode = true; // true = Auto Buy, false = Auto Sell
     
     // Redstone mode: when to run auto buy/sell (same logic as Structure Placer Machine)
@@ -168,115 +218,81 @@ public class AutoShopBlockEntity extends BlockEntity {
         super(ModBlockEntities.AUTO_SHOP_BE.get(), pos, blockState);
     }
     
-    private static final String ENCAPSULATED_SLOT_TAG = "encapsulatedSlot";
-    private static final String SELECTED_ITEM_TAG = "selectedItem";
-    private static final String SELECTED_SHOP_ENTRY_ID_TAG = "selectedShopEntryId";
-    private static final String SELECTED_ENTRY_TYPE_TAG = "selectedEntryType";
-    private static final String FLUID_TANK_TAG = "fluidTank";
-    private static final String GAS_ID_TAG = "gasId";
-    private static final String GAS_AMOUNT_TAG = "gasAmount";
-    private static final String TANK_CAPACITY_TAG = "tankCapacity";
-    private static final String FLUID_CAPACITY_TAG = "fluidCapacity";
-    private static final String GAS_CAPACITY_TAG = "gasCapacity";
-    private static final String ENERGY_STORED_TAG = "energyStored";
-    private static final String ENERGY_CAPACITY_TAG = "energyCapacity";
-
+    @Override
+    public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
+    }
+    
+    @Override
+    public net.minecraft.nbt.CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) {
+        return saveWithoutMetadata(registries);
+    }
+    
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
-
-        output.putBoolean("isActive", isActive);
-        output.putString("currentCategory", currentCategory);
-        output.putString("selectedValute", selectedValute);
-        output.putBoolean("autoBuyMode", autoBuyMode);
-        output.putString("ownerTeamId", ownerTeamId != null ? ownerTeamId.toString() : "");
-        output.putString("placedByPlayer", placedByPlayer != null ? placedByPlayer.toString() : "");
-        output.putInt("redstoneMode", redstoneMode);
-        output.putBoolean("previousRedstoneState", previousRedstoneState);
-
-        ItemStack slotStack = encapsulatedSlot.getStackInSlot(0);
-        if (!slotStack.isEmpty()) {
-            output.store(ENCAPSULATED_SLOT_TAG, ItemStack.CODEC, slotStack);
+        ItemStack stored = encapsulatedSlot.getStackInSlot(0);
+        if (!stored.isEmpty()) {
+            output.store("EncapsulatedItem", ItemStack.CODEC, stored);
+        }
+        output.putBoolean("IsActive", isActive);
+        output.putString("CurrentCategory", currentCategory);
+        output.putString("SelectedValute", selectedValute);
+        output.putBoolean("AutoBuyMode", autoBuyMode);
+        if (ownerTeamId != null) {
+            output.store("OwnerTeamId", net.minecraft.core.UUIDUtil.CODEC, ownerTeamId);
+        }
+        if (placedByPlayer != null) {
+            output.store("PlacedByPlayer", net.minecraft.core.UUIDUtil.CODEC, placedByPlayer);
         }
         if (!selectedItem.isEmpty()) {
-            output.store(SELECTED_ITEM_TAG, ItemStack.CODEC, selectedItem);
+            output.store("SelectedItem", ItemStack.CODEC, selectedItem);
         }
-        if (selectedShopEntryId != null && !selectedShopEntryId.isEmpty()) {
-            output.putString(SELECTED_SHOP_ENTRY_ID_TAG, selectedShopEntryId);
-        }
-        output.putString(SELECTED_ENTRY_TYPE_TAG, selectedEntryType.name());
-        output.putInt(FLUID_CAPACITY_TAG, fluidCapacity);
-        output.putInt(GAS_CAPACITY_TAG, gasCapacity);
-        output.putInt(ENERGY_STORED_TAG, energyStorage.getEnergyStored());
-        output.putInt(ENERGY_CAPACITY_TAG, energyStorage.getMaxEnergyStored());
-        if (!fluidTank.isEmpty()) {
-            output.store(FLUID_TANK_TAG, FluidStack.CODEC, fluidTank.getFluid());
+        output.putString("SelectedShopEntryId", selectedShopEntryId != null ? selectedShopEntryId : "");
+        output.putString("SelectedEntryType", selectedTypeId.toString());
+        output.putInt("RedstoneMode", redstoneMode);
+        output.putBoolean("PreviousRedstoneState", previousRedstoneState);
+        output.putInt("FluidCapacity", fluidCapacity);
+        output.putInt("GasCapacity", gasCapacity);
+        output.putInt("EnergyStored", energyStorage.getEnergyStored());
+        output.putInt("EnergyCapacity", energyStorage.getMaxEnergyStored());
+        if (!fluidTank.getFluid().isEmpty()) {
+            output.store("FluidTank", FluidStack.CODEC, fluidTank.getFluid());
         }
         String gasId = getGasId();
         long gasAmount = getGasAmount();
-        if (gasId != null && !gasId.isEmpty() && gasAmount > 0) {
-            output.putString(GAS_ID_TAG, gasId);
-            output.putLong(GAS_AMOUNT_TAG, gasAmount);
+        if (!gasId.isEmpty() && gasAmount > 0) {
+            output.putString("GasId", gasId);
+            output.putLong("GasAmount", gasAmount);
         }
     }
     
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
-
-        this.isActive = input.getBooleanOr("isActive", false);
-        this.currentCategory = input.getStringOr("currentCategory", "000_default");
-
-        this.selectedValute = normalizeCurrencyId(input.getStringOr("selectedValute", resolveDefaultCurrencyId()));
-
-        this.autoBuyMode = input.getBooleanOr("autoBuyMode", true);
-
-        String ownerTeamStr = input.getStringOr("ownerTeamId", "");
-        this.ownerTeamId = ownerTeamStr.isEmpty() ? null : UUID.fromString(ownerTeamStr);
-
-        String placedByStr = input.getStringOr("placedByPlayer", "");
-        this.placedByPlayer = placedByStr.isEmpty() ? null : UUID.fromString(placedByStr);
-
-        this.redstoneMode = input.getIntOr("redstoneMode", 0);
-        this.previousRedstoneState = input.getBooleanOr("previousRedstoneState", false);
-
-        ItemStack loadedSlot = input.read(ENCAPSULATED_SLOT_TAG, ItemStack.CODEC).orElse(ItemStack.EMPTY);
-        encapsulatedSlot.setStackInSlot(0, loadedSlot);
-
-        this.selectedItem = input.read(SELECTED_ITEM_TAG, ItemStack.CODEC).orElse(ItemStack.EMPTY);
-        if (!this.selectedItem.isEmpty()) {
-            this.selectedItem = this.selectedItem.copy();
-            this.selectedItem.setCount(1);
-        }
-        this.selectedShopEntryId = input.getStringOr(SELECTED_SHOP_ENTRY_ID_TAG, "");
-        try {
-            this.selectedEntryType = ShopEntry.EntryType.valueOf(
-                    input.getStringOr(SELECTED_ENTRY_TYPE_TAG, ShopEntry.EntryType.ITEM.name()));
-        } catch (IllegalArgumentException ignored) {
-            this.selectedEntryType = ShopEntry.EntryType.ITEM;
-        }
-        int legacyCap = Math.max(1, input.getIntOr(TANK_CAPACITY_TAG, DEFAULT_TANK_MB));
-        this.fluidCapacity = Math.max(1, input.getIntOr(FLUID_CAPACITY_TAG, legacyCap));
-        this.gasCapacity = Math.max(1, input.getIntOr(GAS_CAPACITY_TAG, legacyCap));
-        this.fluidTank.setCapacity(fluidCapacity);
-        this.fluidTank.setFluid(input.read(FLUID_TANK_TAG, FluidStack.CODEC).orElse(FluidStack.EMPTY));
-        this.pendingGasId = input.getStringOr(GAS_ID_TAG, "");
-        this.pendingGasAmount = Math.max(0L, input.getLongOr(GAS_AMOUNT_TAG, 0L));
-        this.energyStorage.resize(Math.max(0, input.getIntOr(ENERGY_CAPACITY_TAG, 0)));
-        this.energyStorage.setEnergy(Math.max(0, input.getIntOr(ENERGY_STORED_TAG, 0)));
+        encapsulatedSlot.setStackInSlot(0, input.read("EncapsulatedItem", ItemStack.CODEC).orElse(ItemStack.EMPTY));
+        isActive = input.getBooleanOr("IsActive", false);
+        currentCategory = input.getStringOr("CurrentCategory", "000_default");
+        selectedValute = normalizeCurrencyId(input.getStringOr("SelectedValute", resolveDefaultCurrencyId()));
+        autoBuyMode = input.getBooleanOr("AutoBuyMode", true);
+        ownerTeamId = input.read("OwnerTeamId", net.minecraft.core.UUIDUtil.CODEC).orElse(null);
+        placedByPlayer = input.read("PlacedByPlayer", net.minecraft.core.UUIDUtil.CODEC).orElse(null);
+        selectedItem = input.read("SelectedItem", ItemStack.CODEC).orElse(ItemStack.EMPTY);
+        selectedShopEntryId = input.getStringOr("SelectedShopEntryId", "");
+        String savedType = input.getStringOr("SelectedEntryType", ShopEntryTypes.ITEM.toString());
+        Identifier parsed = ShopEntryHelper.parseTypeId(savedType);
+        selectedTypeId = parsed != null ? parsed : ShopEntryTypes.ITEM;
+        redstoneMode = input.getIntOr("RedstoneMode", 0);
+        previousRedstoneState = input.getBooleanOr("PreviousRedstoneState", false);
+        fluidCapacity = Math.max(1, input.getIntOr("FluidCapacity", DEFAULT_TANK_MB));
+        gasCapacity = Math.max(1, input.getIntOr("GasCapacity", DEFAULT_TANK_MB));
+        fluidTank.setCapacity(fluidCapacity);
+        fluidTank.setFluid(input.read("FluidTank", FluidStack.CODEC).orElse(FluidStack.EMPTY));
+        pendingGasId = input.getStringOr("GasId", "");
+        pendingGasAmount = Math.max(0L, input.getLongOr("GasAmount", 0L));
+        energyStorage.resize(Math.max(0, input.getIntOr("EnergyCapacity", 0)));
+        energyStorage.setEnergy(Math.max(0, input.getIntOr("EnergyStored", 0)));
         ensureGasTank();
-    }
-
-    @Override
-    public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
-        return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
-    }
-
-    @Override
-    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        CompoundTag tag = super.getUpdateTag(registries);
-        tag.merge(this.saveCustomOnly(registries));
-        return tag;
     }
     
     @Override
@@ -319,6 +335,10 @@ public class AutoShopBlockEntity extends BlockEntity {
         return fluidTransferHandler;
     }
 
+    public net.neoforged.neoforge.transfer.energy.EnergyHandler getEnergyHandler() {
+        return energyHandler26;
+    }
+
     /** Mekanism {@code IChemicalHandler} for pipes / tubes (null if Mek absent). */
     @Nullable
     public Object getChemicalTransferHandler() {
@@ -339,10 +359,6 @@ public class AutoShopBlockEntity extends BlockEntity {
 
     public IEnergyStorage getEnergyStorage() {
         return energyStorage;
-    }
-
-    public net.neoforged.neoforge.transfer.energy.EnergyHandler getEnergyHandler() {
-        return energyHandler;
     }
 
     public int getEnergyStored() {
@@ -376,8 +392,8 @@ public class AutoShopBlockEntity extends BlockEntity {
         return pendingGasId;
     }
 
-    public ShopEntry.EntryType getSelectedEntryType() {
-        return selectedEntryType;
+    public Identifier getSelectedTypeId() {
+        return selectedTypeId;
     }
 
     public void dumpFluidTankContents() {
@@ -388,6 +404,10 @@ public class AutoShopBlockEntity extends BlockEntity {
     }
 
     public void dumpGasTankContents() {
+        if (MekChemicalHelper.isRadioactiveInTank(gasTank)
+                || MekChemicalHelper.isRadioactiveGasId(pendingGasId)) {
+            return;
+        }
         boolean changed = MekChemicalHelper.dumpTank(gasTank);
         if (pendingGasAmount > 0) {
             pendingGasAmount = 0;
@@ -400,7 +420,7 @@ public class AutoShopBlockEntity extends BlockEntity {
     }
 
     private boolean isFluidValidForSelection(FluidStack stack) {
-        if (stack.isEmpty() || selectedEntryType != ShopEntry.EntryType.FLUID) {
+        if (stack.isEmpty() || !ShopEntryTypes.FLUID.equals(selectedTypeId)) {
             return true;
         }
         ShopEntry entry = getBoundEntry();
@@ -433,17 +453,14 @@ public class AutoShopBlockEntity extends BlockEntity {
             return;
         }
         int amount = Math.max(1, entry.amount);
-        switch (entry.type) {
-            case FLUID -> {
-                resizeFluidTank(amount);
-                resizeEnergy(0);
-            }
-            case GAS -> {
-                resizeGasTank(amount);
-                resizeEnergy(0);
-            }
-            case ITEM -> resizeEnergy(0);
-            case OTHER -> resizeEnergy(ShopOtherRegistry.isRf(entry.other) ? amount : 0);
+        if (ShopEntryTypes.isFluid(entry)) {
+            resizeFluidTank(amount);
+            resizeEnergy(0);
+        } else if (ShopEntryTypes.isGas(entry)) {
+            resizeGasTank(amount);
+            resizeEnergy(0);
+        } else {
+            resizeEnergy(ShopEntryTypes.isRf(entry) ? amount : 0);
         }
     }
 
@@ -464,7 +481,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         if (!MekChemicalHelper.isLoaded()) {
             return;
         }
-        // Prefer recreate (capacity fixed at creation on many Mek builds); preserve contents.
+        // BasicChemicalTank capacity is fixed at creation — recreate while preserving contents.
         String keepId = "";
         long keepAmt = 0L;
         if (gasTank != null) {
@@ -480,7 +497,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             MekChemicalHelper.fill(gasTank, restack, false);
         }
     }
-
+    
     /** Returns the read-only filter display handler (ghost slot: display only, no put/take). */
     public IItemHandler getFilterDisplayHandler() {
         return filterDisplayHandler;
@@ -593,14 +610,11 @@ public class AutoShopBlockEntity extends BlockEntity {
             // Create a copy of the item with count 1, preserving NBT
             this.selectedItem = item.copy();
             this.selectedItem.setCount(1);
-            
-
         }
         this.selectedShopEntryId = "";
-        this.selectedEntryType = ShopEntry.EntryType.ITEM;
+        this.selectedTypeId = ShopEntryTypes.ITEM;
         // Do not resize fluid/gas buffers when selecting an item — buffers are independent.
         resizeEnergy(0);
-
         
         setChanged();
     }
@@ -611,7 +625,7 @@ public class AutoShopBlockEntity extends BlockEntity {
 
     public void applyPickerSelection(ItemStack item, String currencyId, boolean buyMode, String entryId) {
         ShopEntry entry = entryId != null ? net.unfamily.iskautils.shop.ShopLoader.getEntries().get(entryId) : null;
-        this.selectedEntryType = entry != null ? entry.type : ShopEntry.EntryType.ITEM;
+        this.selectedTypeId = entry != null && entry.typeId != null ? entry.typeId : ShopEntryTypes.ITEM;
         this.selectedItem = item == null ? ItemStack.EMPTY : item.copy();
         if (!this.selectedItem.isEmpty()) {
             this.selectedItem.setCount(1);
@@ -630,7 +644,7 @@ public class AutoShopBlockEntity extends BlockEntity {
     public void clearSelectedItem() {
         this.selectedItem = ItemStack.EMPTY;
         this.selectedShopEntryId = "";
-        this.selectedEntryType = ShopEntry.EntryType.ITEM;
+        this.selectedTypeId = ShopEntryTypes.ITEM;
         // Leave buffer contents/capacities intact; only clear the shop selection.
         resizeEnergy(0);
         setChanged();
@@ -681,8 +695,8 @@ public class AutoShopBlockEntity extends BlockEntity {
         
         // If there's a saved team, check that the player still belongs to that team
         if (level != null && !level.isClientSide()) {
-            net.unfamily.iskalib.team.ShopTeamManager teamManager =
-                net.unfamily.iskalib.team.ShopTeamManager.getInstance((net.minecraft.server.level.ServerLevel) player.level());
+            net.unfamily.iskalib.team.ShopTeamManager teamManager = 
+                net.unfamily.iskalib.team.ShopTeamManager.getInstance(((net.minecraft.server.level.ServerLevel) player.level()));
             
             // Get player's team
             String playerTeamName = teamManager.getPlayerTeam(player);
@@ -715,13 +729,10 @@ public class AutoShopBlockEntity extends BlockEntity {
         return false;
     }
     
-    /**
-     * Searches for a ShopEntry with an exact ItemStack match (same item and components).
-     */
     private static net.unfamily.iskautils.shop.ShopEntry findEntryForItemExact(ItemStack templateItem, String boundEntryId) {
         if (boundEntryId != null && !boundEntryId.isEmpty()) {
             net.unfamily.iskautils.shop.ShopEntry bound = net.unfamily.iskautils.shop.ShopLoader.getEntries().get(boundEntryId);
-            if (bound != null && bound.type == ShopEntry.EntryType.ITEM
+            if (ShopEntryTypes.isItem(bound)
                     && ShopEntryHelper.matchesItem(templateItem, bound.item)) {
                 return bound;
             }
@@ -729,7 +740,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         Map<String, net.unfamily.iskautils.shop.ShopEntry> allEntries = net.unfamily.iskautils.shop.ShopLoader.getEntries();
         for (Map.Entry<String, net.unfamily.iskautils.shop.ShopEntry> entryMap : allEntries.entrySet()) {
             net.unfamily.iskautils.shop.ShopEntry entry = entryMap.getValue();
-            if (entry.type == ShopEntry.EntryType.ITEM && ShopEntryHelper.matchesItem(templateItem, entry.item)) {
+            if (ShopEntryTypes.isItem(entry) && ShopEntryHelper.matchesItem(templateItem, entry.item)) {
                 return entry;
             }
         }
@@ -769,31 +780,56 @@ public class AutoShopBlockEntity extends BlockEntity {
         return true;
     }
 
+    private boolean canAutoTrade(ShopEntry entry, net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide side,
+                                 String teamKey, int units) {
+        if (!(level instanceof net.minecraft.server.level.ServerLevel serverLevel)) {
+            return false;
+        }
+        return net.unfamily.iskautils.shop.ShopPurchaseLimitsData.get(serverLevel).canTrade(
+                serverLevel, placedByPlayer, teamKey, entry, side, units);
+    }
+
+    private void recordAutoTrade(ShopEntry entry, net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide side,
+                                 String teamKey, int units) {
+        if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            net.unfamily.iskautils.shop.ShopPurchaseLimitsData.get(serverLevel).recordTrade(
+                    serverLevel, placedByPlayer, teamKey, entry, side, units);
+        }
+    }
+
     private static void processTypedEntry(AutoShopBlockEntity entity, ShopEntry entry,
                                           net.unfamily.iskalib.team.ShopTeamManager teamManager,
                                           String teamKey, String currencyId,
                                           net.unfamily.iskalib.stage.StageRegistry registry,
                                           ServerPlayer placerPlayer) {
-        if (entry == null || entry.type == ShopEntry.EntryType.ITEM || entry.amount <= 0) {
+        if (entry == null || ShopEntryTypes.isItem(entry) || entry.amount <= 0) {
             return;
         }
         String entryCurrency = entry.valute != null ? entry.valute : "null_coin";
         if (!entryCurrency.equals(currencyId) || !stagesMet(entry, registry, placerPlayer, teamKey)) {
             return;
         }
-
         if (!entity.isAutoBuyMode()) {
             if (!ShopEntryHelper.isSellAllowed(entry) || !entity.hasTypedAmount(entry)) {
                 return;
             }
+            if (!entity.canAutoTrade(entry,
+                    net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.SELL, teamKey, 1)) {
+                return;
+            }
             if (entity.extractTyped(entry)) {
                 teamManager.addTeamValutes(teamKey, currencyId, entry.sell);
+                entity.recordAutoTrade(entry,
+                        net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.SELL, teamKey, 1);
                 entity.setChanged();
             }
             return;
         }
-
         if (!ShopEntryHelper.isBuyAllowed(entry) || !entity.canInsertTyped(entry)) {
+            return;
+        }
+        if (!entity.canAutoTrade(entry,
+                net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.BUY, teamKey, 1)) {
             return;
         }
         double cost = entry.free ? 0 : entry.buy;
@@ -801,97 +837,137 @@ public class AutoShopBlockEntity extends BlockEntity {
                 || !teamManager.removeTeamValutes(teamKey, currencyId, cost)) {
             return;
         }
-        if (!entity.insertTyped(entry) && cost > 0) {
-            teamManager.addTeamValutes(teamKey, currencyId, cost);
+        if (!entity.insertTyped(entry)) {
+            if (cost > 0) {
+                teamManager.addTeamValutes(teamKey, currencyId, cost);
+            }
+        } else {
+            entity.recordAutoTrade(entry,
+                    net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.BUY, teamKey, 1);
         }
     }
 
     private boolean hasTypedAmount(ShopEntry entry) {
-        return switch (entry.type) {
-            case FLUID -> fluidTank.getFluidAmount() >= entry.amount
+        if (ShopEntryTypes.isFluid(entry)) {
+            return fluidTank.getFluidAmount() >= entry.amount
                     && ShopEntryHelper.matchesFluid(fluidTank.getFluid(), entry.fluid);
-            case GAS -> getGasAmount() >= entry.amount
+        }
+        if (ShopEntryTypes.isGas(entry)) {
+            return getGasAmount() >= entry.amount
                     && ShopEntryHelper.matchesGas(MekChemicalHelper.getChemicalInTank(gasTank, 0), entry.gas);
-            case OTHER -> ShopOtherRegistry.isRf(entry.other)
-                    && energyStorage.getEnergyStored() >= entry.amount;
-            case ITEM -> false;
-        };
+        }
+        return ShopEntryTypes.isRf(entry) && energyStorage.getEnergyStored() >= entry.amount;
     }
 
     private boolean extractTyped(ShopEntry entry) {
-        return switch (entry.type) {
-            case FLUID -> fluidTank.drain(entry.amount, IFluidHandler.FluidAction.EXECUTE).getAmount() == entry.amount;
-            case GAS -> MekChemicalHelper.extractFromTank(gasTank, entry.amount) == entry.amount;
-            case OTHER -> ShopOtherRegistry.isRf(entry.other)
-                    && energyStorage.extractEnergy(entry.amount, false) == entry.amount;
-            case ITEM -> false;
-        };
+        if (ShopEntryTypes.isFluid(entry)) {
+            return fluidTank.drain(entry.amount, IFluidHandler.FluidAction.EXECUTE).getAmount() == entry.amount;
+        }
+        if (ShopEntryTypes.isGas(entry)) {
+            return MekChemicalHelper.extractFromTank(gasTank, entry.amount) == entry.amount;
+        }
+        return ShopEntryTypes.isRf(entry)
+                && energyStorage.extractEnergy(entry.amount, false) == entry.amount;
     }
 
     private boolean canInsertTyped(ShopEntry entry) {
         // Like the item encapsulated slot: buy only when the tank is empty.
-        return switch (entry.type) {
-            case FLUID -> {
-                if (!fluidTank.isEmpty()) {
-                    yield false;
-                }
-                var fluid = ShopEntryHelper.resolveFluid(entry.fluid);
-                yield fluid != null && fluidTank.fill(new FluidStack(fluid, entry.amount),
-                        IFluidHandler.FluidAction.SIMULATE) == entry.amount;
+        if (ShopEntryTypes.isFluid(entry)) {
+            if (!fluidTank.isEmpty()) {
+                return false;
             }
-            case GAS -> {
-                ensureGasTank();
-                if (getGasAmount() > 0) {
-                    yield false;
-                }
-                Object stack = MekChemicalHelper.createStackFromId(entry.gas, entry.amount);
-                yield stack != null && MekChemicalHelper.fill(gasTank, stack, true) == entry.amount;
+            var fluid = ShopEntryHelper.resolveFluid(entry.fluid);
+            return fluid != null && fluidTank.fill(new FluidStack(fluid, entry.amount),
+                    IFluidHandler.FluidAction.SIMULATE) == entry.amount;
+        }
+        if (ShopEntryTypes.isGas(entry)) {
+            ensureGasTank();
+            if (getGasAmount() > 0) {
+                return false;
             }
-            case OTHER -> ShopOtherRegistry.isRf(entry.other)
-                    && energyStorage.getEnergyStored() == 0
-                    && energyStorage.receiveEnergy(entry.amount, true) == entry.amount;
-            case ITEM -> false;
-        };
+            Object stack = MekChemicalHelper.createStackFromId(entry.gas, entry.amount);
+            return stack != null && MekChemicalHelper.fill(gasTank, stack, true) == entry.amount;
+        }
+        return ShopEntryTypes.isRf(entry)
+                && energyStorage.getEnergyStored() == 0
+                && energyStorage.receiveEnergy(entry.amount, true) == entry.amount;
     }
 
     private boolean insertTyped(ShopEntry entry) {
-        return switch (entry.type) {
-            case FLUID -> {
-                var fluid = ShopEntryHelper.resolveFluid(entry.fluid);
-                yield fluid != null && fluidTank.fill(new FluidStack(fluid, entry.amount),
-                        IFluidHandler.FluidAction.EXECUTE) == entry.amount;
-            }
-            case GAS -> {
-                Object stack = MekChemicalHelper.createStackFromId(entry.gas, entry.amount);
-                yield stack != null && MekChemicalHelper.fill(gasTank, stack, false) == entry.amount;
-            }
-            case OTHER -> ShopOtherRegistry.isRf(entry.other)
-                    && energyStorage.receiveEnergy(entry.amount, false) == entry.amount;
-            case ITEM -> false;
-        };
+        if (ShopEntryTypes.isFluid(entry)) {
+            var fluid = ShopEntryHelper.resolveFluid(entry.fluid);
+            return fluid != null && fluidTank.fill(new FluidStack(fluid, entry.amount),
+                    IFluidHandler.FluidAction.EXECUTE) == entry.amount;
+        }
+        if (ShopEntryTypes.isGas(entry)) {
+            Object stack = MekChemicalHelper.createStackFromId(entry.gas, entry.amount);
+            return stack != null && MekChemicalHelper.fill(gasTank, stack, false) == entry.amount;
+        }
+        return ShopEntryTypes.isRf(entry)
+                && energyStorage.receiveEnergy(entry.amount, false) == entry.amount;
     }
-
+    
     /**
      * Bucket / fluid container: fill AutoShop tank from item, or fill empty container from tank.
+     * Colossal Resource Port pattern.
      */
     public boolean interactWithItemFluidHandler(ResourceHandler<FluidResource> itemHandler, Player player) {
         if (itemHandler == null || itemHandler.size() == 0) {
             return false;
         }
-        int moved = ResourceHandlerUtil.isEmpty(itemHandler)
-                ? ResourceHandlerUtil.move(fluidTransferHandler, itemHandler, resource -> true,
-                        Integer.MAX_VALUE, null)
-                : ResourceHandlerUtil.move(itemHandler, fluidTransferHandler, resource -> true,
-                        Integer.MAX_VALUE, null);
-        if (moved > 0) {
-            setChanged();
-            return true;
+        for (int slot = 0; slot < itemHandler.size(); slot++) {
+            FluidResource resource = itemHandler.getResource(slot);
+            int amount = itemHandler.getAmountAsInt(slot);
+            if (!resource.isEmpty() && amount > 0) {
+                FluidStack inItem = resource.toStack(amount);
+                int accepted = fluidTank.fill(inItem, IFluidHandler.FluidAction.SIMULATE);
+                if (accepted > 0) {
+                    try (Transaction transaction = Transaction.openRoot()) {
+                        int extracted = itemHandler.extract(slot, resource, accepted, transaction);
+                        if (extracted <= 0) {
+                            return false;
+                        }
+                        int filled = fluidTank.fill(resource.toStack(extracted), IFluidHandler.FluidAction.EXECUTE);
+                        if (filled != extracted) {
+                            fluidTank.drain(filled, IFluidHandler.FluidAction.EXECUTE);
+                            return false;
+                        }
+                        transaction.commit();
+                    }
+                    resource.getFluid().getPickupSound().ifPresent(player::playSound);
+                    setChanged();
+                    return true;
+                }
+                return false;
+            }
+        }
+        FluidStack inBlock = fluidTank.getFluid();
+        if (!inBlock.isEmpty()) {
+            FluidResource resource = FluidResource.of(inBlock);
+            int inserted;
+            try (Transaction transaction = Transaction.openRoot()) {
+                inserted = itemHandler.insert(resource, inBlock.getAmount(), transaction);
+                if (inserted <= 0) {
+                    return false;
+                }
+                fluidTank.drain(inserted, IFluidHandler.FluidAction.EXECUTE);
+                transaction.commit();
+            }
+            if (inserted > 0) {
+                var soundEvent = inBlock.getFluid().getFluidType()
+                        .getSound(net.neoforged.neoforge.common.SoundActions.BUCKET_EMPTY);
+                if (soundEvent != null) {
+                    player.playSound(soundEvent);
+                }
+                setChanged();
+                return true;
+            }
         }
         return false;
     }
 
     /**
-     * Chemical tanks / gas cells: same deposit/withdraw idea as fluid buckets when Mekanism is loaded.
+     * Chemical tanks / gas cells: same deposit/withdraw idea as fluid buckets when Mek is loaded.
      */
     public boolean interactWithItemChemicalHandler(ItemStack singleItem, Player player) {
         if (!MekChemicalHelper.isLoaded() || singleItem == null || singleItem.isEmpty()) {
@@ -1006,7 +1082,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             return false;
         }
 
-        if (entry.type == ShopEntry.EntryType.ITEM) {
+        if (ShopEntryTypes.isItem(entry)) {
             String entryId = selectedShopEntryId != null && !selectedShopEntryId.isEmpty()
                     ? selectedShopEntryId
                     : entry.id;
@@ -1017,18 +1093,32 @@ public class AutoShopBlockEntity extends BlockEntity {
                 if (ShopEntryHelper.isTagEntry(entry) || !ShopEntryHelper.isBuyAllowed(entry)) {
                     return false;
                 }
-                return net.unfamily.iskautils.shop.ShopTransactionManager.buyItem(player, entryId, quantity);
+                return net.unfamily.iskautils.shop.ShopTransactionManager.buyItem(
+                        player, entryId, quantity, placedByPlayer, teamKey);
             }
             if (!ShopEntryHelper.isSellAllowed(entry)) {
                 return false;
             }
-            return net.unfamily.iskautils.shop.ShopTransactionManager.sellItem(player, entryId, quantity);
+            return net.unfamily.iskautils.shop.ShopTransactionManager.sellItem(
+                    player, entryId, quantity, placedByPlayer, teamKey);
         }
 
-        if (isAutoBuyMode()) {
-            return processManualTypedBuy(entry, teamManager, teamKey, currencyId, quantity);
+        net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide side = isAutoBuyMode()
+                ? net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.BUY
+                : net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.SELL;
+        if (!canAutoTrade(entry, side, teamKey, quantity)) {
+            return false;
         }
-        return processManualTypedSell(entry, teamManager, teamKey, currencyId, quantity);
+        boolean traded;
+        if (isAutoBuyMode()) {
+            traded = processManualTypedBuy(entry, teamManager, teamKey, currencyId, quantity);
+        } else {
+            traded = processManualTypedSell(entry, teamManager, teamKey, currencyId, quantity);
+        }
+        if (traded) {
+            recordAutoTrade(entry, side, teamKey, quantity);
+        }
+        return traded;
     }
 
     @Nullable
@@ -1054,7 +1144,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         int totalAmount = unit * quantity;
         double cost = entry.free ? 0 : entry.buy * quantity;
 
-        if (entry.type == ShopEntry.EntryType.FLUID) {
+        if (ShopEntryTypes.isFluid(entry)) {
             if (!fluidTank.isEmpty()) {
                 return false;
             }
@@ -1078,7 +1168,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             return true;
         }
 
-        if (entry.type == ShopEntry.EntryType.GAS) {
+        if (ShopEntryTypes.isGas(entry)) {
             ensureGasTank();
             if (gasTank == null || getGasAmount() > 0) {
                 return false;
@@ -1102,7 +1192,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             setChanged();
             return true;
         }
-        if (entry.type == ShopEntry.EntryType.OTHER && ShopOtherRegistry.isRf(entry.other)) {
+        if (ShopEntryTypes.isRf(entry)) {
             if (energyStorage.getEnergyStored() > 0) {
                 return false;
             }
@@ -1132,15 +1222,15 @@ public class AutoShopBlockEntity extends BlockEntity {
         }
         int unit = entry.amount;
 
-        if (entry.type == ShopEntry.EntryType.FLUID) {
+        if (ShopEntryTypes.isFluid(entry)) {
             if (!ShopEntryHelper.matchesFluid(fluidTank.getFluid(), entry.fluid)) {
                 return false;
             }
             int availableUnits = fluidTank.getFluidAmount() / unit;
-            int units = Math.min(quantity, availableUnits);
-            if (units <= 0) {
+            if (availableUnits < quantity) {
                 return false;
             }
+            int units = quantity;
             int extract = units * unit;
             if (fluidTank.drain(extract, IFluidHandler.FluidAction.EXECUTE).getAmount() != extract) {
                 return false;
@@ -1150,17 +1240,17 @@ public class AutoShopBlockEntity extends BlockEntity {
             return true;
         }
 
-        if (entry.type == ShopEntry.EntryType.GAS) {
+        if (ShopEntryTypes.isGas(entry)) {
             ensureGasTank();
             Object inTank = MekChemicalHelper.getChemicalInTank(gasTank, 0);
             if (!ShopEntryHelper.matchesGas(inTank, entry.gas)) {
                 return false;
             }
             long availableUnits = getGasAmount() / unit;
-            int units = (int) Math.min(quantity, availableUnits);
-            if (units <= 0) {
+            if (availableUnits < quantity) {
                 return false;
             }
+            int units = quantity;
             int extract = units * unit;
             if (MekChemicalHelper.extractFromTank(gasTank, extract) != extract) {
                 return false;
@@ -1169,12 +1259,12 @@ public class AutoShopBlockEntity extends BlockEntity {
             setChanged();
             return true;
         }
-        if (entry.type == ShopEntry.EntryType.OTHER && ShopOtherRegistry.isRf(entry.other)) {
+        if (ShopEntryTypes.isRf(entry)) {
             int availableUnits = energyStorage.getEnergyStored() / unit;
-            int units = Math.min(quantity, availableUnits);
-            if (units <= 0) {
+            if (availableUnits < quantity) {
                 return false;
             }
+            int units = quantity;
             int extract = units * unit;
             if (energyStorage.extractEnergy(extract, false) != extract) {
                 return false;
@@ -1239,7 +1329,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             return false;
         }
         ShopEntry boundEntry = getBoundEntry();
-        if (boundEntry != null && boundEntry.type != ShopEntry.EntryType.ITEM) {
+        if (boundEntry != null && !ShopEntryTypes.isItem(boundEntry)) {
             net.unfamily.iskalib.stage.StageRegistry registry =
                     net.unfamily.iskalib.stage.StageRegistry.getInstance(serverLevel.getServer());
             int beforeFluid = fluidTank.getFluidAmount();
@@ -1280,6 +1370,10 @@ public class AutoShopBlockEntity extends BlockEntity {
             if (!stagesMet(entry, registry, placerPlayer, teamKey)) {
                 return false;
             }
+            if (!canAutoTrade(entry,
+                    net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.SELL, teamKey, 1)) {
+                return false;
+            }
             if (stack.getCount() < entry.amount) {
                 return false;
             }
@@ -1288,12 +1382,15 @@ public class AutoShopBlockEntity extends BlockEntity {
                 return false;
             }
             teamManager.addTeamValutes(teamKey, currencyId, entry.sell);
+            recordAutoTrade(entry,
+                    net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.SELL, teamKey, 1);
             setChanged();
             return true;
         }
 
         ItemStackHandler slot = getEncapsulatedSlot();
-        if (!slot.getStackInSlot(0).isEmpty()) {
+        ItemStack stack = slot.getStackInSlot(0);
+        if (!stack.isEmpty()) {
             return false;
         }
         ItemStack selectedStack = getSelectedItem();
@@ -1313,12 +1410,16 @@ public class AutoShopBlockEntity extends BlockEntity {
         if (!stagesMet(entry, registry, placerPlayer, teamKey)) {
             return false;
         }
+        if (!canAutoTrade(entry,
+                net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.BUY, teamKey, 1)) {
+            return false;
+        }
         double cost = entry.free ? 0 : entry.buy;
         if (teamManager.getTeamValuteBalance(teamKey, currencyId) < cost
                 || !teamManager.removeTeamValutes(teamKey, currencyId, cost)) {
             return false;
         }
-        ItemStack itemToCreate = net.unfamily.iskautils.shop.ItemConverter.parseItemString(entry.item, entry.amount);
+        ItemStack itemToCreate = net.unfamily.iskalib.item.ItemConverter.parseItemString(entry.item, entry.amount);
         if (itemToCreate.isEmpty()) {
             if (cost > 0) {
                 teamManager.addTeamValutes(teamKey, currencyId, cost);
@@ -1326,6 +1427,8 @@ public class AutoShopBlockEntity extends BlockEntity {
             return false;
         }
         slot.setStackInSlot(0, itemToCreate);
+        recordAutoTrade(entry,
+                net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.BUY, teamKey, 1);
         setChanged();
         return true;
     }
@@ -1360,50 +1463,6 @@ public class AutoShopBlockEntity extends BlockEntity {
                 AutoShopBlockEntity.this.setChanged();
             }
             return extracted;
-        }
-    }
-
-    private final class EnergyHandlerImpl
-            extends net.neoforged.neoforge.transfer.transaction.SnapshotJournal<Integer>
-            implements net.neoforged.neoforge.transfer.energy.EnergyHandler {
-        @Override
-        protected Integer createSnapshot() {
-            return energyStorage.getEnergyStored();
-        }
-
-        @Override
-        protected void revertToSnapshot(Integer snapshot) {
-            energyStorage.setEnergy(snapshot);
-        }
-
-        @Override
-        public long getAmountAsLong() {
-            return energyStorage.getEnergyStored();
-        }
-
-        @Override
-        public long getCapacityAsLong() {
-            return energyStorage.getMaxEnergyStored();
-        }
-
-        @Override
-        public int insert(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
-            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
-            if (amount == 0 || energyStorage.getMaxEnergyStored() <= 0) {
-                return 0;
-            }
-            updateSnapshots(transaction);
-            return energyStorage.receiveEnergy(amount, false);
-        }
-
-        @Override
-        public int extract(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
-            net.neoforged.neoforge.transfer.TransferPreconditions.checkNonNegative(amount);
-            if (amount == 0 || energyStorage.getMaxEnergyStored() <= 0) {
-                return 0;
-            }
-            updateSnapshots(transaction);
-            return energyStorage.extractEnergy(amount, false);
         }
     }
 } 

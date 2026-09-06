@@ -9,7 +9,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 
@@ -34,7 +33,7 @@ public class ShopLoader {
     private static final Map<String, Boolean> PROTECTED_CURRENCIES = new HashMap<>();
     private static final Map<String, Boolean> PROTECTED_CATEGORIES = new HashMap<>();
     private static final Map<String, Boolean> PROTECTED_ENTRIES = new HashMap<>();
-    
+
     public static void loadAll(ResourceManager resourceManagerOrNull) {
         try {
             CURRENCIES.clear();
@@ -69,24 +68,9 @@ public class ShopLoader {
         loadAll(null);
     }
 
-    private static String normalizeType(String type) {
-        if (type == null) {
-            return "";
-        }
-        String t = type.trim();
-        if (t.isEmpty()) {
-            return "";
-        }
-        // Backward compatibility: accept un-namespaced shop types
-        if (!t.contains(":")) {
-            return "iska_utils:" + t;
-        }
-        return t;
-    }
-
     private static void ingestShopJson(String fileName, JsonObject json) {
         try {
-            String type = normalizeType(json.has("type") ? json.get("type").getAsString() : "");
+            String type = json.has("type") ? json.get("type").getAsString() : "";
             boolean overwritable = json.has("overwritable") && json.get("overwritable").getAsBoolean();
             switch (type) {
                 case "iska_lib:shop_currency":
@@ -187,25 +171,32 @@ public class ShopLoader {
             
             JsonObject entryObj = element.getAsJsonObject();
             String id = entryObj.has("id") ? entryObj.get("id").getAsString() : null;
-            ShopEntry.EntryType entryType = ShopEntryHelper.parseType(
+            Identifier entryTypeId = ShopEntryHelper.parseTypeId(
                     entryObj.has("type") ? entryObj.get("type").getAsString() : null);
-            String item = entryObj.has("item") ? entryObj.get("item").getAsString() : null;
-            String fluid = entryObj.has("fluid") ? entryObj.get("fluid").getAsString() : null;
-            String gas = entryObj.has("gas") ? entryObj.get("gas").getAsString() : null;
-            String other = entryObj.has("other") ? entryObj.get("other").getAsString() : null;
-            String category = entryObj.has("in_category") ? entryObj.get("in_category").getAsString() : null;
-
-            String resourceForKey = switch (entryType) {
-                case FLUID -> fluid;
-                case GAS -> gas;
-                case OTHER -> other;
-                case ITEM -> item;
-            };
-            if (resourceForKey == null || resourceForKey.trim().isEmpty()) {
-                LOGGER.warn("Entry without valid resource for type {} found in {}", entryType, fileName);
+            if (entryTypeId == null) {
+                LOGGER.warn("Skipping shop entry {} in {}: invalid or unknown type", id, fileName);
                 continue;
             }
-            
+            ShopEntryTypeHandler typeHandler = ShopEntryTypeRegistry.get(entryTypeId);
+            if (typeHandler == null) {
+                LOGGER.warn("Skipping shop entry {} in {}: no handler for {}", id, fileName, entryTypeId);
+                continue;
+            }
+            String category = entryObj.has("in_category") ? entryObj.get("in_category").getAsString() : null;
+
+            ShopEntry entry = new ShopEntry();
+            entry.typeId = entryTypeId;
+            typeHandler.readExtras(entryObj, entry);
+
+            String resourceForKey = typeHandler.resourceSelector(entry);
+            if ((resourceForKey == null || resourceForKey.isBlank()) && typeHandler.usesResourceSelector()) {
+                LOGGER.warn("Entry without valid resource for type {} found in {}", entryTypeId, fileName);
+                continue;
+            }
+            if (resourceForKey == null || resourceForKey.isBlank()) {
+                resourceForKey = entryTypeId.toString();
+            }
+
             String entryKey;
             if (id != null && !id.trim().isEmpty()) {
                 entryKey = id.trim();
@@ -214,19 +205,13 @@ public class ShopLoader {
                 entryKey = category != null ? category + ":" + baseItemId : baseItemId;
                 LOGGER.warn("Entry without ID found in {}, using fallback key: {}", fileName, entryKey);
             }
-            
+
             if (PROTECTED_ENTRIES.containsKey(entryKey) && PROTECTED_ENTRIES.get(entryKey)) {
                 continue;
             }
-            
-            ShopEntry entry = new ShopEntry();
+
             entry.id = entryKey;
             entry.inCategory = category;
-            entry.type = entryType;
-            entry.item = item;
-            entry.fluid = fluid;
-            entry.gas = gas;
-            entry.other = other;
             int amount = 1;
             if (entryObj.has("amount")) {
                 amount = entryObj.get("amount").getAsInt();
@@ -249,11 +234,12 @@ public class ShopLoader {
             entry.sell = entryObj.has("sell") ? entryObj.get("sell").getAsDouble() : 0.0;
             entry.priority = entryObj.has("priority") ? entryObj.get("priority").getAsInt() : 0;
             entry.free = entryObj.has("free") && entryObj.get("free").getAsBoolean();
-            
+            ShopRepeatableRule.readEntryRules(entryObj, entry);
+
             if (entryObj.has("stages") && entryObj.get("stages").isJsonArray()) {
                 JsonArray stagesArray = entryObj.get("stages").getAsJsonArray();
                 entry.stages = new ShopStage[stagesArray.size()];
-                
+
                 for (int i = 0; i < stagesArray.size(); i++) {
                     JsonElement stageElement = stagesArray.get(i);
                     if (stageElement.isJsonObject()) {
@@ -270,16 +256,20 @@ public class ShopLoader {
             if (!ShopEntryHelper.validateEntry(entry, fileName)) {
                 continue;
             }
-            
+
             ENTRIES.put(entryKey, entry);
             PROTECTED_ENTRIES.put(entryKey, !overwritable);
         }
     }
-    
 
     public static void reloadAllConfigurations() {
-        var server = ServerLifecycleHooks.getCurrentServer();
-        loadAll(server != null ? server.getResourceManager() : null);
+
+        
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        var rm = server != null ? server.getResourceManager() : null;
+        loadAll(rm);
+        
+
     }
     
     // Getter methods

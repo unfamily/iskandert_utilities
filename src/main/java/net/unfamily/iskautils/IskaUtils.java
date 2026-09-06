@@ -185,6 +185,7 @@ public class IskaUtils {
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("IskaUtils common setup");
 
+        net.unfamily.iskautils.shop.ShopEntryTypeRegistry.ensureBuiltins();
         net.unfamily.iskautils.arcane.ArcaneDictionaryEffectsInit.registerBuiltins();
         net.unfamily.iskautils.arcane.ArcaneDictionaryLoader.loadAllBootstrap();
         

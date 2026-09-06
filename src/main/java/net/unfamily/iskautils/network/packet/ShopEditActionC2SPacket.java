@@ -14,6 +14,11 @@ import net.unfamily.iskautils.client.gui.ShopEditMenu;
 import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
+import net.unfamily.iskautils.shop.ShopEntryHelper;
+import net.unfamily.iskautils.shop.ShopEntryTypeHandler;
+import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypes;
+import net.unfamily.iskautils.shop.ShopRepeatableRule;
 import net.unfamily.iskautils.shop.ShopStage;
 import net.unfamily.iskautils.shop.edit.ShopEditSession;
 import net.unfamily.iskautils.shop.edit.ShopEditWorkspace;
@@ -21,7 +26,6 @@ import net.unfamily.iskautils.shop.edit.ShopEditWorkspace;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -78,13 +82,13 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
                     data.currencies.remove(oldId);
                 }
                 data.currencies.put(c.id, c);
-                ShopEditSession.autosaveCurrencies(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
+                ShopEditSession.autosaveCurrencies(player.level().getServer());
                 handleRename(data, "currency", oldId, c.id, payload, player);
             }
             case "delete_currency" -> {
                 String id = payload.get("id").getAsString();
                 data.currencies.remove(id);
-                ShopEditSession.autosaveCurrencies(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
+                ShopEditSession.autosaveCurrencies(player.level().getServer());
             }
             case "upsert_category" -> {
                 ShopCategory c = readCategory(payload);
@@ -96,13 +100,13 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
                     data.categories.remove(oldId);
                 }
                 data.categories.put(c.id, c);
-                ShopEditSession.autosaveCategories(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
+                ShopEditSession.autosaveCategories(player.level().getServer());
                 handleRename(data, "category", oldId, c.id, payload, player);
             }
             case "delete_category" -> {
                 String id = payload.get("id").getAsString();
                 data.categories.remove(id);
-                ShopEditSession.autosaveCategories(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
+                ShopEditSession.autosaveCategories(player.level().getServer());
             }
             case "upsert_entry" -> {
                 ShopEntry e = readEntry(payload);
@@ -114,12 +118,12 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
                     data.entries.remove(oldId);
                 }
                 data.entries.put(e.id, e);
-                ShopEditSession.autosaveEntries(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
+                ShopEditSession.autosaveEntries(player.level().getServer());
             }
             case "delete_entry" -> {
                 String id = payload.get("id").getAsString();
                 data.entries.remove(id);
-                ShopEditSession.autosaveEntries(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
+                ShopEditSession.autosaveEntries(player.level().getServer());
             }
             case "rename_resolve" -> {
                 String kind = payload.get("kind").getAsString();
@@ -166,7 +170,7 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
                         e.inCategory = newId;
                     }
                 }
-                ShopEditSession.autosaveEntries(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
+                ShopEditSession.autosaveEntries(player.level().getServer());
             } else if ("delete".equals(mode)) {
                 Iterator<Map.Entry<String, ShopEntry>> it = data.entries.entrySet().iterator();
                 while (it.hasNext()) {
@@ -174,7 +178,7 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
                         it.remove();
                     }
                 }
-                ShopEditSession.autosaveEntries(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
+                ShopEditSession.autosaveEntries(player.level().getServer());
             }
         } else if ("currency".equals(kind)) {
             if ("propagate".equals(mode)) {
@@ -184,7 +188,7 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
                         e.valute = newId;
                     }
                 }
-                ShopEditSession.autosaveEntries(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
+                ShopEditSession.autosaveEntries(player.level().getServer());
             } else if ("delete".equals(mode)) {
                 Iterator<Map.Entry<String, ShopEntry>> it = data.entries.entrySet().iterator();
                 while (it.hasNext()) {
@@ -193,7 +197,7 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
                         it.remove();
                     }
                 }
-                ShopEditSession.autosaveEntries(((net.minecraft.server.level.ServerLevel) player.level()).getServer());
+                ShopEditSession.autosaveEntries(player.level().getServer());
             }
         }
     }
@@ -221,17 +225,12 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
         ShopEntry e = new ShopEntry();
         e.id = o.has("id") ? o.get("id").getAsString() : "";
         e.inCategory = o.has("in_category") ? o.get("in_category").getAsString() : "000_default";
-        String type = o.has("type") ? o.get("type").getAsString() : "item";
-        e.type = switch (type.toLowerCase(Locale.ROOT)) {
-            case "fluid" -> ShopEntry.EntryType.FLUID;
-            case "gas" -> ShopEntry.EntryType.GAS;
-            case "other" -> ShopEntry.EntryType.OTHER;
-            default -> ShopEntry.EntryType.ITEM;
-        };
-        e.item = o.has("item") ? o.get("item").getAsString() : null;
-        e.fluid = o.has("fluid") ? o.get("fluid").getAsString() : null;
-        e.gas = o.has("gas") ? o.get("gas").getAsString() : null;
-        e.other = o.has("other") ? o.get("other").getAsString() : null;
+        String type = o.has("type") ? o.get("type").getAsString() : ShopEntryTypes.ITEM.toString();
+        e.typeId = ShopEntryHelper.parseType(type);
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(e.typeId);
+        if (handler != null) {
+            handler.readExtras(o, e);
+        }
         e.amount = o.has("amount") ? Math.max(1, o.get("amount").getAsInt()) : 1;
         e.itemCount = e.amount;
         e.currency = o.has("currency") ? o.get("currency").getAsString() : "null_coin";
@@ -240,6 +239,7 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
         e.sell = o.has("sell") ? o.get("sell").getAsDouble() : 0;
         e.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
         e.free = o.has("free") && o.get("free").getAsBoolean();
+        ShopRepeatableRule.readEntryRules(o, e);
         if (o.has("stages") && o.get("stages").isJsonArray()) {
             List<ShopStage> stages = new ArrayList<>();
             for (var el : o.getAsJsonArray("stages")) {
