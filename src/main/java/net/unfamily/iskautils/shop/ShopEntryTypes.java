@@ -13,6 +13,7 @@ public final class ShopEntryTypes {
     public static final ResourceLocation RF = ShopEntryTypeRegistry.modId("rf");
     public static final ResourceLocation COMMAND = ShopEntryTypeRegistry.modId("command");
     public static final ResourceLocation STAGE = ShopEntryTypeRegistry.modId("stage");
+    public static final ResourceLocation CURRENCY = ShopEntryTypeRegistry.modId("currency");
 
     private ShopEntryTypes() {}
 
@@ -38,6 +39,10 @@ public final class ShopEntryTypes {
 
     public static boolean isStage(@Nullable ShopEntry entry) {
         return entry != null && STAGE.equals(entry.typeId);
+    }
+
+    public static boolean isCurrency(@Nullable ShopEntry entry) {
+        return entry != null && CURRENCY.equals(entry.typeId);
     }
 
     public static boolean equals(@Nullable ShopEntry entry, ResourceLocation id) {

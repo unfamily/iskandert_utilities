@@ -59,6 +59,13 @@ public class ShopLoader {
                 String fileName = IskaUtilsLoadJson.definitionIdFromLocation(e.getKey()) + ".json";
                 ingestShopJson(fileName, e.getValue().getAsJsonObject());
             }
+            // Empty KubeJS override can wipe Library defaults from the resource stack;
+            // re-seed any missing built-in currencies (null_coin) from the Library jar.
+            mergeMissingCurrenciesFromLibraryJar();
+            if (CURRENCIES.isEmpty()) {
+                LOGGER.warn("No shop currencies after load; seeding built-in null_coin");
+                seedBuiltinNullCoin();
+            }
         } catch (Exception e) {
             LOGGER.error("Error during shop load: {}", e.getMessage());
         }
@@ -123,6 +130,64 @@ public class ShopLoader {
             CURRENCIES.put(id, currency);
             PROTECTED_CURRENCIES.put(id, !overwritable);
         }
+    }
+
+    /**
+     * Adds currencies defined in the Library jar that are missing after datapack merge
+     * (e.g. empty KubeJS {@code default_currencies.json} overriding the stack).
+     * Does not replace currencies already present.
+     */
+    private static void mergeMissingCurrenciesFromLibraryJar() {
+        Map<ResourceLocation, JsonElement> jarShop = IskaUtilsLoadJson.collectFromModJarOnlyForMod(
+                "iska_lib", "iska_utils", IskaUtilsLoadPaths.SHOP);
+        for (var e : jarShop.entrySet()) {
+            if (!e.getValue().isJsonObject()) {
+                continue;
+            }
+            JsonObject json = e.getValue().getAsJsonObject();
+            String type = json.has("type") ? json.get("type").getAsString() : "";
+            if (!"iska_lib:shop_currency".equals(type)
+                    && !"iska_utils:shop_currency".equals(type)
+                    && !"iska_utils:shop_valute".equals(type)) {
+                continue;
+            }
+            if (!json.has("currencies") || !json.get("currencies").isJsonArray()) {
+                continue;
+            }
+            for (JsonElement element : json.getAsJsonArray("currencies")) {
+                if (!element.isJsonObject()) {
+                    continue;
+                }
+                JsonObject currencyObj = element.getAsJsonObject();
+                String id = currencyObj.has("id") ? currencyObj.get("id").getAsString() : null;
+                if (id == null || id.isBlank() || CURRENCIES.containsKey(id)) {
+                    continue;
+                }
+                ShopCurrency currency = new ShopCurrency();
+                currency.id = id;
+                currency.name = currencyObj.has("name") ? currencyObj.get("name").getAsString() : id;
+                currency.charSymbol = currencyObj.has("char_symbol")
+                        ? currencyObj.get("char_symbol").getAsString()
+                        : ShopCurrency.DEFAULT_SYMBOL;
+                currency.priority = currencyObj.has("priority") ? currencyObj.get("priority").getAsInt() : 0;
+                CURRENCIES.put(id, currency);
+                PROTECTED_CURRENCIES.put(id, false);
+                LOGGER.info("Restored missing built-in shop currency from Library jar: {}", id);
+            }
+        }
+    }
+
+    private static void seedBuiltinNullCoin() {
+        if (CURRENCIES.containsKey("null_coin")) {
+            return;
+        }
+        ShopCurrency currency = new ShopCurrency();
+        currency.id = "null_coin";
+        currency.name = "shop.currency.null_coin";
+        currency.charSymbol = "\u2205";
+        currency.priority = 0;
+        CURRENCIES.put("null_coin", currency);
+        PROTECTED_CURRENCIES.put("null_coin", false);
     }
     
     private static void processCategoriesFile(JsonObject json, boolean overwritable, String fileName) {

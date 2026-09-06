@@ -180,6 +180,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private Button freeButton;
     private Button typeButton;
     private Button currencyButton;
+    private Button targetCurrencyButton;
     private Button stageTypeButton;
     private Button stageIsButton;
     private Button stageAddButton;
@@ -242,7 +243,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         idBox = nameBox = descBox = resourceBox = symbolBox = null;
         amountBox = buyBox = sellBox = priorityBox = stageNameBox = displayBox = stringValueBox = null;
         repeatTimeBox = repeatDayBox = repeatMonthBox = repeatCountBox = null;
-        freeButton = typeButton = currencyButton = stageTypeButton = stageIsButton = stageAddButton = null;
+        freeButton = typeButton = currencyButton = targetCurrencyButton = stageTypeButton = stageIsButton = stageAddButton = null;
         repeatScopeButton = repeatWhenButton = iconCycleButton = null;
         if (subView != SubView.CATEGORY_EDIT && subView != SubView.ENTRY_EDIT) {
             menu.clearGhostStack();
@@ -736,6 +737,9 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 .bounds(leftPos + formColX(1, 2), topPos + 30, formColW(1, 2), 12).build());
 
         ShopEntryTypeHandler handler = ShopEntryTypeRegistry.require(draftEntry);
+        if (handler.usesCurrencyConvert()) {
+            ensureCurrencyConvertDefaults();
+        }
         if (handler.usesDisplayAndIcon()) {
             addLabel(FORM_LEFT, 44, "gui.iska_utils.shop_edit.field.display");
             int iconSize = 18;
@@ -752,6 +756,11 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         } else if (handler.usesResourceSelector()) {
             addLabel(FORM_LEFT, 44, "gui.iska_utils.shop_edit.field.resource");
             addResourceSelectorRow(54, resourceString(draftEntry), true);
+        }
+
+        if (handler.usesCurrencyConvert()) {
+            buildCurrencyConvertFields();
+            return;
         }
 
         int fieldRowY = handler.usesDisplayAndIcon() ? 76 : 76;
@@ -830,6 +839,41 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         }
     }
 
+    private void buildCurrencyConvertFields() {
+        // Keep the last action row at Y=112 (same as other entry types) so the red warning at Y=128 stays visible.
+        addLabel(formColX(0, 3), 76, "gui.iska_utils.shop_edit.field.from_currency");
+        currencyButton = addDyn(Button.builder(Component.literal(nullSafe(draftEntry.currency)), b -> cycleCurrency())
+                .bounds(leftPos + formColX(0, 3), topPos + 86, formColW(0, 3), 12).build());
+        addLabel(formColX(1, 3), 76, "gui.iska_utils.shop_edit.field.to_currency");
+        targetCurrencyButton = addDyn(Button.builder(Component.literal(nullSafe(draftEntry.targetCurrency)),
+                b -> cycleTargetCurrency())
+                .bounds(leftPos + formColX(1, 3), topPos + 86, formColW(1, 3), 12).build());
+        addLabel(formColX(2, 3), 76, "gui.iska_utils.shop_edit.field.priority");
+        priorityBox = addBox(formColX(2, 3), 86, formColW(2, 3), 12, String.valueOf(draftEntry.priority), 16);
+
+        addLabel(formColX(0, 4), 102, "gui.iska_utils.shop_edit.field.pay");
+        buyBox = addBox(formColX(0, 4), 112, formColW(0, 4), 12, formatNum(draftEntry.buy), 24);
+        addLabel(formColX(1, 4), 102, "gui.iska_utils.shop_edit.field.get");
+        amountBox = addBox(formColX(1, 4), 112, formColW(1, 4), 12, String.valueOf(draftEntry.amount), 16);
+        freeButton = addDyn(Button.builder(Component.translatable(
+                draftEntry.free ? "gui.iska_utils.shop_edit.field.free_on" : "gui.iska_utils.shop_edit.field.free_off"), b -> {
+            flushFormToDraft();
+            draftEntry.free = !draftEntry.free;
+            freeButton.setMessage(Component.translatable(
+                    draftEntry.free ? "gui.iska_utils.shop_edit.field.free_on" : "gui.iska_utils.shop_edit.field.free_off"));
+            autosaveCurrentForm(true);
+        }).bounds(leftPos + formColX(2, 4), topPos + 112, formColW(2, 4), 12).build());
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.rules"), b -> {
+            flushFormToDraft();
+            editingStageIndex = -1;
+            stageScrollOffset = 0;
+            subView = SubView.ENTRY_RULES;
+            rebuild();
+        }).bounds(leftPos + formColX(3, 4), topPos + 112, formColW(3, 4), 12)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.rules")))
+                .build());
+    }
+
     private void cycleEntryIcon() {
         if (draftEntry == null) {
             return;
@@ -845,6 +889,21 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         rebuild();
     }
 
+    private void ensureCurrencyConvertDefaults() {
+        if (draftEntry.currency == null || draftEntry.currency.isBlank()) {
+            draftEntry.currency = firstCurrencyId();
+            draftEntry.valute = draftEntry.currency;
+        }
+        if (draftEntry.targetCurrency == null || draftEntry.targetCurrency.isBlank()) {
+            draftEntry.targetCurrency = secondCurrencyId(draftEntry.currency);
+        }
+        if (draftEntry.amount < 1) {
+            draftEntry.amount = 1;
+            draftEntry.itemCount = 1;
+        }
+        draftEntry.sell = 0;
+    }
+
     /** Icon slot Y in entry edit (resource types only; command/stage have no slot). */
     private int entryIconSlotY() {
         return 53;
@@ -857,6 +916,25 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             return null;
         }
         ShopEntryTypeHandler handler = ShopEntryTypeRegistry.require(draftEntry);
+        if (handler.usesCurrencyConvert()) {
+            String source = draftEntry.currency != null ? draftEntry.currency : "";
+            String target = draftEntry.targetCurrency != null ? draftEntry.targetCurrency : "";
+            if (source.isBlank() || target.isBlank()) {
+                return Component.translatable("gui.iska_utils.shop_edit.warn.currency_pair");
+            }
+            if (source.equals(target)) {
+                return Component.translatable("gui.iska_utils.shop_edit.warn.currency_same");
+            }
+            double buy = buyBox != null ? parseDouble(buyBox.getValue(), draftEntry.buy) : draftEntry.buy;
+            int amount = amountBox != null ? parseInt(amountBox.getValue(), draftEntry.amount) : draftEntry.amount;
+            if (amount < 1) {
+                return Component.translatable("gui.iska_utils.shop_edit.warn.currency_amount");
+            }
+            if (!draftEntry.free && buy <= 0) {
+                return Component.translatable("gui.iska_utils.shop_edit.warn.no_trade");
+            }
+            return null;
+        }
         if (handler.usesResultButton()) {
             String display = displayBox != null ? displayBox.getValue().trim() : nullSafe(draftEntry.display);
             if (display.isBlank()) {
@@ -1717,6 +1795,9 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         }
         draftEntry.typeId = types.get((current + 1) % types.size()).id();
         applyResourceString(resourceString(draftEntry));
+        if (ShopEntryTypes.isCurrency(draftEntry)) {
+            ensureCurrencyConvertDefaults();
+        }
         if (typeButton != null) {
             typeButton.setMessage(Component.literal(typeLabel()));
         }
@@ -1746,6 +1827,27 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         draftEntry.valute = draftEntry.currency;
         if (currencyButton != null) {
             currencyButton.setMessage(Component.literal(draftEntry.currency));
+        }
+        autosaveCurrentForm(true);
+    }
+
+    private void cycleTargetCurrency() {
+        List<ShopCurrency> list = sortedCurrencies();
+        if (list.isEmpty() || draftEntry == null) {
+            return;
+        }
+        flushFormToDraft();
+        int idx = 0;
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).id.equals(draftEntry.targetCurrency)) {
+                idx = i;
+                break;
+            }
+        }
+        idx = (idx + 1) % list.size();
+        draftEntry.targetCurrency = list.get(idx).id;
+        if (targetCurrencyButton != null) {
+            targetCurrencyButton.setMessage(Component.literal(draftEntry.targetCurrency));
         }
         autosaveCurrentForm(true);
     }
@@ -1782,6 +1884,16 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
 
     private String firstCurrencyId() {
         return sortedCurrencies().stream().map(c -> c.id).findFirst().orElse("null_coin");
+    }
+
+    private String secondCurrencyId(@Nullable String excludeId) {
+        List<ShopCurrency> list = sortedCurrencies();
+        for (ShopCurrency currency : list) {
+            if (currency.id != null && !currency.id.equals(excludeId)) {
+                return currency.id;
+            }
+        }
+        return firstCurrencyId();
     }
 
     private String uniqueId(String prefix) {
