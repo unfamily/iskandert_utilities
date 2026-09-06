@@ -6,11 +6,17 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
+import net.unfamily.iskautils.shop.ShopEntryHelper;
+import net.unfamily.iskautils.shop.ShopEntryTypeHandler;
+import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypes;
+import net.unfamily.iskautils.shop.ShopRepeatableRule;
 import net.unfamily.iskautils.shop.ShopStage;
 import net.unfamily.iskautils.util.ModLogger;
 
@@ -24,7 +30,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -219,11 +224,11 @@ public final class ShopEditWorkspace {
             ShopEntry e = new ShopEntry();
             e.id = id;
             e.inCategory = stringOr(o, "in_category", "000_default");
-            e.type = parseType(stringOr(o, "type", "item"));
-            e.item = stringOrNull(o, "item");
-            e.fluid = stringOrNull(o, "fluid");
-            e.gas = stringOrNull(o, "gas");
-            e.other = stringOrNull(o, "other");
+            e.typeId = parseType(stringOr(o, "type", ShopEntryTypes.ITEM.toString()));
+            ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(e.typeId);
+            if (handler != null) {
+                handler.readExtras(o, e);
+            }
             if (o.has("amount")) {
                 e.amount = o.get("amount").getAsInt();
             } else if (o.has("item_count")) {
@@ -239,6 +244,7 @@ public final class ShopEditWorkspace {
             e.sell = o.has("sell") ? o.get("sell").getAsDouble() : 0;
             e.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
             e.free = o.has("free") && o.get("free").getAsBoolean();
+            ShopRepeatableRule.readEntryRules(o, e);
             if (o.has("stages") && o.get("stages").isJsonArray()) {
                 List<ShopStage> stages = new ArrayList<>();
                 for (JsonElement se : o.getAsJsonArray("stages")) {
@@ -300,36 +306,23 @@ public final class ShopEditWorkspace {
             JsonObject o = new JsonObject();
             o.addProperty("id", e.id);
             o.addProperty("in_category", e.inCategory != null ? e.inCategory : "000_default");
-            ShopEntry.EntryType type = e.type != null ? e.type : ShopEntry.EntryType.ITEM;
-            o.addProperty("type", type.name().toLowerCase(Locale.ROOT));
-            switch (type) {
-                case FLUID -> {
-                    if (e.fluid != null) {
-                        o.addProperty("fluid", e.fluid);
-                    }
-                }
-                case GAS -> {
-                    if (e.gas != null) {
-                        o.addProperty("gas", e.gas);
-                    }
-                }
-                case OTHER -> {
-                    if (e.other != null) {
-                        o.addProperty("other", e.other);
-                    }
-                }
-                default -> {
-                    if (e.item != null) {
-                        o.addProperty("item", e.item);
-                    }
-                }
+            ResourceLocation typeId = e.typeId != null ? e.typeId : ShopEntryTypes.ITEM;
+            o.addProperty("type", typeId.toString());
+            ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(typeId);
+            if (handler != null) {
+                handler.writeExtras(o, e);
             }
-            o.addProperty("amount", Math.max(1, e.amount));
+            if (handler == null || handler.usesAmount()) {
+                o.addProperty("amount", Math.max(1, e.amount));
+            }
             o.addProperty("currency", e.currency != null ? e.currency : "null_coin");
             o.addProperty("buy", e.buy);
-            o.addProperty("sell", e.sell);
+            if (handler == null || handler.usesSell()) {
+                o.addProperty("sell", e.sell);
+            }
             o.addProperty("priority", e.priority);
             o.addProperty("free", e.free);
+            ShopRepeatableRule.writeEntryRules(o, e);
             if (e.stages != null && e.stages.length > 0) {
                 JsonArray stages = new JsonArray();
                 for (ShopStage st : e.stages) {
@@ -350,16 +343,9 @@ public final class ShopEditWorkspace {
         writeJson(file, root);
     }
 
-    private static ShopEntry.EntryType parseType(String raw) {
-        if (raw == null) {
-            return ShopEntry.EntryType.ITEM;
-        }
-        return switch (raw.trim().toLowerCase(Locale.ROOT)) {
-            case "fluid" -> ShopEntry.EntryType.FLUID;
-            case "gas" -> ShopEntry.EntryType.GAS;
-            case "other" -> ShopEntry.EntryType.OTHER;
-            default -> ShopEntry.EntryType.ITEM;
-        };
+    private static ResourceLocation parseType(String raw) {
+        ResourceLocation typeId = ShopEntryHelper.parseTypeId(raw);
+        return typeId != null ? typeId : ShopEntryTypes.ITEM;
     }
 
     private static JsonObject readJsonObject(Path file) throws IOException {

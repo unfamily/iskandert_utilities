@@ -63,10 +63,21 @@ public class ShopCommand {
                     return 1;
                 }))
             .then(Commands.literal("balance")
+                .then(Commands.argument("extended", com.mojang.brigadier.arguments.BoolArgumentType.bool())
+                    .executes(context -> {
+                        CommandSourceStack source = context.getSource();
+                        if (source.getPlayer() != null) {
+                            boolean extended = com.mojang.brigadier.arguments.BoolArgumentType.getBool(context, "extended");
+                            ShopTransactionManager.showTeamBalance(source.getPlayer(), extended);
+                        } else {
+                            source.sendFailure(Component.literal("This command can only be used by players"));
+                        }
+                        return 1;
+                    }))
                 .executes(context -> {
                     CommandSourceStack source = context.getSource();
                     if (source.getPlayer() != null) {
-                        ShopTransactionManager.showTeamBalance(source.getPlayer());
+                        ShopTransactionManager.showTeamBalance(source.getPlayer(), false);
                     } else {
                         source.sendFailure(Component.literal("This command can only be used by players"));
                     }

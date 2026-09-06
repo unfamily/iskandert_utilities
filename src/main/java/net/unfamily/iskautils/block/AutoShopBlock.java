@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.ItemInteractionResult;
@@ -27,6 +28,7 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.capability.IFluidHandlerItem;
+import net.neoforged.neoforge.items.ItemStackHandler;
 import net.unfamily.iskautils.block.entity.AutoShopBlockEntity;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import org.jetbrains.annotations.Nullable;
@@ -187,14 +189,35 @@ public class AutoShopBlock extends BaseEntityBlock {
     }
 
     @Override
+    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        if (!level.isClientSide() && !player.isCreative()) {
+            dropEncapsulatedContents(level, pos);
+        }
+        return super.playerWillDestroy(level, pos, state, player);
+    }
+
+    @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof AutoShopBlockEntity) {
-                // contents stay in BE for drop handling elsewhere if needed
-            }
+            // Explosions / non-player removal: still return the shop drawer item
+            dropEncapsulatedContents(level, pos);
         }
         super.onRemove(state, level, pos, newState, isMoving);
+    }
+
+    private static void dropEncapsulatedContents(Level level, BlockPos pos) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (!(blockEntity instanceof AutoShopBlockEntity autoShop)) {
+            return;
+        }
+        ItemStackHandler handler = autoShop.getEncapsulatedSlot();
+        for (int i = 0; i < handler.getSlots(); i++) {
+            ItemStack stack = handler.getStackInSlot(i);
+            if (!stack.isEmpty()) {
+                Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack.copy());
+                handler.setStackInSlot(i, ItemStack.EMPTY);
+            }
+        }
     }
 
     @Nullable

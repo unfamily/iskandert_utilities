@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -21,7 +22,7 @@ import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
-import net.unfamily.iskautils.shop.ShopOtherRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypes;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.item.ItemStack;
@@ -113,7 +114,7 @@ public class AutoShopBlockEntity extends BlockEntity {
     private UUID placedByPlayer = null; // UUID of the player who placed the Auto Shop
     private ItemStack selectedItem = ItemStack.EMPTY; // Selected item for encapsulated slot
     private String selectedShopEntryId = ""; // Bound shop entry from picker (optional)
-    private ShopEntry.EntryType selectedEntryType = ShopEntry.EntryType.ITEM;
+    private ResourceLocation selectedTypeId = ShopEntryTypes.ITEM;
     private boolean autoBuyMode = true; // true = Auto Buy, false = Auto Sell
     
     // Redstone mode: when to run auto buy/sell (same logic as Structure Placer Machine)
@@ -217,7 +218,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         if (selectedShopEntryId != null && !selectedShopEntryId.isEmpty()) {
             shopData.putString("selectedShopEntryId", selectedShopEntryId);
         }
-        shopData.putString("selectedEntryType", selectedEntryType.name());
+        shopData.putString("selectedEntryType", selectedTypeId.toString());
         shopData.putInt("redstoneMode", redstoneMode);
         shopData.putBoolean("previousRedstoneState", previousRedstoneState);
         
@@ -300,14 +301,18 @@ public class AutoShopBlockEntity extends BlockEntity {
             } else {
                 this.selectedShopEntryId = "";
             }
-            try {
-                this.selectedEntryType = ShopEntry.EntryType.valueOf(
-                        shopData.getString("selectedEntryType").isEmpty()
-                                ? ShopEntry.EntryType.ITEM.name()
-                                : shopData.getString("selectedEntryType"));
-            } catch (IllegalArgumentException ignored) {
-                this.selectedEntryType = ShopEntry.EntryType.ITEM;
-            }
+            String savedType = shopData.getString("selectedEntryType");
+            this.selectedTypeId = switch (savedType.toUpperCase(java.util.Locale.ROOT)) {
+                case "FLUID" -> ShopEntryTypes.FLUID;
+                case "GAS" -> ShopEntryTypes.GAS;
+                case "OTHER", "RF" -> ShopEntryTypes.RF;
+                case "COMMAND" -> ShopEntryTypes.COMMAND;
+                case "STAGE" -> ShopEntryTypes.STAGE;
+                default -> {
+                    ResourceLocation parsed = ShopEntryHelper.parseTypeId(savedType);
+                    yield parsed != null ? parsed : ShopEntryTypes.ITEM;
+                }
+            };
             if (shopData.contains("redstoneMode")) {
                 this.redstoneMode = shopData.getInt("redstoneMode");
             }
@@ -431,8 +436,8 @@ public class AutoShopBlockEntity extends BlockEntity {
         return pendingGasId;
     }
 
-    public ShopEntry.EntryType getSelectedEntryType() {
-        return selectedEntryType;
+    public ResourceLocation getSelectedTypeId() {
+        return selectedTypeId;
     }
 
     public void dumpFluidTankContents() {
@@ -459,7 +464,7 @@ public class AutoShopBlockEntity extends BlockEntity {
     }
 
     private boolean isFluidValidForSelection(FluidStack stack) {
-        if (stack.isEmpty() || selectedEntryType != ShopEntry.EntryType.FLUID) {
+        if (stack.isEmpty() || !ShopEntryTypes.FLUID.equals(selectedTypeId)) {
             return true;
         }
         ShopEntry entry = getBoundEntry();
@@ -492,17 +497,14 @@ public class AutoShopBlockEntity extends BlockEntity {
             return;
         }
         int amount = Math.max(1, entry.amount);
-        switch (entry.type) {
-            case FLUID -> {
-                resizeFluidTank(amount);
-                resizeEnergy(0);
-            }
-            case GAS -> {
-                resizeGasTank(amount);
-                resizeEnergy(0);
-            }
-            case ITEM -> resizeEnergy(0);
-            case OTHER -> resizeEnergy(ShopOtherRegistry.isRf(entry.other) ? amount : 0);
+        if (ShopEntryTypes.isFluid(entry)) {
+            resizeFluidTank(amount);
+            resizeEnergy(0);
+        } else if (ShopEntryTypes.isGas(entry)) {
+            resizeGasTank(amount);
+            resizeEnergy(0);
+        } else {
+            resizeEnergy(ShopEntryTypes.isRf(entry) ? amount : 0);
         }
     }
 
@@ -654,7 +656,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             this.selectedItem.setCount(1);
         }
         this.selectedShopEntryId = "";
-        this.selectedEntryType = ShopEntry.EntryType.ITEM;
+        this.selectedTypeId = ShopEntryTypes.ITEM;
         // Do not resize fluid/gas buffers when selecting an item — buffers are independent.
         resizeEnergy(0);
         
@@ -667,7 +669,7 @@ public class AutoShopBlockEntity extends BlockEntity {
 
     public void applyPickerSelection(ItemStack item, String currencyId, boolean buyMode, String entryId) {
         ShopEntry entry = entryId != null ? net.unfamily.iskautils.shop.ShopLoader.getEntries().get(entryId) : null;
-        this.selectedEntryType = entry != null ? entry.type : ShopEntry.EntryType.ITEM;
+        this.selectedTypeId = entry != null && entry.typeId != null ? entry.typeId : ShopEntryTypes.ITEM;
         this.selectedItem = item == null ? ItemStack.EMPTY : item.copy();
         if (!this.selectedItem.isEmpty()) {
             this.selectedItem.setCount(1);
@@ -686,7 +688,7 @@ public class AutoShopBlockEntity extends BlockEntity {
     public void clearSelectedItem() {
         this.selectedItem = ItemStack.EMPTY;
         this.selectedShopEntryId = "";
-        this.selectedEntryType = ShopEntry.EntryType.ITEM;
+        this.selectedTypeId = ShopEntryTypes.ITEM;
         // Leave buffer contents/capacities intact; only clear the shop selection.
         resizeEnergy(0);
         setChanged();
@@ -774,7 +776,7 @@ public class AutoShopBlockEntity extends BlockEntity {
     private static net.unfamily.iskautils.shop.ShopEntry findEntryForItemExact(ItemStack templateItem, String boundEntryId) {
         if (boundEntryId != null && !boundEntryId.isEmpty()) {
             net.unfamily.iskautils.shop.ShopEntry bound = net.unfamily.iskautils.shop.ShopLoader.getEntries().get(boundEntryId);
-            if (bound != null && bound.type == ShopEntry.EntryType.ITEM
+            if (ShopEntryTypes.isItem(bound)
                     && ShopEntryHelper.matchesItem(templateItem, bound.item)) {
                 return bound;
             }
@@ -782,7 +784,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         Map<String, net.unfamily.iskautils.shop.ShopEntry> allEntries = net.unfamily.iskautils.shop.ShopLoader.getEntries();
         for (Map.Entry<String, net.unfamily.iskautils.shop.ShopEntry> entryMap : allEntries.entrySet()) {
             net.unfamily.iskautils.shop.ShopEntry entry = entryMap.getValue();
-            if (entry.type == ShopEntry.EntryType.ITEM && ShopEntryHelper.matchesItem(templateItem, entry.item)) {
+            if (ShopEntryTypes.isItem(entry) && ShopEntryHelper.matchesItem(templateItem, entry.item)) {
                 return entry;
             }
         }
@@ -822,12 +824,29 @@ public class AutoShopBlockEntity extends BlockEntity {
         return true;
     }
 
+    private boolean canAutoTrade(ShopEntry entry, net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide side,
+                                 String teamKey, int units) {
+        if (!(level instanceof net.minecraft.server.level.ServerLevel serverLevel)) {
+            return false;
+        }
+        return net.unfamily.iskautils.shop.ShopPurchaseLimitsData.get(serverLevel).canTrade(
+                serverLevel, placedByPlayer, teamKey, entry, side, units);
+    }
+
+    private void recordAutoTrade(ShopEntry entry, net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide side,
+                                 String teamKey, int units) {
+        if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            net.unfamily.iskautils.shop.ShopPurchaseLimitsData.get(serverLevel).recordTrade(
+                    serverLevel, placedByPlayer, teamKey, entry, side, units);
+        }
+    }
+
     private static void processTypedEntry(AutoShopBlockEntity entity, ShopEntry entry,
                                           net.unfamily.iskalib.team.ShopTeamManager teamManager,
                                           String teamKey, String currencyId,
                                           net.unfamily.iskalib.stage.StageRegistry registry,
                                           ServerPlayer placerPlayer) {
-        if (entry == null || entry.type == ShopEntry.EntryType.ITEM || entry.amount <= 0) {
+        if (entry == null || ShopEntryTypes.isItem(entry) || entry.amount <= 0) {
             return;
         }
         String entryCurrency = entry.valute != null ? entry.valute : "null_coin";
@@ -838,8 +857,14 @@ public class AutoShopBlockEntity extends BlockEntity {
             if (!ShopEntryHelper.isSellAllowed(entry) || !entity.hasTypedAmount(entry)) {
                 return;
             }
+            if (!entity.canAutoTrade(entry,
+                    net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.SELL, teamKey, 1)) {
+                return;
+            }
             if (entity.extractTyped(entry)) {
                 teamManager.addTeamValutes(teamKey, currencyId, entry.sell);
+                entity.recordAutoTrade(entry,
+                        net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.SELL, teamKey, 1);
                 entity.setChanged();
             }
             return;
@@ -847,79 +872,83 @@ public class AutoShopBlockEntity extends BlockEntity {
         if (!ShopEntryHelper.isBuyAllowed(entry) || !entity.canInsertTyped(entry)) {
             return;
         }
+        if (!entity.canAutoTrade(entry,
+                net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.BUY, teamKey, 1)) {
+            return;
+        }
         double cost = entry.free ? 0 : entry.buy;
         if (teamManager.getTeamValuteBalance(teamKey, currencyId) < cost
                 || !teamManager.removeTeamValutes(teamKey, currencyId, cost)) {
             return;
         }
-        if (!entity.insertTyped(entry) && cost > 0) {
-            teamManager.addTeamValutes(teamKey, currencyId, cost);
+        if (!entity.insertTyped(entry)) {
+            if (cost > 0) {
+                teamManager.addTeamValutes(teamKey, currencyId, cost);
+            }
+        } else {
+            entity.recordAutoTrade(entry,
+                    net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.BUY, teamKey, 1);
         }
     }
 
     private boolean hasTypedAmount(ShopEntry entry) {
-        return switch (entry.type) {
-            case FLUID -> fluidTank.getFluidAmount() >= entry.amount
+        if (ShopEntryTypes.isFluid(entry)) {
+            return fluidTank.getFluidAmount() >= entry.amount
                     && ShopEntryHelper.matchesFluid(fluidTank.getFluid(), entry.fluid);
-            case GAS -> getGasAmount() >= entry.amount
+        }
+        if (ShopEntryTypes.isGas(entry)) {
+            return getGasAmount() >= entry.amount
                     && ShopEntryHelper.matchesGas(MekChemicalHelper.getChemicalInTank(gasTank, 0), entry.gas);
-            case OTHER -> ShopOtherRegistry.isRf(entry.other)
-                    && energyStorage.getEnergyStored() >= entry.amount;
-            case ITEM -> false;
-        };
+        }
+        return ShopEntryTypes.isRf(entry) && energyStorage.getEnergyStored() >= entry.amount;
     }
 
     private boolean extractTyped(ShopEntry entry) {
-        return switch (entry.type) {
-            case FLUID -> fluidTank.drain(entry.amount, IFluidHandler.FluidAction.EXECUTE).getAmount() == entry.amount;
-            case GAS -> MekChemicalHelper.extractFromTank(gasTank, entry.amount) == entry.amount;
-            case OTHER -> ShopOtherRegistry.isRf(entry.other)
-                    && energyStorage.extractEnergy(entry.amount, false) == entry.amount;
-            case ITEM -> false;
-        };
+        if (ShopEntryTypes.isFluid(entry)) {
+            return fluidTank.drain(entry.amount, IFluidHandler.FluidAction.EXECUTE).getAmount() == entry.amount;
+        }
+        if (ShopEntryTypes.isGas(entry)) {
+            return MekChemicalHelper.extractFromTank(gasTank, entry.amount) == entry.amount;
+        }
+        return ShopEntryTypes.isRf(entry)
+                && energyStorage.extractEnergy(entry.amount, false) == entry.amount;
     }
 
     private boolean canInsertTyped(ShopEntry entry) {
         // Like the item encapsulated slot: buy only when the tank is empty.
-        return switch (entry.type) {
-            case FLUID -> {
-                if (!fluidTank.isEmpty()) {
-                    yield false;
-                }
-                var fluid = ShopEntryHelper.resolveFluid(entry.fluid);
-                yield fluid != null && fluidTank.fill(new FluidStack(fluid, entry.amount),
-                        IFluidHandler.FluidAction.SIMULATE) == entry.amount;
+        if (ShopEntryTypes.isFluid(entry)) {
+            if (!fluidTank.isEmpty()) {
+                return false;
             }
-            case GAS -> {
-                ensureGasTank();
-                if (getGasAmount() > 0) {
-                    yield false;
-                }
-                Object stack = MekChemicalHelper.createStackFromId(entry.gas, entry.amount);
-                yield stack != null && MekChemicalHelper.fill(gasTank, stack, true) == entry.amount;
+            var fluid = ShopEntryHelper.resolveFluid(entry.fluid);
+            return fluid != null && fluidTank.fill(new FluidStack(fluid, entry.amount),
+                    IFluidHandler.FluidAction.SIMULATE) == entry.amount;
+        }
+        if (ShopEntryTypes.isGas(entry)) {
+            ensureGasTank();
+            if (getGasAmount() > 0) {
+                return false;
             }
-            case OTHER -> ShopOtherRegistry.isRf(entry.other)
-                    && energyStorage.getEnergyStored() == 0
-                    && energyStorage.receiveEnergy(entry.amount, true) == entry.amount;
-            case ITEM -> false;
-        };
+            Object stack = MekChemicalHelper.createStackFromId(entry.gas, entry.amount);
+            return stack != null && MekChemicalHelper.fill(gasTank, stack, true) == entry.amount;
+        }
+        return ShopEntryTypes.isRf(entry)
+                && energyStorage.getEnergyStored() == 0
+                && energyStorage.receiveEnergy(entry.amount, true) == entry.amount;
     }
 
     private boolean insertTyped(ShopEntry entry) {
-        return switch (entry.type) {
-            case FLUID -> {
-                var fluid = ShopEntryHelper.resolveFluid(entry.fluid);
-                yield fluid != null && fluidTank.fill(new FluidStack(fluid, entry.amount),
-                        IFluidHandler.FluidAction.EXECUTE) == entry.amount;
-            }
-            case GAS -> {
-                Object stack = MekChemicalHelper.createStackFromId(entry.gas, entry.amount);
-                yield stack != null && MekChemicalHelper.fill(gasTank, stack, false) == entry.amount;
-            }
-            case OTHER -> ShopOtherRegistry.isRf(entry.other)
-                    && energyStorage.receiveEnergy(entry.amount, false) == entry.amount;
-            case ITEM -> false;
-        };
+        if (ShopEntryTypes.isFluid(entry)) {
+            var fluid = ShopEntryHelper.resolveFluid(entry.fluid);
+            return fluid != null && fluidTank.fill(new FluidStack(fluid, entry.amount),
+                    IFluidHandler.FluidAction.EXECUTE) == entry.amount;
+        }
+        if (ShopEntryTypes.isGas(entry)) {
+            Object stack = MekChemicalHelper.createStackFromId(entry.gas, entry.amount);
+            return stack != null && MekChemicalHelper.fill(gasTank, stack, false) == entry.amount;
+        }
+        return ShopEntryTypes.isRf(entry)
+                && energyStorage.receiveEnergy(entry.amount, false) == entry.amount;
     }
     
     /**
@@ -1079,7 +1108,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             return false;
         }
 
-        if (entry.type == ShopEntry.EntryType.ITEM) {
+        if (ShopEntryTypes.isItem(entry)) {
             String entryId = selectedShopEntryId != null && !selectedShopEntryId.isEmpty()
                     ? selectedShopEntryId
                     : entry.id;
@@ -1090,18 +1119,32 @@ public class AutoShopBlockEntity extends BlockEntity {
                 if (ShopEntryHelper.isTagEntry(entry) || !ShopEntryHelper.isBuyAllowed(entry)) {
                     return false;
                 }
-                return net.unfamily.iskautils.shop.ShopTransactionManager.buyItem(player, entryId, quantity);
+                return net.unfamily.iskautils.shop.ShopTransactionManager.buyItem(
+                        player, entryId, quantity, placedByPlayer, teamKey);
             }
             if (!ShopEntryHelper.isSellAllowed(entry)) {
                 return false;
             }
-            return net.unfamily.iskautils.shop.ShopTransactionManager.sellItem(player, entryId, quantity);
+            return net.unfamily.iskautils.shop.ShopTransactionManager.sellItem(
+                    player, entryId, quantity, placedByPlayer, teamKey);
         }
 
-        if (isAutoBuyMode()) {
-            return processManualTypedBuy(entry, teamManager, teamKey, currencyId, quantity);
+        net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide side = isAutoBuyMode()
+                ? net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.BUY
+                : net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.SELL;
+        if (!canAutoTrade(entry, side, teamKey, quantity)) {
+            return false;
         }
-        return processManualTypedSell(entry, teamManager, teamKey, currencyId, quantity);
+        boolean traded;
+        if (isAutoBuyMode()) {
+            traded = processManualTypedBuy(entry, teamManager, teamKey, currencyId, quantity);
+        } else {
+            traded = processManualTypedSell(entry, teamManager, teamKey, currencyId, quantity);
+        }
+        if (traded) {
+            recordAutoTrade(entry, side, teamKey, quantity);
+        }
+        return traded;
     }
 
     @Nullable
@@ -1127,7 +1170,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         int totalAmount = unit * quantity;
         double cost = entry.free ? 0 : entry.buy * quantity;
 
-        if (entry.type == ShopEntry.EntryType.FLUID) {
+        if (ShopEntryTypes.isFluid(entry)) {
             if (!fluidTank.isEmpty()) {
                 return false;
             }
@@ -1151,7 +1194,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             return true;
         }
 
-        if (entry.type == ShopEntry.EntryType.GAS) {
+        if (ShopEntryTypes.isGas(entry)) {
             ensureGasTank();
             if (gasTank == null || getGasAmount() > 0) {
                 return false;
@@ -1175,7 +1218,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             setChanged();
             return true;
         }
-        if (entry.type == ShopEntry.EntryType.OTHER && ShopOtherRegistry.isRf(entry.other)) {
+        if (ShopEntryTypes.isRf(entry)) {
             if (energyStorage.getEnergyStored() > 0) {
                 return false;
             }
@@ -1205,15 +1248,15 @@ public class AutoShopBlockEntity extends BlockEntity {
         }
         int unit = entry.amount;
 
-        if (entry.type == ShopEntry.EntryType.FLUID) {
+        if (ShopEntryTypes.isFluid(entry)) {
             if (!ShopEntryHelper.matchesFluid(fluidTank.getFluid(), entry.fluid)) {
                 return false;
             }
             int availableUnits = fluidTank.getFluidAmount() / unit;
-            int units = Math.min(quantity, availableUnits);
-            if (units <= 0) {
+            if (availableUnits < quantity) {
                 return false;
             }
+            int units = quantity;
             int extract = units * unit;
             if (fluidTank.drain(extract, IFluidHandler.FluidAction.EXECUTE).getAmount() != extract) {
                 return false;
@@ -1223,17 +1266,17 @@ public class AutoShopBlockEntity extends BlockEntity {
             return true;
         }
 
-        if (entry.type == ShopEntry.EntryType.GAS) {
+        if (ShopEntryTypes.isGas(entry)) {
             ensureGasTank();
             Object inTank = MekChemicalHelper.getChemicalInTank(gasTank, 0);
             if (!ShopEntryHelper.matchesGas(inTank, entry.gas)) {
                 return false;
             }
             long availableUnits = getGasAmount() / unit;
-            int units = (int) Math.min(quantity, availableUnits);
-            if (units <= 0) {
+            if (availableUnits < quantity) {
                 return false;
             }
+            int units = quantity;
             int extract = units * unit;
             if (MekChemicalHelper.extractFromTank(gasTank, extract) != extract) {
                 return false;
@@ -1242,12 +1285,12 @@ public class AutoShopBlockEntity extends BlockEntity {
             setChanged();
             return true;
         }
-        if (entry.type == ShopEntry.EntryType.OTHER && ShopOtherRegistry.isRf(entry.other)) {
+        if (ShopEntryTypes.isRf(entry)) {
             int availableUnits = energyStorage.getEnergyStored() / unit;
-            int units = Math.min(quantity, availableUnits);
-            if (units <= 0) {
+            if (availableUnits < quantity) {
                 return false;
             }
+            int units = quantity;
             int extract = units * unit;
             if (energyStorage.extractEnergy(extract, false) != extract) {
                 return false;
@@ -1312,7 +1355,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             return false;
         }
         ShopEntry boundEntry = getBoundEntry();
-        if (boundEntry != null && boundEntry.type != ShopEntry.EntryType.ITEM) {
+        if (boundEntry != null && !ShopEntryTypes.isItem(boundEntry)) {
             net.unfamily.iskalib.stage.StageRegistry registry =
                     net.unfamily.iskalib.stage.StageRegistry.getInstance(serverLevel.getServer());
             int beforeFluid = fluidTank.getFluidAmount();
@@ -1353,6 +1396,10 @@ public class AutoShopBlockEntity extends BlockEntity {
             if (!stagesMet(entry, registry, placerPlayer, teamKey)) {
                 return false;
             }
+            if (!canAutoTrade(entry,
+                    net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.SELL, teamKey, 1)) {
+                return false;
+            }
             if (stack.getCount() < entry.amount) {
                 return false;
             }
@@ -1361,6 +1408,8 @@ public class AutoShopBlockEntity extends BlockEntity {
                 return false;
             }
             teamManager.addTeamValutes(teamKey, currencyId, entry.sell);
+            recordAutoTrade(entry,
+                    net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.SELL, teamKey, 1);
             setChanged();
             return true;
         }
@@ -1387,6 +1436,10 @@ public class AutoShopBlockEntity extends BlockEntity {
         if (!stagesMet(entry, registry, placerPlayer, teamKey)) {
             return false;
         }
+        if (!canAutoTrade(entry,
+                net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.BUY, teamKey, 1)) {
+            return false;
+        }
         double cost = entry.free ? 0 : entry.buy;
         if (teamManager.getTeamValuteBalance(teamKey, currencyId) < cost
                 || !teamManager.removeTeamValutes(teamKey, currencyId, cost)) {
@@ -1400,6 +1453,8 @@ public class AutoShopBlockEntity extends BlockEntity {
             return false;
         }
         slot.setStackInSlot(0, itemToCreate);
+        recordAutoTrade(entry,
+                net.unfamily.iskautils.shop.ShopPurchaseLimitsData.TradeSide.BUY, teamKey, 1);
         setChanged();
         return true;
     }

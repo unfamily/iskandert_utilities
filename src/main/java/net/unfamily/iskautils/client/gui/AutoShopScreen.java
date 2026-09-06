@@ -21,8 +21,9 @@ import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
+import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypes;
 import net.unfamily.iskautils.shop.ShopLoader;
-import net.unfamily.iskautils.shop.ShopOtherRegistry;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -529,24 +530,24 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
             return;
         }
         ShopEntry bound = getBoundShopEntry();
-        if (bound != null && bound.type == ShopEntry.EntryType.FLUID) {
+        if (ShopEntryTypes.isFluid(bound)) {
             var fluid = ShopEntryHelper.displayFluidForEntry(bound);
             if (!fluid.isEmpty()) {
                 GuiFluidStillBlit.blit16(guiGraphics, fluid, leftPos + filterSlot.x, topPos + filterSlot.y);
             }
             return;
         }
-        if (bound != null && bound.type == ShopEntry.EntryType.GAS) {
+        if (ShopEntryTypes.isGas(bound)) {
             Object gas = ShopEntryHelper.displayGasForEntry(bound);
             if (gas != null) {
                 GuiChemicalStillBlit.blit16(guiGraphics, gas, leftPos + filterSlot.x, topPos + filterSlot.y);
             }
             return;
         }
-        if (bound != null && bound.type == ShopEntry.EntryType.OTHER) {
-            ShopOtherRegistry.Definition definition = ShopOtherRegistry.get(bound.other);
-            if (definition != null) {
-                guiGraphics.blit(definition.icon(),
+        if (bound != null) {
+            ResourceLocation icon = ShopEntryTypeRegistry.require(bound).guiIcon(bound);
+            if (icon != null) {
+                guiGraphics.blit(icon,
                         leftPos + filterSlot.x, topPos + filterSlot.y, 0, 0, 16, 16, 16, 16);
             }
             return;
@@ -573,7 +574,7 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
         }
         if (minecraft.level.getBlockEntity(pos) instanceof AutoShopBlockEntity autoShop) {
             ShopEntry bound = autoShop.getBoundEntry();
-            if (bound != null && bound.type == ShopEntry.EntryType.ITEM) {
+            if (ShopEntryTypes.isItem(bound)) {
                 ItemStack display = ShopEntryHelper.displayStackForEntry(bound);
                 if (!display.isEmpty()) {
                     return display;

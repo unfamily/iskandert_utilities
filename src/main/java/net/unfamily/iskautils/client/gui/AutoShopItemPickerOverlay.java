@@ -15,8 +15,10 @@ import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
-import net.unfamily.iskautils.shop.ShopOtherRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypes;
 import net.unfamily.iskautils.shop.ShopLoader;
+import net.unfamily.iskautils.shop.ShopPurchaseLimitsData;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -135,6 +137,7 @@ public final class AutoShopItemPickerOverlay {
     }
 
     public void initWidgets(AutoShopScreen screen) {
+        ModMessages.requestShopPurchaseLimits();
         int leftPos = leftPosSupplier.getAsInt();
         int topPos = topPosSupplier.getAsInt();
 
@@ -287,7 +290,7 @@ public final class AutoShopItemPickerOverlay {
             }
 
             if (ShopScreenHelper.isMouseOverEntryIcon(mouseX, mouseY, entryX, entryY)) {
-                if (ShopEntryHelper.isTagEntry(item) || item.type != ShopEntry.EntryType.ITEM) {
+                if (ShopEntryHelper.isTagEntry(item) || !ShopEntryTypes.isItem(item)) {
                     guiGraphics.renderComponentTooltip(font,
                             List.of(ShopEntryHelper.displayTooltipForEntry(item)), mouseX, mouseY);
                     return;
@@ -491,10 +494,15 @@ public final class AutoShopItemPickerOverlay {
                                 button -> applySelection(item, true))
                         .bounds(buyButtonX, buttonY, SELECT_BUTTON_WIDTH, BUTTON_HEIGHT)
                         .build();
-                buyButton.active = ShopBrowsePanel.isSelectableAutoShopEntry(item, true);
+                boolean limitBlocked = ShopClientPurchaseLimits.isBlocked(
+                        item.id, ShopPurchaseLimitsData.TradeSide.BUY);
+                buyButton.active = ShopBrowsePanel.isSelectableAutoShopEntry(item, true) && !limitBlocked;
                 if (tagEntry) {
                     buyButton.setTooltip(Tooltip.create(
                             Component.translatable("gui.iska_utils.shop.tag_sell_only")));
+                } else if (limitBlocked) {
+                    buyButton.setTooltip(Tooltip.create(
+                            Component.translatable("gui.iska_utils.shop.tooltip.cannot_repeat")));
                 }
                 selectBuyButtons.add(buyButton);
                 screen.addPickerWidget(buyButton);
@@ -506,7 +514,13 @@ public final class AutoShopItemPickerOverlay {
                                 button -> applySelection(item, false))
                         .bounds(sellButtonX, buttonY, SELECT_BUTTON_WIDTH, BUTTON_HEIGHT)
                         .build();
-                sellButton.active = ShopBrowsePanel.isSelectableAutoShopEntry(item, false);
+                boolean limitBlocked = ShopClientPurchaseLimits.isBlocked(
+                        item.id, ShopPurchaseLimitsData.TradeSide.SELL);
+                sellButton.active = ShopBrowsePanel.isSelectableAutoShopEntry(item, false) && !limitBlocked;
+                if (limitBlocked) {
+                    sellButton.setTooltip(Tooltip.create(
+                            Component.translatable("gui.iska_utils.shop.tooltip.cannot_repeat")));
+                }
                 selectSellButtons.add(sellButton);
                 screen.addPickerWidget(sellButton);
             }
@@ -514,6 +528,11 @@ public final class AutoShopItemPickerOverlay {
     }
 
     private void applySelection(ShopEntry entry, boolean buyMode) {
+        ShopPurchaseLimitsData.TradeSide side = buyMode
+                ? ShopPurchaseLimitsData.TradeSide.BUY : ShopPurchaseLimitsData.TradeSide.SELL;
+        if (ShopClientPurchaseLimits.isBlocked(entry.id, side)) {
+            return;
+        }
         BlockPos pos = machinePosSupplier.get();
         if (pos.equals(BlockPos.ZERO)) {
             return;
@@ -680,32 +699,27 @@ public final class AutoShopItemPickerOverlay {
         int textX = slotX + 24;
         int textY = entryY + (ENTRY_HEIGHT - 8) / 2;
         guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
-        switch (item.type) {
-            case ITEM -> {
-                ItemStack stack = ShopEntryHelper.displayStackForEntry(item);
-                if (!stack.isEmpty()) {
-                    stack.setCount(Math.max(1, item.amount));
-                    guiGraphics.renderItem(stack, slotX + 1, slotY + 1);
-                    guiGraphics.renderItemDecorations(fontSupplier.get(), stack, slotX + 1, slotY + 1);
-                }
+        if (ShopEntryTypes.isItem(item)) {
+            ItemStack stack = ShopEntryHelper.displayStackForEntry(item);
+            if (!stack.isEmpty()) {
+                stack.setCount(Math.max(1, item.amount));
+                guiGraphics.renderItem(stack, slotX + 1, slotY + 1);
+                guiGraphics.renderItemDecorations(fontSupplier.get(), stack, slotX + 1, slotY + 1);
             }
-            case FLUID -> {
-                var fluid = ShopEntryHelper.displayFluidForEntry(item);
-                if (!fluid.isEmpty()) {
-                    GuiFluidStillBlit.blit16(guiGraphics, fluid, slotX + 1, slotY + 1);
-                }
+        } else if (ShopEntryTypes.isFluid(item)) {
+            var fluid = ShopEntryHelper.displayFluidForEntry(item);
+            if (!fluid.isEmpty()) {
+                GuiFluidStillBlit.blit16(guiGraphics, fluid, slotX + 1, slotY + 1);
             }
-            case GAS -> {
-                Object gas = ShopEntryHelper.displayGasForEntry(item);
-                if (gas != null) {
-                    GuiChemicalStillBlit.blit16(guiGraphics, gas, slotX + 1, slotY + 1);
-                }
+        } else if (ShopEntryTypes.isGas(item)) {
+            Object gas = ShopEntryHelper.displayGasForEntry(item);
+            if (gas != null) {
+                GuiChemicalStillBlit.blit16(guiGraphics, gas, slotX + 1, slotY + 1);
             }
-            case OTHER -> {
-                ShopOtherRegistry.Definition definition = ShopOtherRegistry.get(item.other);
-                if (definition != null) {
-                    guiGraphics.blit(definition.icon(), slotX + 1, slotY + 1, 0, 0, 16, 16, 16, 16);
-                }
+        } else {
+            ResourceLocation icon = ShopEntryTypeRegistry.require(item).guiIcon(item);
+            if (icon != null) {
+                guiGraphics.blit(icon, slotX + 1, slotY + 1, 0, 0, 16, 16, 16, 16);
             }
         }
         int buyButtonX = entryX + PICKER_ENTRY_WIDTH - SELECT_BUTTON_WIDTH - BUTTONS_SPACING - SELECT_BUTTON_WIDTH - ENTRY_RIGHT_MARGIN;

@@ -227,6 +227,16 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.ShopEditSyncS2CPacket::handle
         );
         registrar.playToServer(
+            net.unfamily.iskautils.network.packet.ShopPurchaseLimitsRequestC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.ShopPurchaseLimitsRequestC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.ShopPurchaseLimitsRequestC2SPacket::handle
+        );
+        registrar.playToClient(
+            net.unfamily.iskautils.network.packet.ShopPurchaseLimitsS2CPacket.TYPE,
+            net.unfamily.iskautils.network.packet.ShopPurchaseLimitsS2CPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.ShopPurchaseLimitsS2CPacket::handle
+        );
+        registrar.playToServer(
             AutoShopSetEncapsulatedC2SPacket.TYPE,
             AutoShopSetEncapsulatedC2SPacket.STREAM_CODEC,
             AutoShopSetEncapsulatedC2SPacket::handle
@@ -953,6 +963,12 @@ public class ModMessages {
     public static void sendShopEditActionPacket(String action, String payloadJson) {
         net.neoforged.neoforge.network.PacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.ShopEditActionC2SPacket(action, payloadJson));
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void requestShopPurchaseLimits() {
+        PacketDistributor.sendToServer(
+                new net.unfamily.iskautils.network.packet.ShopPurchaseLimitsRequestC2SPacket());
     }
 
     /**

@@ -13,8 +13,12 @@ import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
-import net.unfamily.iskautils.shop.ShopOtherRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypeHandler;
+import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypes;
 import net.unfamily.iskautils.shop.ShopCurrency;
+import net.unfamily.iskautils.shop.ShopPurchaseLimitsData;
+import net.unfamily.iskautils.shop.ShopTransactionManager;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
 import java.util.*;
@@ -120,6 +124,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         
         // Request team data from server
         net.unfamily.iskautils.network.ModMessages.sendShopTeamDataRequest();
+        net.unfamily.iskautils.network.ModMessages.requestShopPurchaseLimits();
     }
 
     private int entryStartY() {
@@ -155,6 +160,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         
         // Register this instance for callback
         currentInstance = this;
+        net.unfamily.iskautils.network.ModMessages.requestShopPurchaseLimits();
 
         searchBox = new EditBox(
                 font,
@@ -381,6 +387,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
         renderShopTooltips(guiGraphics, mouseX, mouseY);
+        renderCurrencyTooltips(guiGraphics, mouseX, mouseY);
     }
 
     private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
@@ -725,32 +732,27 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Draw slot (18x18)
         guiGraphics.blit(SINGLE_SLOT_TEXTURE, slotX, slotY, 0, 0, 18, 18, 18, 18);
         
-        switch (item.type) {
-            case ITEM -> {
-                ItemStack itemStack = ShopEntryHelper.displayStackForEntry(item);
-                if (!itemStack.isEmpty()) {
-                    itemStack.setCount(Math.max(1, item.amount));
-                    guiGraphics.renderItem(itemStack, slotX + 1, slotY + 1);
-                    guiGraphics.renderItemDecorations(this.font, itemStack, slotX + 1, slotY + 1);
-                }
+        if (ShopEntryTypes.isItem(item)) {
+            ItemStack itemStack = ShopEntryHelper.displayStackForEntry(item);
+            if (!itemStack.isEmpty()) {
+                itemStack.setCount(Math.max(1, item.amount));
+                guiGraphics.renderItem(itemStack, slotX + 1, slotY + 1);
+                guiGraphics.renderItemDecorations(this.font, itemStack, slotX + 1, slotY + 1);
             }
-            case FLUID -> {
-                var fluid = ShopEntryHelper.displayFluidForEntry(item);
-                if (!fluid.isEmpty()) {
-                    GuiFluidStillBlit.blit16(guiGraphics, fluid, slotX + 1, slotY + 1);
-                }
+        } else if (ShopEntryTypes.isFluid(item)) {
+            var fluid = ShopEntryHelper.displayFluidForEntry(item);
+            if (!fluid.isEmpty()) {
+                GuiFluidStillBlit.blit16(guiGraphics, fluid, slotX + 1, slotY + 1);
             }
-            case GAS -> {
-                Object gas = ShopEntryHelper.displayGasForEntry(item);
-                if (gas != null) {
-                    GuiChemicalStillBlit.blit16(guiGraphics, gas, slotX + 1, slotY + 1);
-                }
+        } else if (ShopEntryTypes.isGas(item)) {
+            Object gas = ShopEntryHelper.displayGasForEntry(item);
+            if (gas != null) {
+                GuiChemicalStillBlit.blit16(guiGraphics, gas, slotX + 1, slotY + 1);
             }
-            case OTHER -> {
-                ShopOtherRegistry.Definition definition = ShopOtherRegistry.get(item.other);
-                if (definition != null) {
-                    guiGraphics.blit(definition.icon(), slotX + 1, slotY + 1, 0, 0, 16, 16, 16, 16);
-                }
+        } else {
+            ResourceLocation icon = ShopEntryTypeRegistry.require(item).guiIcon(item);
+            if (icon != null) {
+                guiGraphics.blit(icon, slotX + 1, slotY + 1, 0, 0, 16, 16, 16, 16);
             }
         }
         
@@ -894,12 +896,12 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             }
 
             if (isItemBlocked(item)) {
-                guiGraphics.renderComponentTooltip(this.font, createMissingStagesTooltip(item), mouseX, mouseY);
+                guiGraphics.renderComponentTooltip(this.font, createBlockedTooltip(item), mouseX, mouseY);
                 return;
             }
 
             if (ShopScreenHelper.isMouseOverEntryIcon(mouseX, mouseY, entryX, entryY)) {
-                if (ShopEntryHelper.isTagEntry(item) || item.type != ShopEntry.EntryType.ITEM) {
+                if (ShopEntryHelper.isTagEntry(item) || !ShopEntryTypes.isItem(item)) {
                     guiGraphics.renderComponentTooltip(this.font,
                             List.of(ShopEntryHelper.displayTooltipForEntry(item)), mouseX, mouseY);
                     return;
@@ -961,6 +963,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
 
             if ((item.buy > 0 || item.free) && mouseX >= buyButtonX && mouseX < buyButtonX + BUTTON_WIDTH
                 && mouseY >= buttonsY && mouseY < buttonsY + BUTTON_HEIGHT) {
+                if (isLimitBlocked(item, ShopPurchaseLimitsData.TradeSide.BUY)) {
+                    return createPurchaseLimitTooltip(item, ShopPurchaseLimitsData.TradeSide.BUY);
+                }
                 if (!ShopEntryHelper.isPlayerShopTradable(item)) {
                     return ShopScreenHelper.playerShopFluidGasHintTooltip(item, true, getCurrencySymbol(item.valute));
                 }
@@ -969,6 +974,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
 
             if (item.sell > 0 && mouseX >= sellButtonX && mouseX < sellButtonX + BUTTON_WIDTH
                 && mouseY >= buttonsY && mouseY < buttonsY + BUTTON_HEIGHT) {
+                if (isLimitBlocked(item, ShopPurchaseLimitsData.TradeSide.SELL)) {
+                    return createPurchaseLimitTooltip(item, ShopPurchaseLimitsData.TradeSide.SELL);
+                }
                 if (!ShopEntryHelper.isPlayerShopTradable(item)) {
                     return ShopScreenHelper.playerShopFluidGasHintTooltip(item, false, getCurrencySymbol(item.valute));
                 }
@@ -1051,7 +1059,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             int textY = startY + lineIndex * 10;
 
             double balance = playerTeamBalances.getOrDefault(currency.id, 0.0);
-            String balanceStr = formatLargeNumber(balance);
+            String balanceStr = ShopTransactionManager.formatCompactNumber(balance);
             String balanceText = balanceStr + " " + (currency.charSymbol != null ? currency.charSymbol : currency.id);
             Component currencyText = Component.literal(balanceText);
 
@@ -1068,40 +1076,36 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             guiGraphics.drawString(this.font, noValutesText, textX, startY, GuiTextColors.MUTED, false);
         }
     }
-    
-    /**
-     * Format a numeric value with K/M/B abbreviations
-     * @param value value to format
-     * @return formatted string (e.g. 10K, 1.5M, 2.3B)
-     */
-    private String formatLargeNumber(double value) {
-        if (value < 10000) {
-            // Below 10_000 show plain number
-            if (value == Math.floor(value)) {
-                return String.valueOf((int)value);
-            } else {
-                return String.format("%.1f", value);
+
+    private void renderCurrencyTooltips(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        if (playerTeamName == null || availableCurrencies.isEmpty()) {
+            return;
+        }
+        int guiX = this.leftPos;
+        int startY = this.topPos + CURRENCIES_START_Y;
+        int lineIndex = 0;
+        for (ShopCurrency currency : availableCurrencies.values()) {
+            int textY = startY + lineIndex * 10;
+            int textX = guiX + CURRENCIES_AREA_LEFT;
+            double balance = playerTeamBalances.getOrDefault(currency.id, 0.0);
+            String balanceStr = ShopTransactionManager.formatCompactNumber(balance);
+            String balanceText = balanceStr + " " + (currency.charSymbol != null ? currency.charSymbol : currency.id);
+            int width = this.font.width(balanceText);
+            if (mouseX >= textX && mouseX < textX + Math.max(width, 40)
+                    && mouseY >= textY && mouseY < textY + 10) {
+                String full = ShopTransactionManager.formatFullNumber(balance);
+                String name = Component.translatable(currency.name).getString();
+                String symbol = currency.charSymbol != null ? currency.charSymbol : currency.id;
+                guiGraphics.renderComponentTooltip(this.font,
+                        List.of(Component.literal(name + " " + symbol + ": " + full)),
+                        mouseX, mouseY);
+                return;
             }
-        }
-        
-        String[] suffixes = {"", "K", "M", "B", "T", "P", "E"}; // K=migliaia, M=milioni, B=miliardi, T=trilioni
-        int suffixIndex = 0;
-        double formattedValue = value;
-        
-        // Pick magnitude suffix
-        while (formattedValue >= 1000 && suffixIndex < suffixes.length - 1) {
-            formattedValue /= 1000;
-            suffixIndex++;
-        }
-        
-        // Format with one decimal when needed
-        if (formattedValue == Math.floor(formattedValue)) {
-            return String.format("%.0f%s", formattedValue, suffixes[suffixIndex]);
-        } else {
-            return String.format("%.1f%s", formattedValue, suffixes[suffixIndex]);
+            lineIndex++;
         }
     }
-    
+
+
     /**
      * Update Back button enabled state
      */
@@ -1216,7 +1220,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             int entryY = this.topPos + startY + i * ENTRY_HEIGHT;
             
             // Buy button — fluids/gases shown disabled (catalog only; trade via AutoShop)
-            if ((item.buy > 0 || item.free) && !ShopEntryHelper.isTagEntry(item)) {
+            if (ShopEntryHelper.isBuyAllowed(item) && !ShopEntryHelper.isTagEntry(item)) {
                 int buyButtonX = this.leftPos + ENTRY_START_X + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
                 int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
                 
@@ -1288,6 +1292,10 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         if (!ShopEntryHelper.isPlayerShopTradable(item) || !ShopEntryHelper.isBuyAllowed(item)) {
             return;
         }
+        if (isLimitBlocked(item, ShopPurchaseLimitsData.TradeSide.BUY)) {
+            showFeedback(Component.translatable("gui.iska_utils.shop.tooltip.cannot_repeat").getString(), 0xFF4444);
+            return;
+        }
         // Require player to be in a team
         if (playerTeamName == null) {
             Component message = Component.translatable("gui.iska_utils.shop.feedback.no_team");
@@ -1298,7 +1306,14 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Check balance before sending to server (free entries cost 0)
         String valuteId = item.valute != null ? item.valute : "null_coin";
         double currentBalance = playerTeamBalances.getOrDefault(valuteId, 0.0);
-        double totalCost = item.free ? 0 : (item.buy * multiplier);
+        int effectiveMultiplier = multiplier;
+        ShopEntryTypeHandler buyHandler = ShopEntryTypeRegistry.get(item);
+        if (buyHandler != null && !buyHandler.usesBuy()) {
+            effectiveMultiplier = 1;
+        }
+        double totalCost = item.free || (buyHandler != null && !buyHandler.usesBuy())
+                ? 0
+                : (item.buy * effectiveMultiplier);
         
         if (currentBalance < totalCost) {
             String currencyName = getCurrencyName(valuteId);
@@ -1311,7 +1326,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         hideFeedback();
         
         // Send packet to server using entry id
-        net.unfamily.iskautils.network.ModMessages.sendShopBuyItemPacket(item.id, multiplier);
+        net.unfamily.iskautils.network.ModMessages.sendShopBuyItemPacket(item.id, effectiveMultiplier);
         
         playButtonSound();
     }
@@ -1321,6 +1336,10 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      */
     private void handleSellButtonClick(ShopEntry item, int multiplier) {
         if (!ShopEntryHelper.isPlayerShopTradable(item) || !ShopEntryHelper.isSellAllowed(item)) {
+            return;
+        }
+        if (isLimitBlocked(item, ShopPurchaseLimitsData.TradeSide.SELL)) {
+            showFeedback(Component.translatable("gui.iska_utils.shop.tooltip.cannot_repeat").getString(), 0xFF4444);
             return;
         }
         // Require player to be in a team
@@ -1356,6 +1375,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                 currentInstance.showFeedback(message.getString(), 0xFF4444);
             } else if ("stage_requirements".equals(errorType)) {
                 Component message = Component.translatable("gui.iska_utils.shop.feedback.stage_requirements");
+                currentInstance.showFeedback(message.getString(), 0xFF4444);
+            } else if ("purchase_limit".equals(errorType)) {
+                Component message = Component.translatable("gui.iska_utils.shop.feedback.purchase_limit");
                 currentInstance.showFeedback(message.getString(), 0xFF4444);
             } else {
                 Component message = Component.translatable("gui.iska_utils.shop.feedback.transaction_error");
@@ -1445,7 +1467,43 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      * Whether an entry is locked by missing stages
      */
     private boolean isItemBlocked(ShopEntry item) {
-        return ShopClientStages.isEntryBlocked(item);
+        return ShopClientStages.isEntryBlocked(item)
+                || isLimitBlocked(item, ShopPurchaseLimitsData.TradeSide.BUY)
+                || isLimitBlocked(item, ShopPurchaseLimitsData.TradeSide.SELL);
+    }
+
+    private boolean isLimitBlocked(ShopEntry item, ShopPurchaseLimitsData.TradeSide side) {
+        return ShopClientPurchaseLimits.isBlocked(item.id, side);
+    }
+
+    private List<Component> createBlockedTooltip(ShopEntry item) {
+        List<Component> tooltip = createMissingStagesTooltip(item);
+        for (ShopPurchaseLimitsData.TradeSide side : ShopPurchaseLimitsData.TradeSide.values()) {
+            if (!isLimitBlocked(item, side)) {
+                continue;
+            }
+            if (!tooltip.isEmpty()) {
+                tooltip.add(Component.empty());
+            }
+            tooltip.addAll(createPurchaseLimitTooltip(item, side));
+        }
+        return tooltip;
+    }
+
+    private List<Component> createPurchaseLimitTooltip(ShopEntry item, ShopPurchaseLimitsData.TradeSide side) {
+        List<Component> tooltip = new ArrayList<>();
+        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.purchase_limit",
+                side.id().toUpperCase(Locale.ROOT)));
+        long reset = ShopClientPurchaseLimits.nextResetEpochMs(item.id, side);
+        if (reset > 0) {
+            String formatted = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+                    .withZone(java.time.ZoneId.systemDefault())
+                    .format(java.time.Instant.ofEpochMilli(reset));
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.resets_at", formatted));
+        } else {
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.cannot_repeat"));
+        }
+        return tooltip;
     }
     
     /**

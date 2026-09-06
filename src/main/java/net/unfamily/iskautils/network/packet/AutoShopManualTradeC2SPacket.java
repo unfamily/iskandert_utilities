@@ -49,6 +49,7 @@ public record AutoShopManualTradeC2SPacket(BlockPos pos, int quantity) implement
                 player.serverLevel().playSound(
                         null, packet.pos(), SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.BLOCKS, 0.3f, 1.0f);
             }
+            ShopPurchaseLimitsS2CPacket.sendTo(player);
         });
     }
 }

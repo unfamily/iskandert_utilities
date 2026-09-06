@@ -5,6 +5,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.unfamily.iskautils.shop.ShopEntry;
+import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
+import net.unfamily.iskautils.shop.ShopEntryTypes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,11 +24,14 @@ public final class ShopScreenHelper {
 
     /** Quantity line for items, fluids/chemicals, or RF resources. */
     public static Component amountLine(ShopEntry entry) {
-        if (entry != null && entry.type == ShopEntry.EntryType.OTHER) {
+        if (ShopEntryTypes.isRf(entry)) {
             return Component.translatable("gui.iska_utils.shop.tooltip.amount_rf", entry.amount);
         }
-        if (entry != null && (entry.type == ShopEntry.EntryType.FLUID || entry.type == ShopEntry.EntryType.GAS)) {
+        if (ShopEntryTypes.isFluid(entry) || ShopEntryTypes.isGas(entry)) {
             return Component.translatable("gui.iska_utils.shop.tooltip.amount_mb", entry.amount);
+        }
+        if (entry != null && !ShopEntryTypeRegistry.require(entry).usesAmount()) {
+            return Component.empty();
         }
         int amount = entry != null ? Math.max(1, entry.amount) : 1;
         return Component.translatable("gui.iska_utils.shop.tooltip.amount", amount);

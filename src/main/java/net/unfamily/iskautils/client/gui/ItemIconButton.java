@@ -48,7 +48,7 @@ public class ItemIconButton extends Button {
     @Override
     protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.renderWidget(graphics, mouseX, mouseY, partialTick);
-        int iconSize = 12;
+        int iconSize = Math.min(16, Math.max(8, getWidth() - 2));
         int ix = getX() + (getWidth() - iconSize) / 2;
         int iy = getY() + (getHeight() - iconSize) / 2;
         ResourceLocation texture = overlayTexture != null ? overlayTexture.get() : null;

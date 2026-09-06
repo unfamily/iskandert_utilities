@@ -8,6 +8,7 @@ import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
+import net.unfamily.iskautils.shop.ShopEntryTypes;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.util.DeepDrawerItemFilter;
 import net.unfamily.iskalib.item.ItemConverter;
@@ -267,11 +268,11 @@ public final class ShopBrowsePanel {
     }
 
     public static boolean isTagItemEntry(ShopEntry entry) {
-        return entry != null && entry.type == ShopEntry.EntryType.ITEM && ShopEntryHelper.isTagEntry(entry);
+        return ShopEntryTypes.isItem(entry) && ShopEntryHelper.isTagEntry(entry);
     }
 
     public static boolean isConcreteShopEntry(ShopEntry entry) {
-        if (entry == null || entry.type != ShopEntry.EntryType.ITEM || isTagItemEntry(entry)) {
+        if (!ShopEntryTypes.isItem(entry) || isTagItemEntry(entry)) {
             return false;
         }
         ItemStack stack = ItemConverter.parseItemString(entry.item, 1);
@@ -408,7 +409,7 @@ public final class ShopBrowsePanel {
         if (label != null && label.toLowerCase().contains(lowerQuery)) {
             return true;
         }
-        if (entry.type != ShopEntry.EntryType.ITEM) {
+        if (!ShopEntryTypes.isItem(entry)) {
             String selector = ShopEntryHelper.resourceSelector(entry);
             return selector != null && selector.toLowerCase().contains(lowerQuery);
         }

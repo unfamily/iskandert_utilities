@@ -13,8 +13,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.FluidUtil;
 import net.unfamily.iskalib.item.ItemConverter;
+import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
 import net.unfamily.iskautils.util.ModLogger;
 import org.jetbrains.annotations.Nullable;
@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Helpers for typed shop entries (item / fluid / gas) and {@code #tag} selectors.
+ * Helpers for typed shop entries and {@code #tag} selectors.
  */
 public final class ShopEntryHelper {
     private static final ModLogger LOGGER = ModLogger.of(ShopEntryHelper.class);
@@ -35,13 +35,11 @@ public final class ShopEntryHelper {
 
     private ShopEntryHelper() {}
 
-    /** Clears cached tag members (call on shop/datapack reload). */
     public static void clearTagDisplayCaches() {
         ITEM_TAG_STACKS.clear();
         FLUID_TAG_MEMBERS.clear();
     }
 
-    /** Shared cycle index so icon and label stay in sync across all shop UIs. */
     public static int tagCycleIndex(int size) {
         if (size <= 0) {
             return 0;
@@ -52,29 +50,54 @@ public final class ShopEntryHelper {
         return (int) ((Util.getMillis() / TAG_CYCLE_MS) % size);
     }
 
-    public static ShopEntry.EntryType parseType(@Nullable String raw) {
-        if (raw == null || raw.isBlank()) {
-            return ShopEntry.EntryType.ITEM;
+    /**
+     * Parse type string. Legacy bare {@code item} / blank → {@code iska_utils:item}.
+     * Unknown types return null (caller must skip).
+     */
+    @Nullable
+    public static ResourceLocation parseTypeId(@Nullable String raw) {
+        ShopEntryTypeRegistry.ensureBuiltins();
+        if (raw == null || raw.isBlank() || "item".equalsIgnoreCase(raw.trim())) {
+            return ShopEntryTypes.ITEM;
         }
-        return switch (raw.trim().toLowerCase()) {
-            case "fluid" -> ShopEntry.EntryType.FLUID;
-            case "gas" -> ShopEntry.EntryType.GAS;
-            case "other" -> ShopEntry.EntryType.OTHER;
-            default -> ShopEntry.EntryType.ITEM;
-        };
+        String trimmed = raw.trim();
+        ResourceLocation parsed;
+        try {
+            if (trimmed.indexOf(':') < 0) {
+                // Reject short fluid/gas/other — only legacy item is allowed without namespace
+                LOGGER.warn("Unknown shop entry type '{}' (use iska_utils:* ids; legacy bare item only)", trimmed);
+                return null;
+            }
+            parsed = ResourceLocation.parse(trimmed);
+        } catch (Exception e) {
+            LOGGER.warn("Invalid shop entry type '{}'", trimmed);
+            return null;
+        }
+        if (ShopEntryTypeRegistry.get(parsed) == null) {
+            LOGGER.warn("Unknown shop entry type '{}'", parsed);
+            return null;
+        }
+        return parsed;
+    }
+
+    /** @deprecated use {@link #parseTypeId(String)} */
+    @Deprecated
+    public static ResourceLocation parseType(@Nullable String raw) {
+        ResourceLocation id = parseTypeId(raw);
+        return id != null ? id : ShopEntryTypes.ITEM;
+    }
+
+    public static String typeIdString(@Nullable ShopEntry entry) {
+        if (entry == null || entry.typeId == null) {
+            return ShopEntryTypes.ITEM.toString();
+        }
+        return entry.typeId.toString();
     }
 
     @Nullable
     public static String resourceSelector(@Nullable ShopEntry entry) {
-        if (entry == null) {
-            return null;
-        }
-        return switch (entry.type) {
-            case FLUID -> entry.fluid;
-            case GAS -> entry.gas;
-            case OTHER -> entry.other;
-            case ITEM -> entry.item;
-        };
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(entry);
+        return handler != null ? handler.resourceSelector(entry) : null;
     }
 
     public static boolean isTagEntry(@Nullable ShopEntry entry) {
@@ -90,17 +113,24 @@ public final class ShopEntryHelper {
         if (entry == null || isTagEntry(entry)) {
             return false;
         }
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(entry);
+        if (handler != null && !handler.usesBuy()) {
+            return handler.isPlayerShopTradable(entry);
+        }
         return entry.buy > 0 || entry.free;
     }
 
     public static boolean isSellAllowed(@Nullable ShopEntry entry) {
-        return entry != null && entry.sell > 0;
+        if (entry == null) {
+            return false;
+        }
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(entry);
+        if (handler != null && !handler.usesSell()) {
+            return false;
+        }
+        return entry.sell > 0;
     }
 
-    /**
-     * Search match against a tag entry: tag id plus every member display name
-     * (not only the currently cycling icon/label).
-     */
     public static boolean tagEntryMatchesSearch(@Nullable ShopEntry entry, String lowerQuery) {
         if (entry == null || lowerQuery == null || lowerQuery.isEmpty() || !isTagEntry(entry)) {
             return false;
@@ -109,98 +139,67 @@ public final class ShopEntryHelper {
         if (selector != null && selector.toLowerCase().contains(lowerQuery)) {
             return true;
         }
-        return switch (entry.type) {
-            case ITEM -> {
-                for (ItemStack stack : itemStacksFromTag(selector)) {
-                    if (!stack.isEmpty() && stack.getHoverName().getString().toLowerCase().contains(lowerQuery)) {
-                        yield true;
+        if (ShopEntryTypes.isItem(entry)) {
+            for (ItemStack stack : itemStacksFromTag(selector)) {
+                if (!stack.isEmpty() && stack.getHoverName().getString().toLowerCase().contains(lowerQuery)) {
+                    return true;
+                }
+            }
+        } else if (ShopEntryTypes.isFluid(entry)) {
+            for (Fluid fluid : fluidsFromTag(selector)) {
+                if (fluid != null && fluid != Fluids.EMPTY) {
+                    String name = new FluidStack(fluid, 1).getHoverName().getString().toLowerCase();
+                    if (name.contains(lowerQuery)) {
+                        return true;
                     }
                 }
-                yield false;
             }
-            case FLUID -> {
-                for (Fluid fluid : fluidsFromTag(selector)) {
-                    if (fluid != null && fluid != Fluids.EMPTY) {
-                        String name = new FluidStack(fluid, 1).getHoverName().getString().toLowerCase();
-                        if (name.contains(lowerQuery)) {
-                            yield true;
-                        }
-                    }
-                }
-                yield false;
-            }
-            case GAS -> false;
-            case OTHER -> false;
-        };
+        }
+        return false;
     }
 
-    /** True if the entry has any buy/sell offer (not buy=0, sell=0, free=false). Editor still lists these. */
     public static boolean hasTradeOffer(@Nullable ShopEntry entry) {
-        return entry != null && (entry.free || entry.buy > 0 || entry.sell > 0);
-    }
-
-    /**
-     * Player shop lists item/fluid/gas/other entries that have a trade offer.
-     * Fluids/gases/other are catalog-only (not tradable here); use AutoShop to trade them.
-     * Gas needs Mekanism. Entries with no offer stay in the editor only.
-     */
-    public static boolean isPlayerShopBrowsable(@Nullable ShopEntry entry) {
-        if (entry == null || !hasTradeOffer(entry)) {
+        if (entry == null) {
             return false;
         }
-        return switch (entry.type) {
-            case ITEM, FLUID, OTHER -> true;
-            case GAS -> MekChemicalHelper.isLoaded();
-        };
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(entry);
+        if (handler != null && !handler.usesBuy() && !handler.usesSell()) {
+            return handler.isPlayerShopTradable(entry);
+        }
+        return entry.free || entry.buy > 0 || entry.sell > 0;
     }
 
-    /** Player shop can only trade item entries; fluids/gases/other are catalog-only (trade via AutoShop). */
+    public static boolean isPlayerShopBrowsable(@Nullable ShopEntry entry) {
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(entry);
+        return handler != null && handler.isPlayerShopBrowsable(entry);
+    }
+
     public static boolean isPlayerShopTradable(@Nullable ShopEntry entry) {
-        return entry != null && entry.type == ShopEntry.EntryType.ITEM;
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(entry);
+        return handler != null && handler.isPlayerShopTradable(entry);
     }
 
     public static boolean isAutoShopSelectable(@Nullable ShopEntry entry) {
-        if (entry == null || !hasTradeOffer(entry)) {
-            return false;
-        }
-        if (entry.type == ShopEntry.EntryType.GAS) {
-            return MekChemicalHelper.isLoaded();
-        }
-        if (entry.type == ShopEntry.EntryType.OTHER) {
-            return ShopOtherRegistry.isRegistered(entry.other);
-        }
-        return true;
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(entry);
+        return handler != null && handler.isAutoShopSelectable(entry);
     }
 
-    /**
-     * Validates and normalizes an entry after JSON parse.
-     *
-     * @return false if the entry must be skipped
-     */
     public static boolean validateEntry(ShopEntry entry, String fileName) {
-        if (entry.type == ShopEntry.EntryType.GAS && !MekChemicalHelper.isGasSupportEnabled()) {
-            LOGGER.warn("Skipping gas shop entry {} in {}: gas support disabled on this loader", entry.id, fileName);
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(entry);
+        if (handler == null) {
+            LOGGER.warn("Skipping shop entry {} in {}: unknown type {}", entry.id, fileName, entry.typeId);
             return false;
         }
-        if (entry.type == ShopEntry.EntryType.GAS && isTagSelector(entry.gas)) {
-            LOGGER.warn("Skipping gas shop entry {} in {}: gas entries cannot use tags", entry.id, fileName);
+        if (!handler.validate(entry, fileName)) {
             return false;
-        }
-        if (entry.type == ShopEntry.EntryType.OTHER) {
-            if (isTagSelector(entry.other)) {
-                LOGGER.warn("Skipping other shop entry {} in {}: other entries cannot use tags", entry.id, fileName);
-                return false;
-            }
-            if (!ShopOtherRegistry.isRegistered(entry.other)) {
-                LOGGER.warn("Skipping other shop entry {} in {}: unknown other id {}", entry.id, fileName, entry.other);
-                return false;
-            }
         }
 
-        String selector = resourceSelector(entry);
-        if (selector == null || selector.isBlank()) {
-            LOGGER.warn("Skipping shop entry {} in {}: missing resource for type {}", entry.id, fileName, entry.type);
-            return false;
+        if (handler.usesResourceSelector()) {
+            String selector = handler.resourceSelector(entry);
+            if (selector == null || selector.isBlank()) {
+                LOGGER.warn("Skipping shop entry {} in {}: missing resource for type {}", entry.id, fileName, entry.typeId);
+                return false;
+            }
         }
 
         if (isTagEntry(entry) && (entry.buy > 0 || entry.free)) {
@@ -209,10 +208,15 @@ public final class ShopEntryHelper {
             entry.free = false;
         }
 
-        if (entry.amount <= 0) {
+        if (handler.usesAmount()) {
+            if (entry.amount <= 0) {
+                entry.amount = 1;
+            }
+            entry.itemCount = entry.amount;
+        } else {
             entry.amount = 1;
+            entry.itemCount = 1;
         }
-        entry.itemCount = entry.amount;
         return true;
     }
 
@@ -230,8 +234,8 @@ public final class ShopEntryHelper {
                 return false;
             }
         }
-        ItemStack parsed = ItemConverter.parseItemString(trimmed, 1);
-        return !parsed.isEmpty() && ItemStack.isSameItemSameComponents(stack, parsed);
+        ItemStack template = ItemConverter.parseItemString(trimmed, 1);
+        return !template.isEmpty() && ItemStack.isSameItemSameComponents(stack, template);
     }
 
     public static boolean matchesFluid(FluidStack stack, @Nullable String selector) {
@@ -249,39 +253,12 @@ public final class ShopEntryHelper {
             }
         }
         Fluid fluid = resolveFluid(trimmed);
-        return fluid != null && stack.getFluid() == fluid;
+        return fluid != null && fluid != Fluids.EMPTY && stack.getFluid().isSame(fluid);
     }
 
-    public static boolean matchesGas(@Nullable Object chemicalStack, @Nullable String selector) {
-        if (!MekChemicalHelper.isLoaded() || chemicalStack == null || MekChemicalHelper.isEmpty(chemicalStack)) {
-            return false;
-        }
-        if (selector == null || selector.isBlank() || isTagSelector(selector)) {
-            return false;
-        }
-        String id = MekChemicalHelper.getRegistryName(chemicalStack);
-        return id != null && id.equals(selector.trim());
-    }
-
-    @Nullable
-    public static Fluid resolveFluid(@Nullable String fluidId) {
-        if (fluidId == null || fluidId.isBlank() || fluidId.startsWith("#")) {
-            return null;
-        }
-        try {
-            ResourceLocation id = ResourceLocation.parse(fluidId.trim());
-            return BuiltInRegistries.FLUID.getOptional(id).orElse(null);
-        } catch (Exception ignored) {
-            return null;
-        }
-    }
-
-    @Nullable
     public static ItemStack displayStackForEntry(ShopEntry entry) {
-        if (entry == null || entry.type != ShopEntry.EntryType.ITEM) {
-            return ItemStack.EMPTY;
-        }
-        return displayStackForItemSelector(entry.item, entry.amount);
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(entry);
+        return handler != null ? handler.displayItemStack(entry) : ItemStack.EMPTY;
     }
 
     public static ItemStack displayStackForItemSelector(@Nullable String selector, int amount) {
@@ -305,53 +282,13 @@ public final class ShopEntryHelper {
         return stack;
     }
 
-    /**
-     * Label shown next to a shop entry icon. Tag entries cycle the localized name of the
-     * currently displayed member (same index as the icon).
-     */
     public static String displayLabelForEntry(@Nullable ShopEntry entry) {
-        if (entry == null) {
-            return "";
-        }
-        String selector = resourceSelector(entry);
-        if (selector == null || selector.isBlank()) {
-            return "";
-        }
-        String trimmed = selector.trim();
-        if (trimmed.startsWith("#")) {
-            return switch (entry.type) {
-                case ITEM -> {
-                    ItemStack stack = displayStackForEntry(entry);
-                    yield !stack.isEmpty() ? stack.getHoverName().getString() : trimmed;
-                }
-                case FLUID -> {
-                    FluidStack fluid = displayFluidForEntry(entry);
-                    yield !fluid.isEmpty() ? fluid.getHoverName().getString() : trimmed;
-                }
-                case GAS -> trimmed;
-                case OTHER -> ShopOtherRegistry.displayName(trimmed).getString();
-            };
-        }
-        return switch (entry.type) {
-            case ITEM -> {
-                ItemStack stack = ItemConverter.parseItemString(trimmed, 1);
-                yield !stack.isEmpty() ? stack.getHoverName().getString() : trimmed;
-            }
-            case FLUID -> {
-                FluidStack fluid = displayFluidForEntry(entry);
-                yield !fluid.isEmpty() ? fluid.getHoverName().getString() : trimmed;
-            }
-            case GAS -> {
-                Object chemical = MekChemicalHelper.createStackFromId(trimmed, Math.max(1, entry.amount));
-                Component name = MekChemicalHelper.getDisplayName(chemical);
-                yield !name.getString().isEmpty() ? name.getString() : trimmed;
-            }
-            case OTHER -> ShopOtherRegistry.displayName(trimmed).getString();
-        };
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(entry);
+        return handler != null ? handler.displayLabel(entry) : "";
     }
 
     public static FluidStack displayFluidForEntry(@Nullable ShopEntry entry) {
-        if (entry == null || entry.type != ShopEntry.EntryType.FLUID) {
+        if (!ShopEntryTypes.isFluid(entry)) {
             return FluidStack.EMPTY;
         }
         String selector = entry.fluid;
@@ -374,7 +311,7 @@ public final class ShopEntryHelper {
 
     @Nullable
     public static Object displayGasForEntry(@Nullable ShopEntry entry) {
-        if (entry == null || entry.type != ShopEntry.EntryType.GAS || !MekChemicalHelper.isLoaded()) {
+        if (!ShopEntryTypes.isGas(entry) || !MekChemicalHelper.isLoaded()) {
             return null;
         }
         String selector = entry.gas;
@@ -392,33 +329,8 @@ public final class ShopEntryHelper {
             String selector = resourceSelector(entry);
             return Component.literal(selector != null ? selector.trim() : "");
         }
-        return switch (entry.type) {
-            case ITEM -> {
-                ItemStack stack = displayStackForEntry(entry);
-                yield !stack.isEmpty() ? stack.getHoverName() : Component.literal(displayLabelForEntry(entry));
-            }
-            case FLUID -> {
-                FluidStack fluid = displayFluidForEntry(entry);
-                yield !fluid.isEmpty() ? fluid.getHoverName() : Component.literal(displayLabelForEntry(entry));
-            }
-            case GAS -> {
-                Object chemical = displayGasForEntry(entry);
-                Component name = MekChemicalHelper.getDisplayName(chemical);
-                yield !name.getString().isEmpty() ? name : Component.literal(displayLabelForEntry(entry));
-            }
-            case OTHER -> ShopOtherRegistry.displayName(entry.other);
-        };
-    }
-
-    private static ItemStack firstItemFromTag(String tagSelector) {
-        List<ItemStack> stacks = itemStacksFromTag(tagSelector);
-        return stacks.isEmpty() ? ItemStack.EMPTY : stacks.get(0).copy();
-    }
-
-    @Nullable
-    private static Fluid firstFluidFromTag(String tagSelector) {
-        List<Fluid> fluids = fluidsFromTag(tagSelector);
-        return fluids.isEmpty() ? null : fluids.get(0);
+        ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(entry);
+        return handler != null ? handler.displayName(entry) : Component.empty();
     }
 
     public static List<ItemStack> itemStacksFromTag(String tagSelector) {
@@ -496,9 +408,6 @@ public final class ShopEntryHelper {
         return bracketIndex != -1 ? trimmed.substring(0, bracketIndex) : trimmed;
     }
 
-    /**
-     * Prefers an entry matching {@code preferBuy}, otherwise any buy/sell-capable match.
-     */
     @Nullable
     public static ShopEntry findMatchingFluidEntry(FluidStack stack, boolean preferBuy) {
         if (stack == null || stack.getFluid() == Fluids.EMPTY) {
@@ -507,7 +416,7 @@ public final class ShopEntryHelper {
         ShopEntry preferred = null;
         ShopEntry fallback = null;
         for (ShopEntry entry : ShopLoader.getEntries().values()) {
-            if (entry.type != ShopEntry.EntryType.FLUID || !isAutoShopSelectable(entry)) {
+            if (!ShopEntryTypes.isFluid(entry) || !isAutoShopSelectable(entry)) {
                 continue;
             }
             if (!matchesFluid(stack, entry.fluid)) {
@@ -526,9 +435,6 @@ public final class ShopEntryHelper {
         return preferred != null ? preferred : fallback;
     }
 
-    /**
-     * Prefers an entry matching {@code preferBuy}, otherwise any buy/sell-capable match.
-     */
     @Nullable
     public static ShopEntry findMatchingGasEntry(@Nullable Object chemicalStack, boolean preferBuy) {
         if (!MekChemicalHelper.isLoaded() || chemicalStack == null || MekChemicalHelper.isEmpty(chemicalStack)) {
@@ -537,7 +443,7 @@ public final class ShopEntryHelper {
         ShopEntry preferred = null;
         ShopEntry fallback = null;
         for (ShopEntry entry : ShopLoader.getEntries().values()) {
-            if (entry.type != ShopEntry.EntryType.GAS || !isAutoShopSelectable(entry)) {
+            if (!ShopEntryTypes.isGas(entry) || !isAutoShopSelectable(entry)) {
                 continue;
             }
             if (!matchesGas(chemicalStack, entry.gas)) {
@@ -556,7 +462,17 @@ public final class ShopEntryHelper {
         return preferred != null ? preferred : fallback;
     }
 
-    /** Chooses buy/sell so the entry remains selectable for AutoShop apply. */
+    public static boolean matchesGas(@Nullable Object chemicalStack, @Nullable String selector) {
+        if (!MekChemicalHelper.isLoaded() || chemicalStack == null || MekChemicalHelper.isEmpty(chemicalStack)) {
+            return false;
+        }
+        if (selector == null || selector.isBlank() || isTagSelector(selector)) {
+            return false;
+        }
+        String id = MekChemicalHelper.getRegistryName(chemicalStack);
+        return id != null && id.equals(selector.trim());
+    }
+
     public static boolean resolveBuyModeForEntry(@Nullable ShopEntry entry, boolean preferBuy) {
         if (entry == null) {
             return preferBuy;
@@ -579,19 +495,13 @@ public final class ShopEntryHelper {
         return preferBuy;
     }
 
-    /**
-     * Fluid contained in an item (bucket/tank). Uses legacy FluidUtil on 1.21.1.
-     */
     public static FluidStack fluidContainedInItem(@Nullable ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return FluidStack.EMPTY;
         }
-        return FluidUtil.getFluidContained(stack).orElse(FluidStack.EMPTY);
+        return net.neoforged.neoforge.fluids.FluidUtil.getFluidContained(stack).orElse(FluidStack.EMPTY);
     }
 
-    /**
-     * JEI may expose fluid types with amount 0; normalize so matching/isEmpty checks still work.
-     */
     public static FluidStack normalizeFluidIngredient(@Nullable FluidStack fluid) {
         if (fluid == null || fluid.getFluid() == Fluids.EMPTY) {
             return FluidStack.EMPTY;
@@ -604,5 +514,18 @@ public final class ShopEntryHelper {
 
     public static boolean isFluidIngredient(@Nullable Object ingredient) {
         return ingredient instanceof FluidStack fluid && fluid.getFluid() != Fluids.EMPTY;
+    }
+
+    @Nullable
+    public static Fluid resolveFluid(@Nullable String fluidId) {
+        if (fluidId == null || fluidId.isBlank() || fluidId.startsWith("#")) {
+            return null;
+        }
+        try {
+            ResourceLocation id = ResourceLocation.parse(fluidId.trim());
+            return BuiltInRegistries.FLUID.getOptional(id).orElse(null);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 }

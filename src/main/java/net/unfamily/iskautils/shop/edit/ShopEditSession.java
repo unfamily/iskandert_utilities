@@ -128,11 +128,28 @@ public final class ShopEditSession {
         ShopEntry e = new ShopEntry();
         e.id = src.id;
         e.inCategory = src.inCategory;
-        e.type = src.type;
+        e.typeId = src.typeId;
         e.item = src.item;
         e.fluid = src.fluid;
         e.gas = src.gas;
-        e.other = src.other;
+        e.display = src.display;
+        e.icon = src.icon;
+        e.commands = src.commands != null ? new java.util.ArrayList<>(src.commands) : new java.util.ArrayList<>();
+        e.repeatableBuy = src.repeatableBuy != null ? src.repeatableBuy.copy() : null;
+        e.repeatableSell = src.repeatableSell != null ? src.repeatableSell.copy() : null;
+        if (src.stageRewards != null) {
+            e.stageRewards = new net.unfamily.iskautils.shop.ShopStage[src.stageRewards.length];
+            for (int i = 0; i < src.stageRewards.length; i++) {
+                if (src.stageRewards[i] == null) {
+                    continue;
+                }
+                net.unfamily.iskautils.shop.ShopStage st = new net.unfamily.iskautils.shop.ShopStage();
+                st.stage = src.stageRewards[i].stage;
+                st.stageType = src.stageRewards[i].stageType;
+                st.is = src.stageRewards[i].is;
+                e.stageRewards[i] = st;
+            }
+        }
         e.amount = src.amount;
         e.itemCount = src.itemCount;
         e.currency = src.currency;

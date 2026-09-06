@@ -61,7 +61,7 @@ public record AutoShopConvertSelectedC2SPacket(BlockPos pos) implements CustomPa
             }
 
             ItemStack filterItem = ShopEntryHelper.displayStackForEntry(entry);
-            if (entry.type == ShopEntry.EntryType.ITEM && filterItem.isEmpty()) {
+            if (net.unfamily.iskautils.shop.ShopEntryTypes.isItem(entry) && filterItem.isEmpty()) {
                 return;
             }
             if (!filterItem.isEmpty()) {
