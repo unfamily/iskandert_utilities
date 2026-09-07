@@ -37,7 +37,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.common.Tags;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.client.KeyBindings;
+import net.unfamily.iskautils.util.KeybindTooltipUtil;
 import net.unfamily.iskautils.scan.ScannerLootScan;
 import net.unfamily.iskautils.util.ScannerLiquidFilter;
 import net.unfamily.iskautils.util.ScannerLootModes;
@@ -1063,7 +1063,7 @@ public class ScannerItem extends Item {
         }
 
         int scanRange = getScanRange(stack);
-        String keybindName = KeyBindings.SCANNER_RANGE_KEY.getTranslatedKeyMessage().getString();
+        Component keybindName = KeybindTooltipUtil.keybindOrTranslation("key.iska_utils.scanner_range", "SCANNER_RANGE_KEY");
         tooltipComponents.add(
             Component.translatable("item.iska_utils.scanner.tooltip.range_key_line", scanRange, keybindName)
                 .withStyle(ChatFormatting.GRAY));

@@ -23,6 +23,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.unfamily.iskautils.client.KeyBindings;
+import net.unfamily.iskautils.util.KeybindTooltipUtil;
 import net.unfamily.iskautils.Config;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.component.CustomData;
@@ -132,7 +133,8 @@ public class PortableDislocatorItem extends Item {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         
         // Get the keybind name
-        String keybindName = KeyBindings.PORTABLE_DISLOCATOR_KEY.getTranslatedKeyMessage().getString();
+        Component keybindName = KeybindTooltipUtil.keybindOrTranslation(
+                "key.iska_utils.portable_dislocator", "PORTABLE_DISLOCATOR_KEY");
 
         tooltipComponents.add(Component.translatable("item.iska_utils.portable_dislocator.tooltip.main", keybindName)
                 .withStyle(ArtifactTooltipUtil.loreStyle()));

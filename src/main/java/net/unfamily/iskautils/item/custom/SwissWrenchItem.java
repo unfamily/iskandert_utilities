@@ -8,6 +8,8 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.events.SetWrenchDirectionBlock;
+import net.unfamily.iskautils.util.ArtifactTooltipUtil;
+import net.unfamily.iskautils.util.KeybindTooltipUtil;
 
 import java.util.List;
 
@@ -31,14 +33,16 @@ public class SwissWrenchItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
 
-        tooltipComponents.add(Component.translatable("item.iska_utils.swiss_wrench.tooltip.desc0"));
-        tooltipComponents.add(Component.translatable("item.iska_utils.swiss_wrench.tooltip.desc_shift"));
+        Component keybind = KeybindTooltipUtil.keybindOrTranslation(
+                "key.iska_utils.swiss_wrench_rotate", "SWISS_WRENCH_ROTATE_KEY");
+        ArtifactTooltipUtil.addLoreLine(tooltipComponents::add, "item.iska_utils.swiss_wrench.tooltip.desc0", keybind);
+        ArtifactTooltipUtil.addLoreLine(tooltipComponents::add, "item.iska_utils.swiss_wrench.tooltip.desc_shift");
 
         if (Config.swissWrenchLegacyModes) {
             SetWrenchDirectionBlock.RotationMode currentMode = SetWrenchDirectionBlock.getSelectedRotationMode(stack);
-            tooltipComponents.add(Component.translatable("item.iska_utils.swiss_wrench.tooltip.current_mode",
-                    currentMode.getDisplayName()));
-            tooltipComponents.add(Component.translatable("item.iska_utils.swiss_wrench.tooltip.desc1"));
+            ArtifactTooltipUtil.addTechLine(tooltipComponents::add, "item.iska_utils.swiss_wrench.tooltip.current_mode",
+                    currentMode.getDisplayName());
+            ArtifactTooltipUtil.addTechLine(tooltipComponents::add, "item.iska_utils.swiss_wrench.tooltip.desc1");
         }
     }
 }
