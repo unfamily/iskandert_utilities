@@ -93,8 +93,8 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
     // Filter letter labels above/below 18x18 variable edit buttons
     private static final int FILTER_LABEL_WIDTH = 16;
-    private static final int FILTER_LABEL_HEIGHT = 12;
-    private static final int FILTER_LABEL_GAP = 1;
+    private static final int FILTER_LABEL_HEIGHT = 14;
+    private static final int FILTER_LABEL_GAP = 3;
     private static final int VARIABLE_SLOT_X = ImprovedPatternCrafterMenu.MACHINE_INPUT_X;
     private static final int VARIABLE_SLOT_Y = 47;
     private static final int NAV_BACK_WIDTH = 40;
@@ -965,14 +965,18 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             variablePreviews[i] = preview;
             if (variableButtons[i] != null) {
                 variableButtons[i].visible = showMain;
-                // Keep active when locked so Shift+click can clear filter content; open edit still requires a letter.
-                variableButtons[i].active = showMain;
-                var varTip = Component.translatable("gui.iska_utils.variable_open_tooltip")
-                        .append(Component.literal("\n"))
-                        .append(Component.translatable("gui.iska_utils.variable_shift_clear_filter"));
-                if (letterValue <= PatternData.EMPTY) {
-                    varTip = varTip.append(Component.literal("\n"))
-                            .append(Component.translatable("gui.iska_utils.variable_locked_hint"));
+                // Inactive letter: disabled look; Shift+click clear still handled in mouseClicked.
+                boolean letterActive = letterValue > PatternData.EMPTY;
+                variableButtons[i].active = showMain && letterActive;
+                Component varTip;
+                if (!letterActive) {
+                    varTip = Component.translatable("gui.iska_utils.variable_locked_hint")
+                            .append(Component.literal("\n"))
+                            .append(Component.translatable("gui.iska_utils.variable_shift_clear_only"));
+                } else {
+                    varTip = Component.translatable("gui.iska_utils.variable_open_tooltip")
+                            .append(Component.literal("\n"))
+                            .append(Component.translatable("gui.iska_utils.variable_shift_clear_filter"));
                 }
                 variableButtons[i].setTooltip(Tooltip.create(varTip));
             }
@@ -1330,11 +1334,17 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         double mouseX = event.x();
         double mouseY = event.y();
         int button = event.button();
-        // Shift+LMB on variable edit buttons clears filter content (works while letter-locked too).
+        // Shift+LMB clears filter content even when the button looks inactive (no letter).
         if (subView == SubView.MAIN && button == 0 && isShiftDown() && menu.getBlockEntity() != null) {
             for (int i = 0; i < variableButtons.length; i++) {
                 ItemIconButton btn = variableButtons[i];
-                if (btn == null || !btn.visible || !btn.isMouseOver(mouseX, mouseY)) continue;
+                // isMouseOver requires active; check bounds so inactive (no-letter) buttons still clear.
+                if (btn == null || !btn.visible
+                        || mouseX < btn.getX() || mouseY < btn.getY()
+                        || mouseX >= btn.getX() + btn.getWidth()
+                        || mouseY >= btn.getY() + btn.getHeight()) {
+                    continue;
+                }
                 int slotIndex = resolveFilterIndex(i);
                 if (slotIndex < 0 || slotIndex >= menu.getEffectiveKeyInputCount()) continue;
                 int letter = menu.getFilterLetter(slotIndex);

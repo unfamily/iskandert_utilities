@@ -65,6 +65,9 @@ public class ItemIconButton extends Button {
             graphics.pose().scale(scale, scale);
             graphics.item(stack, 0, 0);
             graphics.pose().popMatrix();
+            if (!this.active) {
+                graphics.fill(ix, iy, ix + iconSize, iy + iconSize, 0x66000000);
+            }
         }
     }
 
