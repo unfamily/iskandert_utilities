@@ -1267,8 +1267,8 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
     @Override
     public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-        int x = (this.width - this.imageWidth) / 2;
-        int y = (this.height - this.imageHeight) / 2;
+        int x = this.leftPos;
+        int y = this.topPos;
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
 
         if (subView != SubView.MAIN) {
@@ -1308,6 +1308,16 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 y + ImprovedPatternCrafterMenu.UPGRADE_SLOT_Y1 - 1, 0, 0, 18, 18, 18, 18);
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SINGLE_SLOT, x + ImprovedPatternCrafterMenu.UPGRADE_SLOT_X - 1,
                 y + ImprovedPatternCrafterMenu.UPGRADE_SLOT_Y2 - 1, 0, 0, 18, 18, 18, 18);
+
+        // Ghosts / lock under slots + carried cursor item (must be before extractCarriedItem).
+        if (menu.getBlockEntity() != null) {
+            renderUpgradeSlotOverlays(guiGraphics);
+        }
+        if (!variableInlineEdit) {
+            renderMarkInputGhosts(guiGraphics);
+        }
+        renderMarkOutputGhosts(guiGraphics);
+        renderUpgradeLockOverlays(guiGraphics);
     }
 
     /** Input filter slots are visual-only letter+button widgets; skip menu ghost slot contents. */
@@ -1346,17 +1356,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
 
-        if (subView == SubView.MAIN) {
-            if (menu.getBlockEntity() != null) {
-                renderUpgradeSlotOverlays(guiGraphics);
-            }
-            if (!variableInlineEdit) {
-                renderMarkInputGhosts(guiGraphics);
-            }
-            renderMarkOutputGhosts(guiGraphics);
-            renderUpgradeLockOverlays(guiGraphics);
-            // Editor ghost frame+item drawn in extractBackground only so JEI highlight stays on top.
-        } else {
+        if (subView != SubView.MAIN) {
             renderFilterListSubview(guiGraphics, mouseX, mouseY);
             renderSettingsCopierItem(guiGraphics, mouseX, mouseY);
         }
@@ -1836,7 +1836,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         // Title centered at top of GUI
         int titleW = this.font.width(this.title);
         int titleX = (this.imageWidth - titleW) / 2;
-        guiGraphics.text(this.font, this.title, titleX, 6, 4210752, false);
+        guiGraphics.text(this.font, this.title, titleX, 6, GuiTextColors.TITLE, false);
 
         if (subView != SubView.MAIN) return;
 
@@ -1844,7 +1844,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         String outputPage = (currentOutputPage + 1) + "/" + maxPages;
         int outputPageY = ImprovedPatternCrafterMenu.OUTPUT_PAGE_Y + 3;
         int outputPageX = OUTPUT_SIDE_BTN_X + (OUTPUT_SIDE_BTN_W - this.font.width(outputPage)) / 2;
-        guiGraphics.text(this.font, outputPage, outputPageX, outputPageY, 4210752, false);
+        guiGraphics.text(this.font, outputPage, outputPageX, outputPageY, GuiTextColors.TITLE, false);
     }
 
     /**
@@ -2478,7 +2478,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             };
             int y = this.topPos + 40;
             for (String key : keys) {
-                guiGraphics.text(this.font, Component.translatable(key), this.leftPos + 12, y, 0x404040, false);
+                guiGraphics.text(this.font, Component.translatable(key), this.leftPos + 12, y, GuiTextColors.BODY, false);
                 y += 12;
             }
             return;
@@ -2525,7 +2525,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 displayText = this.font.plainSubstrByWidth(displayText, maxTextWidth - this.font.width("...")) + "...";
             }
             if (!displayText.isEmpty()) {
-                guiGraphics.text(this.font, Component.literal(displayText), textX, textY, 0x404040, false);
+                guiGraphics.text(this.font, Component.literal(displayText), textX, textY, GuiTextColors.BODY, false);
             }
         }
     }

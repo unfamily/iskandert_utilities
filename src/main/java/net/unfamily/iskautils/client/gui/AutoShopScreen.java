@@ -363,6 +363,7 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
                 GUI_WIDTH, GUI_HEIGHT, GUI_WIDTH, GUI_HEIGHT);
         renderEnergyBar(guiGraphics);
         renderTanks(guiGraphics);
+        renderFilterGhost(guiGraphics);
         renderGuiLabels(guiGraphics);
     }
 
@@ -542,7 +543,6 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
 
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
         updateModeButtonTooltip();
-        renderFilterGhost(guiGraphics);
         renderFilterGhostTooltip(guiGraphics, mouseX, mouseY);
         if (redstoneModeButton != null && redstoneModeButton.isMouseOver(mouseX, mouseY)) {
             MachineGuiButtons.renderTooltipLine(

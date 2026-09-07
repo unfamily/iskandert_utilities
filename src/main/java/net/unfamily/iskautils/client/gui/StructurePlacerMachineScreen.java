@@ -422,6 +422,7 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, this.leftPos, this.topPos, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         renderEnergyBar(guiGraphics);
+        renderGhostItems(guiGraphics);
     }
     
     private void renderEnergyBar(GuiGraphicsExtractor guiGraphics) {
@@ -459,7 +460,6 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
     @Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
-        renderGhostItems(guiGraphics);
         renderEnergyTooltip(guiGraphics, mouseX, mouseY);
         if (redstoneModeButton != null && redstoneModeButton.isMouseOver(mouseX, mouseY)) {
             MachineGuiButtons.renderTooltipLine(

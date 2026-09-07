@@ -333,13 +333,13 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, this.leftPos, this.topPos, 0.0F, 0.0F,
                 this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
         renderXpBar(guiGraphics);
+        renderGhostModule(guiGraphics);
+        GuiSlotLock.renderIfLocked(guiGraphics, leftPos, topPos, menu.getSlot(CollectingCrateMenu.MODULE_SLOT_INDEX));
     }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
-        renderGhostModule(guiGraphics);
-        GuiSlotLock.renderIfLocked(guiGraphics, leftPos, topPos, menu.getSlot(CollectingCrateMenu.MODULE_SLOT_INDEX));
         renderButtonTooltips(guiGraphics, mouseX, mouseY);
     }
 

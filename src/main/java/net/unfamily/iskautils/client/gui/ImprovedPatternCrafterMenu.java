@@ -598,21 +598,21 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
         }
     }
 
-    // Player inventory: 9 columns x 3 rows at (80, 171)
+    // Player inventory: 9 columns x 3 rows (aligned with GUI texture / PLAYER_INV_*)
     private void addPlayerInventory(Inventory playerInventory) {
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
                 this.addSlot(new Slot(playerInventory, col + row * 9 + 9,
-                        80 + col * 18, 171 + row * 18));
+                        PLAYER_INV_X + col * 18, PLAYER_INV_Y + row * 18));
             }
         }
     }
 
-    // Player hotbar: 9 columns x 1 row at (80, 229)
+    // Player hotbar: 9 columns x 1 row
     private void addPlayerHotbar(Inventory playerInventory) {
         for (int col = 0; col < 9; col++) {
             this.addSlot(new Slot(playerInventory, col,
-                    80 + col * 18, 229));
+                    PLAYER_INV_X + col * 18, PLAYER_HOTBAR_Y));
         }
     }
 

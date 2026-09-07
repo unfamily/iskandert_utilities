@@ -81,6 +81,8 @@ public class EntropicSpawnerScreen extends AbstractContainerScreen<EntropicSpawn
                 0.0F, 0.0F, 18, 18, 18, 18);
         renderCenterInfo(graphics);
         renderPlaceholderOverlay(graphics);
+        renderGhostItems(graphics);
+        renderModuleLockOverlays(graphics);
     }
 
     private void renderPlaceholderOverlay(GuiGraphicsExtractor graphics) {
@@ -120,8 +122,6 @@ public class EntropicSpawnerScreen extends AbstractContainerScreen<EntropicSpawn
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
-        renderGhostItems(graphics);
-        renderModuleLockOverlays(graphics);
         renderButtonTooltips(graphics, mouseX, mouseY);
     }
 

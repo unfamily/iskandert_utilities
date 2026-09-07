@@ -271,11 +271,13 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
         int guiX = this.leftPos;
         int guiY = this.topPos;
-        
+
         // Render main background
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND, guiX, guiY, 0.0F, 0.0F, this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
-        
+
         renderRangeGrid(guiGraphics);
+        renderGhostItems(guiGraphics);
+        renderModuleLockOverlays(guiGraphics);
     }
     
     private void renderRangeGrid(GuiGraphicsExtractor guiGraphics) {
@@ -506,8 +508,6 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     @Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
-        renderGhostItems(guiGraphics);
-        renderModuleLockOverlays(guiGraphics);
         renderButtonTooltips(guiGraphics, mouseX, mouseY);
     }
 

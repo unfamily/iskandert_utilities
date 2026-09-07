@@ -101,8 +101,6 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
     @Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
-        renderGhostModules(guiGraphics);
-        renderModuleLockOverlays(guiGraphics);
         renderButtonTooltips(guiGraphics, mouseX, mouseY);
     }
 
@@ -113,6 +111,8 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
                 this.imageWidth, this.imageHeight, GUI_WIDTH, GUI_HEIGHT);
 
         renderModuleSlotBackgrounds(guiGraphics);
+        renderGhostModules(guiGraphics);
+        renderModuleLockOverlays(guiGraphics);
         renderStats(guiGraphics);
     }
 

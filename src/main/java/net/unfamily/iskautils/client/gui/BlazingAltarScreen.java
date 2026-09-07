@@ -301,7 +301,6 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
-        GuiSlotLock.renderIfLocked(graphics, leftPos, topPos, menu.getSlot(BlazingAltarMenu.MODULE_SLOT_INDEX));
         renderButtonTooltips(graphics, mouseX, mouseY);
     }
 
@@ -322,6 +321,7 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
         renderPlacerGhost(graphics);
         renderModuleSlotBackground(graphics);
         renderModuleGhost(graphics);
+        GuiSlotLock.renderIfLocked(graphics, leftPos, topPos, menu.getSlot(BlazingAltarMenu.MODULE_SLOT_INDEX));
     }
 
     private void renderModuleSlotBackground(GuiGraphicsExtractor graphics) {
