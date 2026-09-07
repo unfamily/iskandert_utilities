@@ -62,6 +62,7 @@ import net.unfamily.iskautils.item.custom.ExtremeModuleItem;
 import net.unfamily.iskautils.item.custom.UltraModuleItem;
 import net.unfamily.iskautils.item.custom.LogicModuleItem;
 import net.unfamily.iskautils.item.custom.ProductionModuleItem;
+import net.unfamily.iskautils.item.custom.PatternCrafterImproverItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
 import net.unfamily.iskautils.item.custom.AncientTabletItem;
 import net.unfamily.iskautils.item.custom.UnstableEntropyCatalystItem;
@@ -697,6 +698,9 @@ public class ModItems {
 
     public static final DeferredItem<Item> IMPROVED_PATTERN_CRAFTER = ITEMS.register("improved_pattern_crafter",
             () -> new BlockItem(ModBlocks.IMPROVED_PATTERN_CRAFTER.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> PATTERN_CRAFTER_IMPROVER = ITEMS.register("pattern_crafter_improver",
+            () -> new PatternCrafterImproverItem(ITEM_PROPERTIES));
 
     public static final DeferredItem<Item> SHOP = ITEMS.register("shop",
             () -> new ShopBlockItem(ModBlocks.SHOP.get(), ITEM_PROPERTIES));

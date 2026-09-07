@@ -6,12 +6,6 @@ navigation:
   position: 45
 item_ids:
   - iska_utils:mob_reaper
-  - iska_utils:normal_damage_module
-  - iska_utils:lethal_damage_module
-  - iska_utils:enchant_module
-  - iska_utils:beheading_module
-  - iska_utils:luck_module
-  - iska_utils:experience_module
 categories:
   - World and machines
 ---
@@ -64,7 +58,7 @@ Use **one damage module type** at a time: **Normal** (stackable) **or** **Lethal
   <ItemIcon id="iska_utils:experience_module" />
 </ItemGrid>
 
-Module inventory is **hopper / pipe** compatible. See **Modules** for a short map of every machine module.
+Module inventory is **hopper / pipe** compatible. See **Modules** → **Mob Reaper modules**.
 
 ## Redstone
 

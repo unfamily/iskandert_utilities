@@ -152,18 +152,30 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
                 || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
     }
 
+    private boolean isCtrlOrAltDownNow() {
+        if (minecraft == null) {
+            return false;
+        }
+        long window = minecraft.getWindow().getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL)
+                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL)
+                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT)
+                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (rangeButton != null && rangeButton.isMouseOver(mouseX, mouseY)) {
             boolean shift = isShiftDownNow();
+            boolean step10 = !shift && isCtrlOrAltDownNow();
             int range = menu.getRange();
             int max = menu.getMaxRange();
             if (button == 0) {
-                sendRange(shift ? (max - range) : 1);
+                sendRange(shift ? (max - range) : (step10 ? 10 : 1));
                 return true;
             }
             if (button == 1) {
-                sendRange(shift ? (1 - range) : -1);
+                sendRange(shift ? (1 - range) : (step10 ? -10 : -1));
                 return true;
             }
         }

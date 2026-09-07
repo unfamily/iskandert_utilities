@@ -7,7 +7,6 @@ navigation:
 item_ids:
   - iska_utils:temporal_overclocker
   - iska_utils:temporal_overclocker_chip
-  - iska_utils:entropic_clock
 categories:
   - World and machines
 ---
@@ -25,7 +24,7 @@ categories:
 
 ## Entropic upgrade
 
-- **Upgrade slot** (left of the Overclock button): insert an <ItemImage id="iska_utils:entropic_clock" /> **Entropic Clock** to raise the max overclock factor.
+- **Upgrade slot** (left of the Overclock button): insert an <ItemImage id="iska_utils:entropic_clock" /> **Entropic Clock** to raise the max overclock factor. See **Modules** → **Entropic Clock**.
 - **Fuel slot** (right of the Overclock button): insert **Drop of Entropy**; drops are converted into internal entropy charge (percentage shown under the slot). Entropy is consumed while accelerating linked blocks when the clock is installed.
 
 <ItemGrid>

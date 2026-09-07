@@ -166,6 +166,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.ENTROPIC_CLOCK.get());
                                 pOutput.accept(ModItems.PATTERN_CRAFTER.get());
                                 pOutput.accept(ModItems.IMPROVED_PATTERN_CRAFTER.get());
+                                pOutput.accept(ModItems.PATTERN_CRAFTER_IMPROVER.get());
                                 // Deep drawer (all components)
                                 pOutput.accept(ModItems.DEEP_DRAWERS.get());
                                 pOutput.accept(ModItems.DEEP_DRAWER_EXTRACTOR.get());

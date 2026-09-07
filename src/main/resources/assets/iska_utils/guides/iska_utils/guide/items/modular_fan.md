@@ -6,9 +6,6 @@ navigation:
   position: 35
 item_ids:
   - iska_utils:fan
-  - iska_utils:range_module
-  - iska_utils:ghost_module
-  - iska_utils:slow_module
 categories:
   - World and machines
 ---
@@ -35,9 +32,9 @@ categories:
 | ---- | ------ | ------ |
 | Range | <ItemImage id="iska_utils:range_module" /> **Range Module** | Increases max reach on all axes. |
 | Ghost | <ItemImage id="iska_utils:ghost_module" /> **Ghost Module** | Lets airflow interact through solid blocks. |
-| Speed | Slow → Ultra vector modules | Speeds fan thrust (higher tier = stronger). |
+| Speed | **Vector modules** (Slow → Ultra) | Speeds fan thrust (higher tier = stronger). |
 
-See **Modules** for the full module map.
+See **Modules** → **Range Module**, **Ghost Module**, and **Vector modules**.
 
 <ItemGrid>
   <ItemIcon id="iska_utils:range_module" />

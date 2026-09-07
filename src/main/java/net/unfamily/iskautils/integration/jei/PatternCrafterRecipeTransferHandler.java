@@ -12,6 +12,7 @@ import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
@@ -23,6 +24,7 @@ import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.iskautils.client.gui.ImprovedPatternCrafterMenu;
+import net.unfamily.iskautils.client.gui.ImprovedPatternCrafterScreen;
 import net.unfamily.iskautils.client.gui.ModMenuTypes;
 import net.unfamily.iskautils.network.packet.PatternCrafterJeiTransferC2SPacket;
 import net.unfamily.iskautils.pattern.PatternData;
@@ -60,8 +62,11 @@ public final class PatternCrafterRecipeTransferHandler
         if (menu.getBlockEntity() == null) {
             return error("jei.iska_utils.pattern_crafter.transfer.wrong_menu");
         }
+        ImprovedPatternCrafterScreen openScreen = Minecraft.getInstance().screen instanceof ImprovedPatternCrafterScreen s
+                ? s : null;
         for (int i = 0; i < 9; i++) {
-            if (menu.getGridCell(i) != 0) {
+            int cell = openScreen != null ? openScreen.getEffectiveGridCell(i) : menu.getGridCell(i);
+            if (cell != PatternData.EMPTY) {
                 return error("jei.iska_utils.pattern_crafter.transfer.pattern_slot_assigned");
             }
         }
@@ -103,9 +108,18 @@ public final class PatternCrafterRecipeTransferHandler
         }
         if (doTransfer) {
             int craftingMode = resolveCraftingMode(recipe.value());
+            int[] pendingLetters = menu.getBlockEntity().previewJeiGridLetters(grid);
+            if (pendingLetters == null) {
+                return error("jei.iska_utils.pattern_crafter.transfer.no_variables");
+            }
             PacketDistributor.sendToServer(
                     new PatternCrafterJeiTransferC2SPacket(
                             menu.getBlockEntity().getBlockPos(), grid, craftingMode));
+            if (openScreen != null) {
+                openScreen.applyJeiPending(pendingLetters, craftingMode);
+            } else if (Minecraft.getInstance().screen instanceof ImprovedPatternCrafterScreen screen) {
+                screen.applyJeiPending(pendingLetters, craftingMode);
+            }
         }
         return null;
     }

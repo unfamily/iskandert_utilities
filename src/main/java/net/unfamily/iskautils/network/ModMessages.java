@@ -482,6 +482,9 @@ public class ModMessages {
         registrar.playToServer(net.unfamily.iskautils.network.packet.CraftingModeSwitchC2SPacket.TYPE,
                 net.unfamily.iskautils.network.packet.CraftingModeSwitchC2SPacket.STREAM_CODEC,
                 net.unfamily.iskautils.network.packet.CraftingModeSwitchC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.CraftingModeSetC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.CraftingModeSetC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.CraftingModeSetC2SPacket::handle);
         registrar.playToServer(net.unfamily.iskautils.network.packet.FilterLetterUpdateC2SPacket.TYPE,
                 net.unfamily.iskautils.network.packet.FilterLetterUpdateC2SPacket.STREAM_CODEC,
                 net.unfamily.iskautils.network.packet.FilterLetterUpdateC2SPacket::handle);
@@ -530,6 +533,9 @@ public class ModMessages {
         registrar.playToServer(net.unfamily.iskautils.network.packet.ToolSafeguardC2SPacket.TYPE,
                 net.unfamily.iskautils.network.packet.ToolSafeguardC2SPacket.STREAM_CODEC,
                 net.unfamily.iskautils.network.packet.ToolSafeguardC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.AutoclearVariablesC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.AutoclearVariablesC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.AutoclearVariablesC2SPacket::handle);
         registrar.playToServer(net.unfamily.iskautils.network.packet.ForbiddenFiltersC2SPacket.TYPE,
                 net.unfamily.iskautils.network.packet.ForbiddenFiltersC2SPacket.STREAM_CODEC,
                 net.unfamily.iskautils.network.packet.ForbiddenFiltersC2SPacket::handle);

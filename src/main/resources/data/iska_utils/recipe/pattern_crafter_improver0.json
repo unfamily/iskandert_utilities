@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["ABA", "BCB", "ABA"],
+  "key": {
+    "A": [
+      { "tag": "c:gems/quartz" },
+      { "tag": "c:gems/diamond" },
+      { "tag": "c:gems/prismarine" }
+    ],
+    "B": [
+      { "tag": "c:gems/lapis" },
+      { "item": "minecraft:glow_ink_sac" }
+    ],
+    "C": { "tag": "minecraft:planks" }
+  },
+  "result": {
+    "id": "iska_utils:pattern_crafter_improver",
+    "count": 1
+  }
+}

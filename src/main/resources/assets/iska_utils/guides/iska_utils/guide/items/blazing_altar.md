@@ -6,7 +6,6 @@ navigation:
   position: 23
 item_ids:
   - iska_utils:blazing_altar
-  - iska_utils:range_module
 categories:
   - Combat and travel
 ---
@@ -39,7 +38,7 @@ Area controller for **Burning Flame** / **Cursed Burning Flame** placement and o
 
 - **Range Module** slot: each module increases the altar’s **chunk radius** (coverage for flames and spawn filter).
 
-See **Modules** for the full module map.
+See **Modules** → **Range Module**.
 
 ## Visibility
 
