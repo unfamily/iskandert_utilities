@@ -28,6 +28,7 @@ import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
 import net.unfamily.iskautils.shop.ShopEntryTypes;
+import net.unfamily.iskautils.shop.ShopHierarchy;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.item.ItemStack;
@@ -164,7 +165,8 @@ public class AutoShopBlockEntity extends BlockEntity {
 
     // Shop state (simplified)
     private boolean isActive = false;
-    private String currentCategory = "000_default";
+    /** Blank = root browse level (aligned with client null). */
+    private String currentCategory = "";
     private String selectedValute = resolveDefaultCurrencyId();
     private UUID ownerTeamId = null; // Team ID of the player who placed the AutoShop
     private UUID placedByPlayer = null; // UUID of the player who placed the Auto Shop
@@ -236,7 +238,7 @@ public class AutoShopBlockEntity extends BlockEntity {
             output.store("EncapsulatedItem", ItemStack.CODEC, stored);
         }
         output.putBoolean("IsActive", isActive);
-        output.putString("CurrentCategory", currentCategory);
+        output.putString("CurrentCategory", currentCategory != null ? currentCategory : "");
         output.putString("SelectedValute", selectedValute);
         output.putBoolean("AutoBuyMode", autoBuyMode);
         if (ownerTeamId != null) {
@@ -272,7 +274,9 @@ public class AutoShopBlockEntity extends BlockEntity {
         super.loadAdditional(input);
         encapsulatedSlot.setStackInSlot(0, input.read("EncapsulatedItem", ItemStack.CODEC).orElse(ItemStack.EMPTY));
         isActive = input.getBooleanOr("IsActive", false);
-        currentCategory = input.getStringOr("CurrentCategory", "000_default");
+        String loadedCategory = input.getStringOr("CurrentCategory", "");
+        String normalizedCategory = ShopHierarchy.normalizeParent(loadedCategory);
+        currentCategory = normalizedCategory != null ? normalizedCategory : "";
         selectedValute = normalizeCurrencyId(input.getStringOr("SelectedValute", resolveDefaultCurrencyId()));
         autoBuyMode = input.getBooleanOr("AutoBuyMode", true);
         ownerTeamId = input.read("OwnerTeamId", net.minecraft.core.UUIDUtil.CODEC).orElse(null);
@@ -314,12 +318,15 @@ public class AutoShopBlockEntity extends BlockEntity {
         setChanged();
     }
     
+    /** Null means root. */
+    @Nullable
     public String getCurrentCategory() {
-        return this.currentCategory;
+        return ShopHierarchy.normalizeParent(this.currentCategory);
     }
     
-    public void setCurrentCategory(String category) {
-        this.currentCategory = category;
+    public void setCurrentCategory(@Nullable String category) {
+        String normalized = ShopHierarchy.normalizeParent(category);
+        this.currentCategory = normalized != null ? normalized : "";
         setChanged();
     }
     

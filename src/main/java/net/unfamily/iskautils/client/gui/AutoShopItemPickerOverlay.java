@@ -21,6 +21,7 @@ import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
 import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
 import net.unfamily.iskautils.shop.ShopEntryTypes;
+import net.unfamily.iskautils.shop.ShopHierarchy;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopPurchaseLimitsData;
 
@@ -137,7 +138,7 @@ public final class AutoShopItemPickerOverlay {
         showingCategories = true;
         currentCategoryId = null;
         scrollOffset = 0;
-        totalShopEntries = browsePanel.getFilteredCategories().size();
+        totalShopEntries = browsePanel.getMixedRowCount();
     }
 
     public void initWidgets(AutoShopScreen screen) {
@@ -234,13 +235,11 @@ public final class AutoShopItemPickerOverlay {
             ShopScreenHelper.renderExtendedEntryBackground(
                     guiGraphics, ENTRY_TEXTURE, entryX, entryY, PICKER_ENTRY_WIDTH, ENTRY_HEIGHT);
 
-            if (displayingItems()) {
-                if (entryIndex < browsePanel.getFilteredItems().size()) {
-                    renderItemEntry(guiGraphics, entryX, entryY, browsePanel.getFilteredItems().get(entryIndex));
-                }
-            } else if (entryIndex < browsePanel.getFilteredCategories().size()) {
-                renderCategoryEntry(guiGraphics, entryX, entryY,
-                        browsePanel.getFilteredCategories().get(entryIndex));
+            ShopBrowsePanel.MixedRow row = browsePanel.getMixedRow(entryIndex);
+            if (row != null && row.isCategory()) {
+                renderCategoryEntry(guiGraphics, entryX, entryY, row.category);
+            } else if (row != null && row.isEntry()) {
+                renderItemEntry(guiGraphics, entryX, entryY, row.entry);
             }
         }
     }
@@ -262,11 +261,13 @@ public final class AutoShopItemPickerOverlay {
         int entryY = topPos + startY + row * ENTRY_HEIGHT;
         Font font = fontSupplier.get();
 
-        if (displayingItems()) {
-            if (entryIndex >= browsePanel.getFilteredItems().size()) {
-                return;
-            }
-            ShopEntry item = browsePanel.getFilteredItems().get(entryIndex);
+        ShopBrowsePanel.MixedRow mixed = browsePanel.getMixedRow(entryIndex);
+        if (mixed == null) {
+            return;
+        }
+
+        if (mixed.isEntry()) {
+            ShopEntry item = mixed.entry;
             int buyButtonX = entryX + PICKER_ENTRY_WIDTH - SELECT_BUTTON_WIDTH - BUTTONS_SPACING - SELECT_BUTTON_WIDTH - ENTRY_RIGHT_MARGIN;
             int sellButtonX = entryX + PICKER_ENTRY_WIDTH - SELECT_BUTTON_WIDTH - ENTRY_RIGHT_MARGIN;
             int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
@@ -308,10 +309,7 @@ public final class AutoShopItemPickerOverlay {
             return;
         }
 
-        if (entryIndex >= browsePanel.getFilteredCategories().size()) {
-            return;
-        }
-        ShopCategory category = browsePanel.getFilteredCategories().get(entryIndex);
+        ShopCategory category = mixed.category;
 
         if (ShopScreenHelper.isMouseOverEntryIcon(mouseX, mouseY, entryX, entryY)) {
             if (ShopEntryHelper.isTagSelector(category.item)) {
@@ -457,15 +455,11 @@ public final class AutoShopItemPickerOverlay {
 
     private void onBackPressed() {
         playButtonSound.run();
-        if (!showingCategories) {
-            navigateBackToCategories();
+        if (currentCategoryId != null) {
+            navigateBackOneLevel();
             return;
         }
         onBackToMain.run();
-    }
-
-    private boolean displayingItems() {
-        return browsePanel.isDisplayingItems(showingCategories);
     }
 
     private void refreshFilteredLists() {
@@ -473,9 +467,7 @@ public final class AutoShopItemPickerOverlay {
             browsePanel.setSearchQuery(searchBox.getValue() == null ? "" : searchBox.getValue());
         }
         browsePanel.applyFilters(showingCategories);
-        totalShopEntries = displayingItems()
-                ? browsePanel.getFilteredItems().size()
-                : browsePanel.getFilteredCategories().size();
+        totalShopEntries = browsePanel.getMixedRowCount();
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset()));
         updateBackButtonState();
         rebuildSelectButtons.run();
@@ -487,10 +479,6 @@ public final class AutoShopItemPickerOverlay {
         selectBuyButtons.clear();
         selectSellButtons.clear();
 
-        if (!displayingItems()) {
-            return;
-        }
-
         int leftPos = leftPosSupplier.getAsInt();
         int topPos = topPosSupplier.getAsInt();
         int entries = visibleEntries();
@@ -499,10 +487,11 @@ public final class AutoShopItemPickerOverlay {
 
         for (int i = 0; i < visibleCount; i++) {
             int entryIndex = scrollOffset + i;
-            if (entryIndex >= browsePanel.getFilteredItems().size()) {
-                break;
+            ShopBrowsePanel.MixedRow row = browsePanel.getMixedRow(entryIndex);
+            if (row == null || !row.isEntry()) {
+                continue;
             }
-            ShopEntry item = browsePanel.getFilteredItems().get(entryIndex);
+            ShopEntry item = row.entry;
             int entryY = topPos + startY + i * ENTRY_HEIGHT;
             int entryX = leftPos + ENTRY_START_X;
             int buyButtonX = entryX + PICKER_ENTRY_WIDTH - SELECT_BUTTON_WIDTH - BUTTONS_SPACING - SELECT_BUTTON_WIDTH - ENTRY_RIGHT_MARGIN;
@@ -573,10 +562,32 @@ public final class AutoShopItemPickerOverlay {
         refreshFilteredLists();
     }
 
+    private void navigateBackOneLevel() {
+        if (currentCategoryId == null) {
+            return;
+        }
+        ShopCategory current = ShopLoader.getCategories().get(currentCategoryId);
+        String parentId = current != null ? ShopHierarchy.normalizeParent(current.inCategory) : null;
+        if (parentId == null) {
+            navigateBackToCategories();
+            return;
+        }
+        ShopCategory parent = ShopLoader.getCategories().get(parentId);
+        if (parent == null) {
+            navigateBackToCategories();
+            return;
+        }
+        openCategoryLevel(parent, false);
+    }
+
     private void navigateToCategory(ShopCategory category) {
+        openCategoryLevel(category, true);
+    }
+
+    private void openCategoryLevel(ShopCategory category, boolean enteringCategory) {
         showingCategories = false;
         currentCategoryId = category.id;
-        resetSearchOnNavigation(true);
+        resetSearchOnNavigation(enteringCategory);
         browsePanel.loadCategoryItems(category.id);
         scrollOffset = 0;
         refreshFilteredLists();
@@ -795,13 +806,17 @@ public final class AutoShopItemPickerOverlay {
                 continue;
             }
             int actualIndex = scrollOffset + i;
-            if (!displayingItems() && actualIndex < browsePanel.getFilteredCategories().size()) {
-                navigateToCategory(browsePanel.getFilteredCategories().get(actualIndex));
+            ShopBrowsePanel.MixedRow row = browsePanel.getMixedRow(actualIndex);
+            if (row == null) {
+                continue;
+            }
+            if (row.isCategory()) {
+                navigateToCategory(row.category);
                 playButtonSound.run();
                 return true;
             }
-            if (displayingItems() && actualIndex < browsePanel.getFilteredItems().size()) {
-                ShopEntry item = browsePanel.getFilteredItems().get(actualIndex);
+            if (row.isEntry()) {
+                ShopEntry item = row.entry;
                 int buyButtonX = entryX + PICKER_ENTRY_WIDTH - SELECT_BUTTON_WIDTH - BUTTONS_SPACING - SELECT_BUTTON_WIDTH - ENTRY_RIGHT_MARGIN;
                 int sellButtonX = entryX + PICKER_ENTRY_WIDTH - SELECT_BUTTON_WIDTH - ENTRY_RIGHT_MARGIN;
                 int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;

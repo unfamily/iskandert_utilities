@@ -11,6 +11,9 @@ import java.util.List;
  */
 public class ShopEntry {
     public String id;
+    /**
+     * Parent category id (JSON {@code in_category}). {@code null}/omit = root.
+     */
     public String inCategory;
     /** Namespaced type id (e.g. {@code iska_utils:item}). Default item. */
     public Identifier typeId = ShopEntryTypes.ITEM;

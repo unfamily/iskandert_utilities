@@ -21,9 +21,29 @@ The **Pattern Crafter** (and **Improved Pattern Crafter**) is an automated craft
 
 The **Improved** variant supports a larger upgrade budget and more concurrent work; both share the same GUI and controls.
 
+## Crafting
+
+### Pattern Crafter
+
+Cobblestone + planks frame around a vanilla **Crafter** (two mirror patterns).
+
+<RecipesFor id="iska_utils:pattern_crafter" />
+
+### Improved Pattern Crafter
+
+Same gem frame as the Improver, with a **Pattern Crafter** in the centre (gems: quartz / diamond / prismarine corners; lapis / glow ink sides).
+
+<RecipesFor id="iska_utils:improved_pattern_crafter" />
+
+### Pattern Crafter Improver
+
+Same gem frame, but the centre is any `#minecraft:planks`. Used only for the in-place upgrade below.
+
+<RecipesFor id="iska_utils:pattern_crafter_improver" />
+
 ## In-place upgrade
 
-Craft a **Pattern Crafter Improver** (same gem frame as Improved, centre is any `#minecraft:planks`). **Shift+right-click** a placed normal Pattern Crafter with the Improver to convert it to Improved **without losing** inventory, patterns, filters, energy, or settings. The Improver is consumed.
+Craft a **Pattern Crafter Improver** (recipe above). **Shift+right-click** a placed normal Pattern Crafter with the Improver to convert it to Improved **without losing** inventory, patterns, filters, energy, or settings. The Improver is consumed.
 
 ## Patterns
 

@@ -66,6 +66,7 @@ public class ShopLoader {
                 LOGGER.warn("No shop currencies after load; seeding built-in null_coin");
                 seedBuiltinNullCoin();
             }
+            resolveMissingParents();
         } catch (Exception e) {
             LOGGER.error("Error during shop load: {}", e.getMessage());
         }
@@ -217,6 +218,7 @@ public class ShopLoader {
             category.name = categoryObj.has("name") ? categoryObj.get("name").getAsString() : id;
             category.description = categoryObj.has("description") ? categoryObj.get("description").getAsString() : "";
             category.item = categoryObj.has("item") ? categoryObj.get("item").getAsString() : "minecraft:stone";
+            category.inCategory = ShopHierarchy.readInCategory(categoryObj);
             category.priority = categoryObj.has("priority") ? categoryObj.get("priority").getAsInt() : 0;
             
             CATEGORIES.put(id, category);
@@ -247,7 +249,7 @@ public class ShopLoader {
                 LOGGER.warn("Skipping shop entry {} in {}: no handler for {}", id, fileName, entryTypeId);
                 continue;
             }
-            String category = entryObj.has("in_category") ? entryObj.get("in_category").getAsString() : null;
+            String category = ShopHierarchy.readInCategory(entryObj);
 
             ShopEntry entry = new ShopEntry();
             entry.typeId = entryTypeId;
@@ -324,6 +326,40 @@ public class ShopLoader {
 
             ENTRIES.put(entryKey, entry);
             PROTECTED_ENTRIES.put(entryKey, !overwritable);
+        }
+    }
+
+    /**
+     * After all shop JSON is merged: dangling {@code in_category} → root + warning.
+     */
+    private static void resolveMissingParents() {
+        for (ShopCategory category : CATEGORIES.values()) {
+            String requested = ShopHierarchy.normalizeParent(category.inCategory);
+            if (requested == null) {
+                category.inCategory = null;
+                continue;
+            }
+            String resolved = ShopHierarchy.resolveParentOrRoot(requested, CATEGORIES);
+            if (resolved == null) {
+                LOGGER.warn(
+                        "Shop category '{}' references missing parent '{}'; treating as root",
+                        category.id, requested);
+            }
+            category.inCategory = resolved;
+        }
+        for (ShopEntry entry : ENTRIES.values()) {
+            String requested = ShopHierarchy.normalizeParent(entry.inCategory);
+            if (requested == null) {
+                entry.inCategory = null;
+                continue;
+            }
+            String resolved = ShopHierarchy.resolveParentOrRoot(requested, CATEGORIES);
+            if (resolved == null) {
+                LOGGER.warn(
+                        "Shop entry '{}' references missing category '{}'; treating as root",
+                        entry.id, requested);
+            }
+            entry.inCategory = resolved;
         }
     }
 

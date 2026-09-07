@@ -120,6 +120,7 @@ public final class ShopEditSession {
         c.name = src.name;
         c.description = src.description;
         c.item = src.item;
+        c.inCategory = src.inCategory;
         c.priority = src.priority;
         return c;
     }

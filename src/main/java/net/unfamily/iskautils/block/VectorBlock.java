@@ -58,6 +58,11 @@ public class VectorBlock extends HorizontalDirectionalBlock {
     // Whether this vector plate affects only players
     private final boolean affectsPlayers;
 
+    /** True for player-only plates; false for mobfarm plates. */
+    public boolean affectsPlayers() {
+        return affectsPlayers;
+    }
+
     @Override
     protected MapCodec<? extends HorizontalDirectionalBlock> codec() {
         return CODEC;

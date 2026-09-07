@@ -5,7 +5,6 @@ navigation:
   parent: hubs/modules.md
   position: 20
 item_ids:
-  - iska_utils:base_module
   - iska_utils:slow_module
   - iska_utils:moderate_module
   - iska_utils:fast_module
@@ -31,10 +30,13 @@ Higher tiers mean a stronger speed effect.
 ## Items
 
 <ItemGrid>
-  <ItemIcon id="iska_utils:base_module" />
   <ItemIcon id="iska_utils:slow_module" />
   <ItemIcon id="iska_utils:moderate_module" />
   <ItemIcon id="iska_utils:fast_module" />
   <ItemIcon id="iska_utils:extreme_module" />
   <ItemIcon id="iska_utils:ultra_module" />
 </ItemGrid>
+
+## Material
+
+<ItemImage id="iska_utils:base_module" /> **Base Module** is only a crafting intermediate for these modules. It has no machine effect on its own.

@@ -4,8 +4,10 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
+import net.neoforged.neoforge.client.event.RegisterItemDecorationsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.client.model.ConnectedTextureFallbackModelLoader;
 import net.unfamily.iskautils.client.gui.*;
 import net.unfamily.iskautils.client.gui.EtherealFrameFilterScreen;
@@ -45,6 +47,20 @@ public final class IskaUtilsClientModEvents {
         event.register(
                 net.minecraft.resources.Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "connected_texture_fallback"),
                 new ConnectedTextureFallbackModelLoader());
+    }
+
+    @SubscribeEvent
+    public static void registerItemDecorations(RegisterItemDecorationsEvent event) {
+        event.register(ModItems.SLOW_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.MODERATE_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.FAST_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.EXTREME_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.ULTRA_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.PLAYER_SLOW_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.PLAYER_MODERATE_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.PLAYER_FAST_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.PLAYER_EXTREME_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.PLAYER_ULTRA_VECT.get(), VectorPlateIconDecorator.INSTANCE);
     }
 
     @SubscribeEvent
