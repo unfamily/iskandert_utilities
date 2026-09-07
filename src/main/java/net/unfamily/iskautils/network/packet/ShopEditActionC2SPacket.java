@@ -18,6 +18,7 @@ import net.unfamily.iskautils.shop.ShopEntryHelper;
 import net.unfamily.iskautils.shop.ShopEntryTypeHandler;
 import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
 import net.unfamily.iskautils.shop.ShopEntryTypes;
+import net.unfamily.iskautils.shop.ShopHierarchy;
 import net.unfamily.iskautils.shop.ShopRepeatableRule;
 import net.unfamily.iskautils.shop.ShopStage;
 import net.unfamily.iskautils.shop.edit.ShopEditSession;
@@ -95,6 +96,13 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
                 if (c.id == null || c.id.isBlank()) {
                     return;
                 }
+                String parent = ShopHierarchy.normalizeParent(c.inCategory);
+                if (parent != null && (parent.equals(c.id)
+                        || ShopHierarchy.isDescendantOf(data.categories, parent, c.id))) {
+                    c.inCategory = null;
+                } else {
+                    c.inCategory = parent;
+                }
                 String oldId = payload.has("old_id") ? payload.get("old_id").getAsString() : c.id;
                 if (!oldId.equals(c.id) && data.categories.containsKey(oldId)) {
                     data.categories.remove(oldId);
@@ -165,19 +173,31 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
         }
         if ("category".equals(kind)) {
             if ("propagate".equals(mode)) {
+                for (ShopCategory c : data.categories.values()) {
+                    if (oldId.equals(c.inCategory)) {
+                        c.inCategory = newId;
+                    }
+                }
                 for (ShopEntry e : data.entries.values()) {
                     if (oldId.equals(e.inCategory)) {
                         e.inCategory = newId;
                     }
                 }
+                ShopEditSession.autosaveCategories(player.server);
                 ShopEditSession.autosaveEntries(player.server);
             } else if ("delete".equals(mode)) {
+                for (ShopCategory c : data.categories.values()) {
+                    if (oldId.equals(c.inCategory)) {
+                        c.inCategory = null;
+                    }
+                }
                 Iterator<Map.Entry<String, ShopEntry>> it = data.entries.entrySet().iterator();
                 while (it.hasNext()) {
                     if (oldId.equals(it.next().getValue().inCategory)) {
                         it.remove();
                     }
                 }
+                ShopEditSession.autosaveCategories(player.server);
                 ShopEditSession.autosaveEntries(player.server);
             }
         } else if ("currency".equals(kind)) {
@@ -217,6 +237,7 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
         c.name = o.has("name") ? o.get("name").getAsString() : c.id;
         c.description = o.has("description") ? o.get("description").getAsString() : "";
         c.item = o.has("item") ? o.get("item").getAsString() : "minecraft:stone";
+        c.inCategory = ShopHierarchy.readInCategory(o);
         c.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
         return c;
     }
@@ -224,7 +245,7 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
     private static ShopEntry readEntry(JsonObject o) {
         ShopEntry e = new ShopEntry();
         e.id = o.has("id") ? o.get("id").getAsString() : "";
-        e.inCategory = o.has("in_category") ? o.get("in_category").getAsString() : "000_default";
+        e.inCategory = ShopHierarchy.readInCategory(o);
         String type = o.has("type") ? o.get("type").getAsString() : ShopEntryTypes.ITEM.toString();
         e.typeId = ShopEntryHelper.parseType(type);
         ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(e.typeId);

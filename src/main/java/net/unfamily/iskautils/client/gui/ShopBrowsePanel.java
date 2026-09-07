@@ -9,6 +9,7 @@ import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
 import net.unfamily.iskautils.shop.ShopEntryTypes;
+import net.unfamily.iskautils.shop.ShopHierarchy;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.util.DeepDrawerItemFilter;
 import net.unfamily.iskalib.item.ItemConverter;
@@ -35,6 +36,38 @@ public final class ShopBrowsePanel {
     public enum TradeVisibility {
         SHOW,
         HIDE_UNTRADEABLE
+    }
+
+    /**
+     * One visible browse row: either a child category or an entry at the current level.
+     * Categories are listed before entries.
+     */
+    public static final class MixedRow {
+        @Nullable
+        public final ShopCategory category;
+        @Nullable
+        public final ShopEntry entry;
+
+        private MixedRow(@Nullable ShopCategory category, @Nullable ShopEntry entry) {
+            this.category = category;
+            this.entry = entry;
+        }
+
+        public static MixedRow ofCategory(ShopCategory category) {
+            return new MixedRow(category, null);
+        }
+
+        public static MixedRow ofEntry(ShopEntry entry) {
+            return new MixedRow(null, entry);
+        }
+
+        public boolean isCategory() {
+            return category != null;
+        }
+
+        public boolean isEntry() {
+            return entry != null;
+        }
     }
 
     public static final int GUI_WIDTH = 300;
@@ -206,28 +239,59 @@ public final class ShopBrowsePanel {
         return filteredItems;
     }
 
+    /** Categories first (already sorted), then entries. */
+    public int getMixedRowCount() {
+        return filteredCategories.size() + filteredItems.size();
+    }
+
+    @Nullable
+    public MixedRow getMixedRow(int index) {
+        if (index < 0) {
+            return null;
+        }
+        int catCount = filteredCategories.size();
+        if (index < catCount) {
+            return MixedRow.ofCategory(filteredCategories.get(index));
+        }
+        int entryIndex = index - catCount;
+        if (entryIndex < filteredItems.size()) {
+            return MixedRow.ofEntry(filteredItems.get(entryIndex));
+        }
+        return null;
+    }
+
     public void loadAllCategories() {
         Map<String, ShopCategory> categories = ShopLoader.getCategories();
-        allCategories = categories.values().stream()
+        allCategories = ShopHierarchy.childCategories(categories.values(), null).stream()
                 .sorted(Comparator.comparingInt((ShopCategory cat) -> cat.priority).reversed()
                         .thenComparing(cat -> cat.id))
                 .collect(Collectors.toList());
-        categoryItems = List.of();
+        categoryItems = ShopHierarchy.childEntries(ShopLoader.getEntries().values(), null).stream()
+                .filter(this::isBrowsable)
+                .sorted(entryComparator())
+                .collect(Collectors.toList());
         applyFilters(true);
     }
 
     public void loadCategoryItems(String categoryId) {
-        Map<String, ShopEntry> allEntries = ShopLoader.getEntries();
-        categoryItems = allEntries.values().stream()
-                .filter(entry -> categoryId.equals(entry.inCategory))
+        Map<String, ShopCategory> categories = ShopLoader.getCategories();
+        allCategories = ShopHierarchy.childCategories(categories.values(), categoryId).stream()
+                .sorted(Comparator.comparingInt((ShopCategory cat) -> cat.priority).reversed()
+                        .thenComparing(cat -> cat.id))
+                .collect(Collectors.toList());
+        categoryItems = ShopHierarchy.childEntries(ShopLoader.getEntries().values(), categoryId).stream()
                 .filter(this::isBrowsable)
-                .sorted(Comparator.comparingInt((ShopEntry e) -> e.priority).reversed()
-                        .thenComparing(entry -> {
-                            String selector = ShopEntryHelper.resourceSelector(entry);
-                            return selector != null ? selector : "";
-                        }))
+                .sorted(entryComparator())
                 .collect(Collectors.toList());
         applyFilters(false);
+    }
+
+    private static Comparator<ShopEntry> entryComparator() {
+        return Comparator.comparingInt((ShopEntry e) -> e.priority).reversed()
+                .thenComparing(entry -> {
+                    String selector = ShopEntryHelper.resourceSelector(entry);
+                    return selector != null ? selector : "";
+                });
     }
 
     public void applyFilters(boolean categoryView) {
@@ -235,24 +299,18 @@ public final class ShopBrowsePanel {
             filteredItems = ShopLoader.getEntries().values().stream()
                     .filter(this::isBrowsable)
                     .filter(this::matchesItemFilters)
-                    .sorted(Comparator.comparingInt((ShopEntry e) -> e.priority).reversed()
-                            .thenComparing(entry -> {
-                                String selector = ShopEntryHelper.resourceSelector(entry);
-                                return selector != null ? selector : "";
-                            }))
+                    .sorted(entryComparator())
                     .collect(Collectors.toList());
             filteredCategories = List.of();
-        } else if (categoryView) {
+        } else {
+            // Root or nested level: mixed child categories + child entries
             filteredCategories = allCategories.stream()
                     .filter(this::matchesCategoryFilters)
                     .collect(Collectors.toList());
-            filteredItems = List.of();
-        } else {
             filteredItems = categoryItems.stream()
                     .filter(this::isBrowsable)
                     .filter(this::matchesItemFilters)
                     .collect(Collectors.toList());
-            filteredCategories = List.of();
         }
     }
 
@@ -312,9 +370,20 @@ public final class ShopBrowsePanel {
         return true;
     }
 
+    private boolean entryBelongsUnderCategory(ShopEntry entry, String categoryId) {
+        if (entry == null || categoryId == null) {
+            return false;
+        }
+        String entryParent = ShopHierarchy.normalizeParent(entry.inCategory);
+        if (categoryId.equals(entryParent)) {
+            return true;
+        }
+        return ShopHierarchy.isDescendantOf(ShopLoader.getCategories(), entryParent, categoryId);
+    }
+
     private boolean categoryHasMatchingItem(String categoryId) {
         for (ShopEntry entry : ShopLoader.getEntries().values()) {
-            if (!categoryId.equals(entry.inCategory) || !isBrowsable(entry)) {
+            if (!entryBelongsUnderCategory(entry, categoryId) || !isBrowsable(entry)) {
                 continue;
             }
             if (!passesTradeVisibility(entry)) {
@@ -343,7 +412,7 @@ public final class ShopBrowsePanel {
 
     private boolean categoryHasCurrency(String categoryId, String currencyId) {
         for (ShopEntry entry : ShopLoader.getEntries().values()) {
-            if (categoryId.equals(entry.inCategory) && currencyId.equals(entryCurrency(entry))) {
+            if (entryBelongsUnderCategory(entry, categoryId) && currencyId.equals(entryCurrency(entry))) {
                 return true;
             }
         }

@@ -13,6 +13,7 @@ import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
+import net.unfamily.iskautils.shop.ShopHierarchy;
 import net.unfamily.iskautils.shop.ShopEntryTypeHandler;
 import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
 import net.unfamily.iskautils.shop.ShopEntryTypes;
@@ -205,8 +206,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         
         // Create vanilla Back button
         backButton = Button.builder(Component.translatable("gui.iska_utils.shop.back"), button -> {
-            if (!showingCategories) {
-                navigateBackToCategories();
+            if (currentCategoryId != null) {
+                navigateBackOneLevel();
             }
         }).bounds(this.leftPos + BACK_BUTTON_X, this.topPos + BACK_BUTTON_Y, BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT).build();
         
@@ -245,18 +246,12 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         }
     }
 
-    private boolean displayingItems() {
-        return browsePanel.isDisplayingItems(showingCategories);
-    }
-
     private void refreshFilteredLists() {
         if (searchBox != null) {
             browsePanel.setSearchQuery(searchBox.getValue() == null ? "" : searchBox.getValue());
         }
         browsePanel.applyFilters(showingCategories);
-        totalShopEntries = displayingItems()
-                ? browsePanel.getFilteredItems().size()
-                : browsePanel.getFilteredCategories().size();
+        totalShopEntries = browsePanel.getMixedRowCount();
         int maxScroll = maxScrollOffset();
         if (totalShopEntries > visibleEntries()) {
             scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
@@ -365,15 +360,11 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             // Render entry background (enrty_wide_wide_wide.png 220x24)
             guiGraphics.blit(ENTRY_TEXTURE, entryX, entryY, 0, 0, ENTRY_WIDTH, ENTRY_HEIGHT, 220, 24);
             
-            // Render entry content only if there's data to show
-            if (displayingItems()) {
-                if (entryIndex < browsePanel.getFilteredItems().size()) {
-                    ShopEntry item = browsePanel.getFilteredItems().get(entryIndex);
-                    renderItemEntry(guiGraphics, entryX, entryY, item);
-                }
-            } else if (entryIndex < browsePanel.getFilteredCategories().size()) {
-                ShopCategory category = browsePanel.getFilteredCategories().get(entryIndex);
-                renderCategoryEntry(guiGraphics, entryX, entryY, category);
+            ShopBrowsePanel.MixedRow row = browsePanel.getMixedRow(entryIndex);
+            if (row != null && row.isCategory()) {
+                renderCategoryEntry(guiGraphics, entryX, entryY, row.category);
+            } else if (row != null && row.isEntry()) {
+                renderItemEntry(guiGraphics, entryX, entryY, row.entry);
             }
         }
         
@@ -678,7 +669,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         currentCategoryId = null;
         currentCategoryName = Component.translatable("gui.iska_utils.shop.title").getString();
         scrollOffset = 0;
-        totalShopEntries = browsePanel.getFilteredCategories().size();
+        totalShopEntries = browsePanel.getMixedRowCount();
     }
     
     /**
@@ -686,15 +677,11 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      */
     private void renderEntryContent(GuiGraphics guiGraphics, int entryX, int entryY, int entryIndex) {
         int actualIndex = scrollOffset + entryIndex;
-        
-        if (displayingItems()) {
-            if (actualIndex < browsePanel.getFilteredItems().size()) {
-                ShopEntry item = browsePanel.getFilteredItems().get(actualIndex);
-                renderItemEntry(guiGraphics, entryX, entryY, item);
-            }
-        } else if (actualIndex < browsePanel.getFilteredCategories().size()) {
-            ShopCategory category = browsePanel.getFilteredCategories().get(actualIndex);
-            renderCategoryEntry(guiGraphics, entryX, entryY, category);
+        ShopBrowsePanel.MixedRow row = browsePanel.getMixedRow(actualIndex);
+        if (row != null && row.isCategory()) {
+            renderCategoryEntry(guiGraphics, entryX, entryY, row.category);
+        } else if (row != null && row.isEntry()) {
+            renderItemEntry(guiGraphics, entryX, entryY, row.entry);
         }
     }
     
@@ -789,35 +776,38 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                 mouseY >= entryY && mouseY < entryY + ENTRY_HEIGHT) {
                 
                 int actualIndex = scrollOffset + i;
-                
-                if (displayingItems()) {
-                    if (actualIndex < browsePanel.getFilteredItems().size()) {
-                        ShopEntry item = browsePanel.getFilteredItems().get(actualIndex);
-                        
-                        int buyButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
-                        int sellButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - 3;
-                        int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
-                        
-                        // If click is on buttons, let super.mouseClicked handle them
-                        boolean clickOnBuyButton = (item.buy > 0 || item.free) &&
-                            mouseX >= buyButtonX && mouseX < buyButtonX + BUTTON_WIDTH &&
-                            mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT;
-                            
-                        boolean clickOnSellButton = item.sell > 0 && 
-                            mouseX >= sellButtonX && mouseX < sellButtonX + BUTTON_WIDTH &&
-                            mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT;
-                        
-                        if (clickOnBuyButton || clickOnSellButton) {
-                            return false; // Let super.mouseClicked handle buttons
-                        }
-                        
-                        // Click on row (not buttons): no-op for now
-                        playButtonSound();
-                        return true;
+                ShopBrowsePanel.MixedRow row = browsePanel.getMixedRow(actualIndex);
+                if (row == null) {
+                    break;
+                }
+
+                if (row.isEntry()) {
+                    ShopEntry item = row.entry;
+
+                    int buyButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
+                    int sellButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - 3;
+                    int buttonY = entryY + (ENTRY_HEIGHT - BUTTON_HEIGHT) / 2;
+
+                    // If click is on buttons, let super.mouseClicked handle them
+                    boolean clickOnBuyButton = (item.buy > 0 || item.free) &&
+                        mouseX >= buyButtonX && mouseX < buyButtonX + BUTTON_WIDTH &&
+                        mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT;
+
+                    boolean clickOnSellButton = item.sell > 0 &&
+                        mouseX >= sellButtonX && mouseX < sellButtonX + BUTTON_WIDTH &&
+                        mouseY >= buttonY && mouseY < buttonY + BUTTON_HEIGHT;
+
+                    if (clickOnBuyButton || clickOnSellButton) {
+                        return false; // Let super.mouseClicked handle buttons
                     }
-                } else if (actualIndex < browsePanel.getFilteredCategories().size()) {
-                    ShopCategory category = browsePanel.getFilteredCategories().get(actualIndex);
-                    navigateToCategory(category);
+
+                    // Click on row (not buttons): no-op for now
+                    playButtonSound();
+                    return true;
+                }
+
+                if (row.isCategory()) {
+                    navigateToCategory(row.category);
                     playButtonSound();
                     return true;
                 }
@@ -831,18 +821,43 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      * Navigate into a category
      */
     private void navigateToCategory(ShopCategory category) {
+        openCategoryLevel(category, true);
+    }
+
+    private void openCategoryLevel(ShopCategory category, boolean enteringCategory) {
         showingCategories = false;
         currentCategoryId = category.id;
         currentCategoryName = Component.translatable(category.name).getString();
-        resetSearchOnNavigation(true);
+        resetSearchOnNavigation(enteringCategory);
         browsePanel.loadCategoryItems(category.id);
         scrollOffset = 0;
         updateBackButtonState();
         refreshFilteredLists();
     }
+
+    /**
+     * Go up one level: parent category, or root if parent is root.
+     */
+    private void navigateBackOneLevel() {
+        if (currentCategoryId == null) {
+            return;
+        }
+        ShopCategory current = ShopLoader.getCategories().get(currentCategoryId);
+        String parentId = current != null ? ShopHierarchy.normalizeParent(current.inCategory) : null;
+        if (parentId == null) {
+            navigateBackToCategories();
+            return;
+        }
+        ShopCategory parent = ShopLoader.getCategories().get(parentId);
+        if (parent == null) {
+            navigateBackToCategories();
+            return;
+        }
+        openCategoryLevel(parent, false);
+    }
     
     /**
-     * Return to category view
+     * Return to root category view
      */
     public void navigateBackToCategories() {
         showingCategories = true;
@@ -882,18 +897,20 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
         int startY = entryStartY();
-        int row = entryIndex - scrollOffset;
-        if (row < 0 || row >= visibleEntries()) {
+        int rowOffset = entryIndex - scrollOffset;
+        if (rowOffset < 0 || rowOffset >= visibleEntries()) {
             return;
         }
         int entryX = x + ENTRY_START_X;
-        int entryY = y + startY + row * ENTRY_HEIGHT;
+        int entryY = y + startY + rowOffset * ENTRY_HEIGHT;
 
-        if (displayingItems()) {
-            if (entryIndex >= browsePanel.getFilteredItems().size()) {
-                return;
-            }
-            ShopEntry item = browsePanel.getFilteredItems().get(entryIndex);
+        ShopBrowsePanel.MixedRow mixed = browsePanel.getMixedRow(entryIndex);
+        if (mixed == null) {
+            return;
+        }
+
+        if (mixed.isEntry()) {
+            ShopEntry item = mixed.entry;
 
             List<Component> buttonTooltip = getButtonTooltip(mouseX, mouseY);
             if (buttonTooltip != null && !buttonTooltip.isEmpty()) {
@@ -921,10 +938,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             return;
         }
 
-        if (entryIndex >= browsePanel.getFilteredCategories().size()) {
-            return;
-        }
-        ShopCategory category = browsePanel.getFilteredCategories().get(entryIndex);
+        ShopCategory category = mixed.category;
 
         if (ShopScreenHelper.isMouseOverEntryIcon(mouseX, mouseY, entryX, entryY)) {
             if (ShopEntryHelper.isTagSelector(category.item)) {
@@ -949,8 +963,6 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      * Buy/Sell button tooltips
      */
     private List<Component> getButtonTooltip(int mouseX, int mouseY) {
-        if (!displayingItems()) return null;
-
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
         int startY = entryStartY();
@@ -958,9 +970,12 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
 
         for (int i = 0; i < entries; i++) {
             int actualIndex = scrollOffset + i;
-            if (actualIndex >= browsePanel.getFilteredItems().size()) continue;
+            ShopBrowsePanel.MixedRow row = browsePanel.getMixedRow(actualIndex);
+            if (row == null || !row.isEntry()) {
+                continue;
+            }
 
-            ShopEntry item = browsePanel.getFilteredItems().get(actualIndex);
+            ShopEntry item = row.entry;
             int entryY = y + startY + i * ENTRY_HEIGHT;
             int entryX = x + ENTRY_START_X;
             int buyButtonX = entryX + ENTRY_WIDTH - BUTTON_WIDTH - BUTTONS_SPACING - BUTTON_WIDTH - 3;
@@ -1117,7 +1132,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      */
     private void updateBackButtonState() {
         if (backButton != null) {
-            backButton.active = !showingCategories;
+            backButton.active = currentCategoryId != null;
         }
     }
     
@@ -1206,23 +1221,19 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         buyButtons.clear();
         sellButtons.clear();
         
-        // No buy/sell buttons while browsing categories
-        if (!displayingItems()) {
-            return;
-        }
-        
-        // Create buttons for visible entries
+        // Create buttons only for visible entry rows (not categories)
         int entries = visibleEntries();
         int startY = entryStartY();
         int visibleCount = Math.min(entries, totalShopEntries - scrollOffset);
         
         for (int i = 0; i < visibleCount; i++) {
             int entryIndex = scrollOffset + i;
-            if (entryIndex >= browsePanel.getFilteredItems().size()) {
-                break;
+            ShopBrowsePanel.MixedRow row = browsePanel.getMixedRow(entryIndex);
+            if (row == null || !row.isEntry()) {
+                continue;
             }
             
-            ShopEntry item = browsePanel.getFilteredItems().get(entryIndex);
+            ShopEntry item = row.entry;
             int entryY = this.topPos + startY + i * ENTRY_HEIGHT;
             
             // Buy button — fluids/gases shown disabled (catalog only; trade via AutoShop)

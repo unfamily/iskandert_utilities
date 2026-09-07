@@ -16,6 +16,7 @@ import net.unfamily.iskautils.shop.ShopEntryHelper;
 import net.unfamily.iskautils.shop.ShopEntryTypeHandler;
 import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
 import net.unfamily.iskautils.shop.ShopEntryTypes;
+import net.unfamily.iskautils.shop.ShopHierarchy;
 import net.unfamily.iskautils.shop.ShopRepeatableRule;
 import net.unfamily.iskautils.shop.ShopStage;
 import net.unfamily.iskautils.util.ModLogger;
@@ -201,6 +202,7 @@ public final class ShopEditWorkspace {
         ensureBuiltinNullCoinPresent(server, data);
         data.categories.putAll(readCategories(dir.resolve(CATEGORIES_FILE)));
         data.entries.putAll(readEntries(dir.resolve(ENTRIES_FILE)));
+        resolveMissingParents(data);
         return data;
     }
 
@@ -314,6 +316,7 @@ public final class ShopEditWorkspace {
             c.name = stringOr(o, "name", id);
             c.description = stringOr(o, "description", "");
             c.item = stringOr(o, "item", "minecraft:stone");
+            c.inCategory = ShopHierarchy.readInCategory(o);
             c.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
             map.put(id, c);
         }
@@ -337,7 +340,7 @@ public final class ShopEditWorkspace {
             }
             ShopEntry e = new ShopEntry();
             e.id = id;
-            e.inCategory = stringOr(o, "in_category", "000_default");
+            e.inCategory = ShopHierarchy.readInCategory(o);
             e.typeId = parseType(stringOr(o, "type", ShopEntryTypes.ITEM.toString()));
             ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(e.typeId);
             if (handler != null) {
@@ -405,6 +408,7 @@ public final class ShopEditWorkspace {
             o.addProperty("name", c.name != null ? c.name : c.id);
             o.addProperty("description", c.description != null ? c.description : "");
             o.addProperty("item", c.item != null ? c.item : "minecraft:stone");
+            ShopHierarchy.writeInCategory(o, c.inCategory);
             o.addProperty("priority", c.priority);
             arr.add(o);
         }
@@ -419,7 +423,7 @@ public final class ShopEditWorkspace {
         for (ShopEntry e : entries.values()) {
             JsonObject o = new JsonObject();
             o.addProperty("id", e.id);
-            o.addProperty("in_category", e.inCategory != null ? e.inCategory : "000_default");
+            ShopHierarchy.writeInCategory(o, e.inCategory);
             ResourceLocation typeId = e.typeId != null ? e.typeId : ShopEntryTypes.ITEM;
             o.addProperty("type", typeId.toString());
             ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(typeId);
@@ -455,6 +459,37 @@ public final class ShopEditWorkspace {
         }
         root.add("entries", arr);
         writeJson(file, root);
+    }
+
+    private static void resolveMissingParents(ShopEditData data) {
+        for (ShopCategory category : data.categories.values()) {
+            String requested = ShopHierarchy.normalizeParent(category.inCategory);
+            if (requested == null) {
+                category.inCategory = null;
+                continue;
+            }
+            String resolved = ShopHierarchy.resolveParentOrRoot(requested, data.categories);
+            if (resolved == null) {
+                LOGGER.warn(
+                        "Shop category '{}' references missing parent '{}'; treating as root",
+                        category.id, requested);
+            }
+            category.inCategory = resolved;
+        }
+        for (ShopEntry entry : data.entries.values()) {
+            String requested = ShopHierarchy.normalizeParent(entry.inCategory);
+            if (requested == null) {
+                entry.inCategory = null;
+                continue;
+            }
+            String resolved = ShopHierarchy.resolveParentOrRoot(requested, data.categories);
+            if (resolved == null) {
+                LOGGER.warn(
+                        "Shop entry '{}' references missing category '{}'; treating as root",
+                        entry.id, requested);
+            }
+            entry.inCategory = resolved;
+        }
     }
 
     private static ResourceLocation parseType(String raw) {

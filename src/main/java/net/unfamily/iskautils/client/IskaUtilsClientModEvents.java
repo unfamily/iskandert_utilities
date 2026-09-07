@@ -13,6 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
+import net.neoforged.neoforge.client.event.RegisterItemDecorationsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import net.unfamily.iskautils.Config;
@@ -156,6 +157,20 @@ public final class IskaUtilsClientModEvents {
     @SubscribeEvent
     public static void registerClientExtensions(RegisterClientExtensionsEvent event) {
         ModFluidClient.registerClientExtensions(event);
+    }
+
+    @SubscribeEvent
+    public static void registerItemDecorations(RegisterItemDecorationsEvent event) {
+        event.register(ModItems.SLOW_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.MODERATE_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.FAST_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.EXTREME_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.ULTRA_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.PLAYER_SLOW_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.PLAYER_MODERATE_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.PLAYER_FAST_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.PLAYER_EXTREME_VECT.get(), VectorPlateIconDecorator.INSTANCE);
+        event.register(ModItems.PLAYER_ULTRA_VECT.get(), VectorPlateIconDecorator.INSTANCE);
     }
 
     @SubscribeEvent

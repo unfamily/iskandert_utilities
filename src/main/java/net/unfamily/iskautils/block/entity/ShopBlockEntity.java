@@ -16,6 +16,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.minecraft.world.item.ItemStack;
+import net.unfamily.iskautils.shop.ShopHierarchy;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Block Entity for Shop Block
@@ -41,7 +43,7 @@ public class ShopBlockEntity extends BlockEntity implements MenuProvider {
     
     // Shop state (simplified)
     private boolean isActive = false;
-    private String currentCategory = "000_default";
+    private String currentCategory = "";
     
     public ShopBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.SHOP_BE.get(), pos, blockState);
@@ -63,7 +65,7 @@ public class ShopBlockEntity extends BlockEntity implements MenuProvider {
         
         // Save only essential data
         nbt.putBoolean("isActive", this.isActive);
-        nbt.putString("currentCategory", this.currentCategory);
+        nbt.putString("currentCategory", this.currentCategory != null ? this.currentCategory : "");
     }
     
     @Override
@@ -72,7 +74,9 @@ public class ShopBlockEntity extends BlockEntity implements MenuProvider {
         
         // Load only essential data
         this.isActive = nbt.getBoolean("isActive");
-        this.currentCategory = nbt.getString("currentCategory");
+        String loaded = nbt.contains("currentCategory") ? nbt.getString("currentCategory") : "";
+        String normalized = ShopHierarchy.normalizeParent(loaded);
+        this.currentCategory = normalized != null ? normalized : "";
     }
     
     @Override
@@ -98,12 +102,15 @@ public class ShopBlockEntity extends BlockEntity implements MenuProvider {
         setChanged();
     }
     
+    /** Null means root. */
+    @Nullable
     public String getCurrentCategory() {
-        return this.currentCategory;
+        return ShopHierarchy.normalizeParent(this.currentCategory);
     }
     
-    public void setCurrentCategory(String category) {
-        this.currentCategory = category;
+    public void setCurrentCategory(@Nullable String category) {
+        String normalized = ShopHierarchy.normalizeParent(category);
+        this.currentCategory = normalized != null ? normalized : "";
         setChanged();
     }
     

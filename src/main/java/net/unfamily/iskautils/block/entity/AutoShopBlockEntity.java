@@ -23,6 +23,7 @@ import net.unfamily.iskautils.shop.ShopCurrency;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopEntryHelper;
 import net.unfamily.iskautils.shop.ShopEntryTypes;
+import net.unfamily.iskautils.shop.ShopHierarchy;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.item.ItemStack;
@@ -108,7 +109,8 @@ public class AutoShopBlockEntity extends BlockEntity {
 
     // Shop state (simplified)
     private boolean isActive = false;
-    private String currentCategory = "000_default";
+    /** Blank = root browse level (aligned with client null). */
+    private String currentCategory = "";
     private String selectedValute = resolveDefaultCurrencyId();
     private UUID ownerTeamId = null; // Team ID of the player who placed the AutoShop
     private UUID placedByPlayer = null; // UUID of the player who placed the Auto Shop
@@ -190,7 +192,7 @@ public class AutoShopBlockEntity extends BlockEntity {
         // Save shop state (filter/selected item is in shopData.selectedItem)
         CompoundTag shopData = new CompoundTag();
         shopData.putBoolean("isActive", isActive);
-        shopData.putString("currentCategory", currentCategory);
+        shopData.putString("currentCategory", currentCategory != null ? currentCategory : "");
         
         // Always save the currency (even if it's "unset")
         shopData.putString("selectedValute", selectedValute);
@@ -249,7 +251,9 @@ public class AutoShopBlockEntity extends BlockEntity {
         if (tag.contains("shopData")) {
             CompoundTag shopData = tag.getCompound("shopData");
             this.isActive = shopData.getBoolean("isActive");
-            this.currentCategory = shopData.getString("currentCategory");
+            String loadedCategory = shopData.contains("currentCategory") ? shopData.getString("currentCategory") : "";
+            String normalizedCategory = ShopHierarchy.normalizeParent(loadedCategory);
+            this.currentCategory = normalizedCategory != null ? normalizedCategory : "";
             
             if (shopData.contains("selectedValute")) {
                 this.selectedValute = normalizeCurrencyId(shopData.getString("selectedValute"));
@@ -366,12 +370,15 @@ public class AutoShopBlockEntity extends BlockEntity {
         setChanged();
     }
     
+    /** Null means root. */
+    @Nullable
     public String getCurrentCategory() {
-        return this.currentCategory;
+        return ShopHierarchy.normalizeParent(this.currentCategory);
     }
     
-    public void setCurrentCategory(String category) {
-        this.currentCategory = category;
+    public void setCurrentCategory(@Nullable String category) {
+        String normalized = ShopHierarchy.normalizeParent(category);
+        this.currentCategory = normalized != null ? normalized : "";
         setChanged();
     }
     

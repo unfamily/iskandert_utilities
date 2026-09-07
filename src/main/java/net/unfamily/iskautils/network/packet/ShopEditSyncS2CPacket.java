@@ -21,6 +21,7 @@ import net.unfamily.iskautils.shop.ShopEntryHelper;
 import net.unfamily.iskautils.shop.ShopEntryTypeHandler;
 import net.unfamily.iskautils.shop.ShopEntryTypeRegistry;
 import net.unfamily.iskautils.shop.ShopEntryTypes;
+import net.unfamily.iskautils.shop.ShopHierarchy;
 import net.unfamily.iskautils.shop.ShopRepeatableRule;
 import net.unfamily.iskautils.shop.ShopStage;
 import net.unfamily.iskautils.shop.edit.ShopEditWorkspace;
@@ -70,6 +71,7 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
             o.addProperty("name", c.name);
             o.addProperty("description", c.description);
             o.addProperty("item", c.item);
+            ShopHierarchy.writeInCategory(o, c.inCategory);
             o.addProperty("priority", c.priority);
             categories.add(o);
         }
@@ -79,7 +81,7 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
         for (ShopEntry e : data.entries.values()) {
             JsonObject o = new JsonObject();
             o.addProperty("id", e.id);
-            o.addProperty("in_category", e.inCategory);
+            ShopHierarchy.writeInCategory(o, e.inCategory);
             o.addProperty("type", ShopEntryHelper.typeIdString(e));
             ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(e);
             if (handler != null) {
@@ -134,6 +136,7 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
                 c.name = o.has("name") ? o.get("name").getAsString() : c.id;
                 c.description = o.has("description") ? o.get("description").getAsString() : "";
                 c.item = o.has("item") ? o.get("item").getAsString() : "minecraft:stone";
+                c.inCategory = ShopHierarchy.readInCategory(o);
                 c.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
                 data.categories.put(c.id, c);
             }
@@ -143,7 +146,7 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
                 JsonObject o = el.getAsJsonObject();
                 ShopEntry e = new ShopEntry();
                 e.id = o.get("id").getAsString();
-                e.inCategory = o.has("in_category") ? o.get("in_category").getAsString() : "000_default";
+                e.inCategory = ShopHierarchy.readInCategory(o);
                 String type = o.has("type") ? o.get("type").getAsString() : ShopEntryTypes.ITEM.toString();
                 e.typeId = ShopEntryHelper.parseType(type);
                 ShopEntryTypeHandler handler = ShopEntryTypeRegistry.get(e.typeId);

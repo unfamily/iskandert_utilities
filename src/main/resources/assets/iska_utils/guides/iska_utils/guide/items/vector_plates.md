@@ -22,15 +22,33 @@ categories:
 
 <ItemImage id="iska_utils:slow_vect" />
 
-## Standard plates
+Conveyor-style plates that push entities along their facing. Inventory icons show a **mobfarm** or **player** badge so you can tell the two lines apart.
 
-- **Slow / Moderate / Fast / Extreme / Ultra** vector plates push entities along their facing direction.
+## Mobfarm plates
 
-## Player-only plates
+IDs without `player_` (`slow_vect` … `ultra_vect`). Push **mobs** (non-players) only.
 
-- **Player_*** variants affect players the same way but ignore mobs.
+- **Slow / Moderate / Fast / Extreme / Ultra** — higher tiers move entities faster.
+
+## Player plates
+
+IDs with `player_` (`player_slow_vect` … `player_ultra_vect`). Push **players** the same way but ignore mobs.
 
 ## Speed tiers
 
-- Each speed tier is a different block. Higher tiers are upgrades of lower ones.
+Each speed tier is a different block. Higher tiers are upgrades of lower ones.
 
+## Items
+
+<ItemGrid>
+  <ItemIcon id="iska_utils:slow_vect" />
+  <ItemIcon id="iska_utils:moderate_vect" />
+  <ItemIcon id="iska_utils:fast_vect" />
+  <ItemIcon id="iska_utils:extreme_vect" />
+  <ItemIcon id="iska_utils:ultra_vect" />
+  <ItemIcon id="iska_utils:player_slow_vect" />
+  <ItemIcon id="iska_utils:player_moderate_vect" />
+  <ItemIcon id="iska_utils:player_fast_vect" />
+  <ItemIcon id="iska_utils:player_extreme_vect" />
+  <ItemIcon id="iska_utils:player_ultra_vect" />
+</ItemGrid>
