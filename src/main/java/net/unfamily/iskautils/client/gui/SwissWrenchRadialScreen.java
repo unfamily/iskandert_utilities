@@ -37,8 +37,10 @@ public class SwissWrenchRadialScreen extends Screen {
     private static final int OUTER_RADIUS = 118;
     private static final int SECTOR_HALF = 22;
     private static final float PREVIEW_SCALE = 24.0f;
-    /** Extra Y offset so camera looks toward the face the player sees in-world. */
-    private static final float PREVIEW_YAW_OFFSET = 180.0f;
+    /**
+     * Entity GUI path: player yaw only (+yaw mirrored). Do not use the +180 PoseStack offset from 1.21.1.
+     */
+    private static final float PREVIEW_YAW_OFFSET = 0.0f;
     /** Packed block+sky light max (legacy LightTexture.FULL_BRIGHT). */
     private static final int FULL_BRIGHT = 0xF000F0;
 
@@ -306,10 +308,11 @@ public class SwissWrenchRadialScreen extends Screen {
         moving.lightEngine = mc.level.getLightEngine();
         moving.modelData = ModelData.EMPTY;
 
+        // Slight high-side view: +X after rotateZ(PI) reads as from below; use negative pitch instead.
         Quaternionf rotation = new Quaternionf()
                 .rotateZ((float) Math.PI)
-                .rotateX((float) Math.toRadians(30.0))
-                .rotateY((float) Math.toRadians(PREVIEW_YAW_OFFSET - yaw));
+                .rotateX((float) Math.toRadians(-25.0))
+                .rotateY((float) Math.toRadians(PREVIEW_YAW_OFFSET + yaw));
         Vector3f translation = new Vector3f(0.0f, 0.5f, 0.0f);
 
         graphics.entity(

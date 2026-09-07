@@ -123,8 +123,6 @@ public record SwissWrenchRadialSubmitC2SPacket(BlockPos pos, List<String> proper
 
             level.setBlock(pos, newState, 3);
             level.playSound(null, pos, SoundEvents.LANTERN_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
-            player.sendOverlayMessage(
-                    Component.translatable("item.iska_utils.swiss_wrench.message.block_rotated"));
         });
     }
 }
