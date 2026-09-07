@@ -36,7 +36,10 @@ public class SwissWrenchRadialScreen extends Screen {
     private static final int OUTER_RADIUS = 118;
     private static final int SECTOR_HALF = 22;
     private static final float PREVIEW_SCALE = 24.0f;
-    /** Extra Y offset so camera looks toward the face the player sees in-world. */
+    /**
+     * PoseStack GUI path needs +180 vs the 26 entity preview path.
+     * Use +yaw (mirrored) so the face toward the camera matches in-world view.
+     */
     private static final float PREVIEW_YAW_OFFSET = 180.0f;
 
     private static final int PAD_BTN = 24;
@@ -292,7 +295,8 @@ public class SwissWrenchRadialScreen extends Screen {
         pose.scale(PREVIEW_SCALE, -PREVIEW_SCALE, PREVIEW_SCALE);
         pose.mulPose(Axis.XP.rotationDegrees(30.0f));
         // Face toward camera matches the face the player sees looking at the block in-world.
-        pose.mulPose(Axis.YP.rotationDegrees(PREVIEW_YAW_OFFSET - yaw));
+        // Mirrored relative yaw (+ player yaw) so the face toward the camera matches in-world view.
+        pose.mulPose(Axis.YP.rotationDegrees(PREVIEW_YAW_OFFSET + yaw));
         pose.translate(-0.5f, -0.5f, -0.5f);
 
         Lighting.setupForFlatItems();
