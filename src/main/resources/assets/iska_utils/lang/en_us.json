@@ -1597,5 +1597,6 @@
   "jei.iska_utils.pattern_crafter.transfer.wrong_menu": "Open a Pattern Crafter to transfer this recipe",
   "jei.iska_utils.pattern_crafter.transfer.not_crafting": "Only crafting recipes can be transferred",
   "gui.iska_utils.variable_shift_clear_filter": "Shift+Click to clear filter content",
-  "gui.iska_utils.variable_locked_hint": "Set a letter first to open the editor"
+  "gui.iska_utils.variable_locked_hint": "Set a letter first to open the editor",
+  "gui.iska_utils.module_slot_locked": "Module not supported"
 }

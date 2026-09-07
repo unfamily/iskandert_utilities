@@ -20,7 +20,7 @@ public final class GuiGhostItem {
     }
 
     public static void render(GuiGraphicsExtractor graphics, int leftPos, int topPos, Slot slot, ItemStack ghostStack, int argbColor) {
-        if (slot == null || !slot.getItem().isEmpty() || ghostStack.isEmpty()) {
+        if (slot == null || !slot.getItem().isEmpty() || ghostStack.isEmpty() || GuiSlotLock.isLocked(slot)) {
             return;
         }
         GhostItemRenderer.render(graphics, ghostStack, leftPos + slot.x, topPos + slot.y, argbColor);
@@ -34,7 +34,7 @@ public final class GuiGhostItem {
             List<ItemStack> cycleStacks,
             GuiCycleTimer timer,
             int argbColor) {
-        if (slot == null || !slot.getItem().isEmpty() || cycleStacks.isEmpty()) {
+        if (slot == null || !slot.getItem().isEmpty() || cycleStacks.isEmpty() || GuiSlotLock.isLocked(slot)) {
             return;
         }
         timer.onDraw();

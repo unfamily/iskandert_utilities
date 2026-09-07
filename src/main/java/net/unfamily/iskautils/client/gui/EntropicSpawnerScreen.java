@@ -121,6 +121,7 @@ public class EntropicSpawnerScreen extends AbstractContainerScreen<EntropicSpawn
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         renderGhostItems(graphics);
+        renderModuleLockOverlays(graphics);
         renderButtonTooltips(graphics, mouseX, mouseY);
     }
 
@@ -139,12 +140,20 @@ public class EntropicSpawnerScreen extends AbstractContainerScreen<EntropicSpawn
         };
         for (int i = 0; i < indices.length; i++) {
             Slot slot = menu.getSlot(indices[i]);
-            if (!slot.getItem().isEmpty() || !isMouseOverSlot(slot, mouseX, mouseY)) {
+            if (!isMouseOverSlot(slot, mouseX, mouseY)) {
                 continue;
             }
-            java.util.List<FormattedCharSequence> lines = java.util.List.of(ghosts[i].getHoverName().getVisualOrderText());
-            graphics.setTooltipForNextFrame(this.font, lines, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
-            return;
+            if (GuiSlotLock.isLocked(slot)) {
+                java.util.List<FormattedCharSequence> locked =
+                        java.util.List.of(GuiSlotLock.lockedTooltip().getVisualOrderText());
+                graphics.setTooltipForNextFrame(this.font, locked, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
+                return;
+            }
+            if (slot.getItem().isEmpty()) {
+                java.util.List<FormattedCharSequence> lines = java.util.List.of(ghosts[i].getHoverName().getVisualOrderText());
+                graphics.setTooltipForNextFrame(this.font, lines, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
+                return;
+            }
         }
     }
 
@@ -168,17 +177,24 @@ public class EntropicSpawnerScreen extends AbstractContainerScreen<EntropicSpawn
 
     private void renderGhostItems(GuiGraphicsExtractor graphics) {
         Slot clockSlot = menu.getSlot(EntropicSpawnerBlockEntity.CLOCK_SLOT_INDEX);
-        if (clockSlot.getItem().isEmpty()) {
+        if (clockSlot.getItem().isEmpty() && !GuiSlotLock.isLocked(clockSlot)) {
             renderGhostItem(graphics, GHOST_CLOCK, clockSlot.x, clockSlot.y);
         }
         Slot prodSlot = menu.getSlot(EntropicSpawnerBlockEntity.PRODUCTION_SLOT_INDEX);
-        if (prodSlot.getItem().isEmpty()) {
+        if (prodSlot.getItem().isEmpty() && !GuiSlotLock.isLocked(prodSlot)) {
             renderGhostItem(graphics, GHOST_PRODUCTION, prodSlot.x, prodSlot.y);
         }
         Slot fuelSlot = menu.getSlot(EntropicSpawnerBlockEntity.FUEL_SLOT_INDEX);
-        if (fuelSlot.getItem().isEmpty()) {
+        if (fuelSlot.getItem().isEmpty() && !GuiSlotLock.isLocked(fuelSlot)) {
             renderGhostItem(graphics, GHOST_FUEL, fuelSlot.x, fuelSlot.y);
         }
+    }
+
+    private void renderModuleLockOverlays(GuiGraphicsExtractor graphics) {
+        GuiSlotLock.renderIfLocked(graphics, leftPos, topPos,
+                menu.getSlot(EntropicSpawnerBlockEntity.CLOCK_SLOT_INDEX));
+        GuiSlotLock.renderIfLocked(graphics, leftPos, topPos,
+                menu.getSlot(EntropicSpawnerBlockEntity.PRODUCTION_SLOT_INDEX));
     }
 
     @Override

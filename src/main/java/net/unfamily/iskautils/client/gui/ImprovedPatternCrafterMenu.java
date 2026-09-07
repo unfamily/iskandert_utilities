@@ -21,8 +21,8 @@ import net.unfamily.iskautils.pattern.PatternData;
  * Slot layout (item render positions) for 340×270 GUI — coords match baked slot interiors:
  *   - Input filter / variables:  9 x 2 at (90, 47) [paginated]
  *   - Upgrade slots:             stacked at (12, 207/225/243) [manual only; SINGLE_SLOT blit]
- *   - Output slots:              3x3 at (266, 119) [extract only, paginated; SINGLE_SLOT blit]
- *   - Machine input inventory:   9x3 at (90, 114)
+ *   - Output slots:              3x3 at (266, 167) [above page/Mark Output; Mark Output @ hotbar]
+ *   - Machine input inventory:   9x3 at (90, 117)
  *   - Player inventory:          9x3 at (90, 185)
  *   - Player hotbar:             9x1 at (90, 243)
  */
@@ -42,14 +42,26 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
     public static final int UPGRADE_SLOT_Y2 = 243;
     /** First baked inventory slot interior (inside the dark border) on the 340×270 texture. */
     public static final int MACHINE_INPUT_X = 90;
-    public static final int MACHINE_INPUT_Y = 114;
+    public static final int MACHINE_INPUT_Y = 117;
+    /**
+     * Pattern 3×3 grid Y — same upward nudge as machine inventory, plus one extra pixel.
+     * Mark Input / Autoclear stay tied to {@link #MACHINE_INPUT_Y}.
+     */
+    public static final int PATTERN_GRID_Y = MACHINE_INPUT_Y - 1;
     public static final int PLAYER_INV_X = MACHINE_INPUT_X;
     public static final int PLAYER_INV_Y = 185;
     public static final int PLAYER_HOTBAR_Y = 243;
     /** Centered in the right gutter after the 9-wide inventory band. */
     public static final int OUTPUT_SLOT_X = 266;
-    /** Aligned with the 3 player-inventory rows (not the hotbar). */
-    public static final int OUTPUT_SLOT_Y = PLAYER_INV_Y;
+    /** Output column stacked upward from hotbar with breathing room (not packed). */
+    public static final int OUTPUT_COL_GAP = 4;
+    public static final int OUTPUT_CTRL_H = 14;
+    public static final int MARK_OUTPUT_H = 12;
+    public static final int MARK_OUTPUT_Y = PLAYER_HOTBAR_Y;
+    public static final int OUTPUT_PAGE_Y = MARK_OUTPUT_Y - OUTPUT_COL_GAP - OUTPUT_CTRL_H;
+    public static final int OUTPUT_SLOT_Y = OUTPUT_PAGE_Y - OUTPUT_COL_GAP - 54;
+    /** Forbidden sits a bit higher than a single gap above the output grid. */
+    public static final int FORBIDDEN_Y = OUTPUT_SLOT_Y - OUTPUT_COL_GAP - 2 - OUTPUT_CTRL_H;
 
     /** Filter edit chrome — exact DeepDrawer Extractor proportions. */
     public static final int EDIT_SLOT_SIZE = 18;

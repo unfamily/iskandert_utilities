@@ -136,7 +136,7 @@ public class Config {
 
     private static final ModConfigSpec.IntValue NULLIFIER_RANGE_UPGRADE_MAX = BUILDER
             .comment("Maximum number of Range Module items stackable in a nullifier's module slot")
-            .defineInRange("009_nullifierRangeUpgradeMax", 3, 1, 64);
+            .defineInRange("009_nullifierRangeUpgradeMax", 3, 0, 64);
 
     static {
         BUILDER.pop(); // End of nullifiers category
@@ -1322,7 +1322,7 @@ public class Config {
 
     private static final ModConfigSpec.IntValue COLLECTING_CRATE_RANGE_UPGRADE_MAX = BUILDER
             .comment("Maximum stack size of range modules in the upgrade slot")
-            .defineInRange("105_collectingCrateRangeUpgradeMax", 8, 1, 64);
+            .defineInRange("105_collectingCrateRangeUpgradeMax", 8, 0, 64);
 
     static {
         BUILDER.pop(); // End of collecting_crate category
@@ -1364,7 +1364,7 @@ public class Config {
 
     private static final ModConfigSpec.IntValue BLAZING_ALTAR_RANGE_UPGRADE_MAX = BUILDER
             .comment("Maximum stack size of range modules in the altar upgrade slot")
-            .defineInRange("007_range_upgrade_max", 4, 1, 64);
+            .defineInRange("007_range_upgrade_max", 4, 0, 64);
 
     private static final ModConfigSpec.IntValue BLAZING_ALTAR_EXTINGUISH_COLUMNS_PER_TICK = BUILDER
             .comment("Chunk columns (16x1 block strips) processed per server tick when removing flames on break or GUI extinguish")

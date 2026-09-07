@@ -103,6 +103,11 @@ public class NullifierMenu extends AbstractContainerMenu {
             public int getMaxStackSize() {
                 return handler.getSlotLimit(0);
             }
+
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return handler.getSlotLimit(0) > 0 && super.mayPlace(stack);
+            }
         });
     }
 

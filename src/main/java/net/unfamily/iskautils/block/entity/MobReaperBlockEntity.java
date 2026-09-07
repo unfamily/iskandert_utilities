@@ -123,7 +123,11 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
                     if (existing.is(ModItems.LETHAL_DAMAGE_MODULE.get())) {
                         yield Config.reaperLethalUpgradeMax;
                     }
-                    yield Config.reaperNormalUpgradeMax;
+                    if (existing.is(ModItems.NORMAL_DAMAGE_MODULE.get())) {
+                        yield Config.reaperNormalUpgradeMax;
+                    }
+                    // Empty: accept whichever damage type still has a positive config max.
+                    yield Math.max(Config.reaperNormalUpgradeMax, Config.reaperLethalUpgradeMax);
                 }
                 case 1 -> Config.reaperEnchantUpgradeMax;
                 case 2 -> Config.reaperBeheadingUpgradeMax;

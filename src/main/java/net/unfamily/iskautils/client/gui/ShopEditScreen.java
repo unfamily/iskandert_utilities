@@ -20,6 +20,7 @@ import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.unfamily.iskalib.item.ItemConverter;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.util.DeepDrawerFilterVariants;
 import net.unfamily.iskautils.integration.jei.ghost.IIskaUtilsGhostTarget;
 import net.unfamily.iskautils.integration.mekanism.MekChemicalHelper;
 import net.unfamily.iskautils.network.ModMessages;
@@ -1740,7 +1741,17 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             menu.setGhostStack(ItemStack.EMPTY);
             return;
         }
-        ItemStack stack = ItemConverter.parseItemString(resource, 1);
+        // Valid Keys -id form (e.g. from paste) → load item into selector
+        ItemStack fromId = DeepDrawerFilterVariants.itemStackFromIdFilter(resource);
+        if (!fromId.isEmpty()) {
+            menu.setGhostStack(fromId);
+            return;
+        }
+        String toParse = resource.trim();
+        if (toParse.startsWith("-")) {
+            toParse = toParse.substring(1).trim();
+        }
+        ItemStack stack = ItemConverter.parseItemString(toParse, 1);
         menu.setGhostStack(stack);
     }
 

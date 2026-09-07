@@ -301,6 +301,7 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        GuiSlotLock.renderIfLocked(graphics, leftPos, topPos, menu.getSlot(BlazingAltarMenu.MODULE_SLOT_INDEX));
         renderButtonTooltips(graphics, mouseX, mouseY);
     }
 
@@ -422,7 +423,20 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
 
     private boolean tryModuleGhostTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         Slot moduleSlot = menu.getSlot(BlazingAltarMenu.MODULE_SLOT_INDEX);
-        if (!moduleSlot.getItem().isEmpty() || !isMouseOverSlot(moduleSlot, mouseX, mouseY)) {
+        if (!isMouseOverSlot(moduleSlot, mouseX, mouseY)) {
+            return false;
+        }
+        if (GuiSlotLock.isLocked(moduleSlot)) {
+            graphics.setTooltipForNextFrame(
+                    font,
+                    List.of(GuiSlotLock.lockedTooltip().getVisualOrderText()),
+                    DefaultTooltipPositioner.INSTANCE,
+                    mouseX,
+                    mouseY,
+                    true);
+            return true;
+        }
+        if (!moduleSlot.getItem().isEmpty()) {
             return false;
         }
         graphics.setTooltipForNextFrame(

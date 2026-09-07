@@ -18,6 +18,47 @@ public final class DeepDrawerFilterVariants {
     private DeepDrawerFilterVariants() {}
 
     /**
+     * If {@code filter} is a Valid Keys item-id form ({@code -namespace:path}), returns that item.
+     * Tags, macros, bare ids, and empty strings yield {@link ItemStack#EMPTY} (no editor ghost seed).
+     */
+    public static ItemStack itemStackFromIdFilter(@Nullable String filter) {
+        if (filter == null || filter.isBlank()) {
+            return ItemStack.EMPTY;
+        }
+        String trimmed = filter.trim();
+        if (!trimmed.startsWith("-") || trimmed.length() < 2) {
+            return ItemStack.EMPTY;
+        }
+        String idPart = trimmed.substring(1).trim();
+        if (idPart.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        try {
+            Identifier id = Identifier.parse(idPart);
+            var item = BuiltInRegistries.ITEM.getValue(id);
+            if (item != null && item != net.minecraft.world.item.Items.AIR) {
+                return new ItemStack(item);
+            }
+        } catch (Exception ignored) {
+        }
+        return ItemStack.EMPTY;
+    }
+
+    /** Index of {@code filter} in {@code variants}, or {@code 0} if missing. */
+    public static int indexOfVariant(@NotNull List<String> variants, @Nullable String filter) {
+        if (filter == null || variants.isEmpty()) {
+            return 0;
+        }
+        String trimmed = filter.trim();
+        for (int i = 0; i < variants.size(); i++) {
+            if (trimmed.equals(variants.get(i))) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    /**
      * Order: item id, mod id (non-minecraft), &enchanted, &damaged, tags, optional ?SNBT.
      */
     public static List<String> generateAllFilterVariants(

@@ -102,6 +102,7 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
         renderGhostModules(guiGraphics);
+        renderModuleLockOverlays(guiGraphics);
         renderButtonTooltips(guiGraphics, mouseX, mouseY);
     }
 
@@ -207,12 +208,20 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
         };
         for (int i = 0; i < ghosts.length; i++) {
             Slot slot = menu.getSlot(i);
-            if (!slot.getItem().isEmpty() || !isMouseOverSlot(slot, mouseX, mouseY)) {
+            if (!isMouseOverSlot(slot, mouseX, mouseY)) {
                 continue;
             }
-            java.util.List<FormattedCharSequence> lines = java.util.List.of(ghosts[i].getHoverName().getVisualOrderText());
-            guiGraphics.setTooltipForNextFrame(this.font, lines, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
-            return;
+            if (GuiSlotLock.isLocked(slot)) {
+                java.util.List<FormattedCharSequence> locked =
+                        java.util.List.of(GuiSlotLock.lockedTooltip().getVisualOrderText());
+                guiGraphics.setTooltipForNextFrame(this.font, locked, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
+                return;
+            }
+            if (slot.getItem().isEmpty()) {
+                java.util.List<FormattedCharSequence> lines = java.util.List.of(ghosts[i].getHoverName().getVisualOrderText());
+                guiGraphics.setTooltipForNextFrame(this.font, lines, DefaultTooltipPositioner.INSTANCE, mouseX, mouseY, true);
+                return;
+            }
         }
     }
 
@@ -236,9 +245,15 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
         };
         for (int i = 0; i < 5; i++) {
             Slot slot = menu.getSlot(i);
-            if (slot.getItem().isEmpty()) {
+            if (slot.getItem().isEmpty() && !GuiSlotLock.isLocked(slot)) {
                 renderGhostItem(guiGraphics, ghosts[i], slot.x, slot.y);
             }
+        }
+    }
+
+    private void renderModuleLockOverlays(GuiGraphicsExtractor guiGraphics) {
+        for (int i = 0; i < 5; i++) {
+            GuiSlotLock.renderIfLocked(guiGraphics, this.leftPos, this.topPos, menu.getSlot(i));
         }
     }
 

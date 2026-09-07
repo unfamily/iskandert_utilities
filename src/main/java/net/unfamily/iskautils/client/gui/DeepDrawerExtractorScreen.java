@@ -1435,6 +1435,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                     editModeTextBox.setCursorPosition(0);
                     editModeTextBox.setHighlightPos(0);
                 }
+                ghostSlotItem = ItemStack.EMPTY;
+                filterVariants.clear();
+                currentFilterVariantIndex = 0;
             })
             .bounds(clearButtonX, buttonAfterSlotY, buttonSize, buttonSize)
             .tooltip(net.minecraft.client.gui.components.Tooltip.create(
@@ -1474,8 +1477,27 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
 
         layoutValidKeysButton();
 
-        // Initialize ghost slot as empty
-        ghostSlotItem = ItemStack.EMPTY;
+        // Seed selector from existing -id filter; empty / tags / macros leave ghost empty.
+        String seedFilter = editModeTextBox != null ? editModeTextBox.getValue() : originalFilterValue;
+        seedGhostFromIdFilter(seedFilter);
+    }
+
+    /**
+     * When opening an existing {@code -id} filter, load that item into the selector so the player
+     * can cycle to tags / other variants. Leaves textbox unchanged.
+     */
+    private void seedGhostFromIdFilter(String filter) {
+        ItemStack fromId = net.unfamily.iskautils.util.DeepDrawerFilterVariants.itemStackFromIdFilter(filter);
+        if (fromId.isEmpty()) {
+            ghostSlotItem = ItemStack.EMPTY;
+            filterVariants.clear();
+            currentFilterVariantIndex = 0;
+            return;
+        }
+        ghostSlotItem = fromId.copyWithCount(1);
+        filterVariants = generateAllFilterVariants(ghostSlotItem);
+        currentFilterVariantIndex = net.unfamily.iskautils.util.DeepDrawerFilterVariants.indexOfVariant(
+                filterVariants, filter);
     }
     
     /**

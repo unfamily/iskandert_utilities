@@ -105,7 +105,8 @@ public class BlazingAltarMenu extends AbstractContainerMenu {
         addSlot(new SlotItemHandler(blockEntity.getModuleHandler(), BlazingAltarBlockEntity.MODULE_SLOT, MODULE_SLOT_X, MODULE_SLOT_Y) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return stack.is(ModItems.RANGE_MODULE.get());
+                return stack.is(ModItems.RANGE_MODULE.get())
+                        && blockEntity.getModuleHandler().getSlotLimit(BlazingAltarBlockEntity.MODULE_SLOT) > 0;
             }
         });
 
