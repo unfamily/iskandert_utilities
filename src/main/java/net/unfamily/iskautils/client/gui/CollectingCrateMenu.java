@@ -171,7 +171,7 @@ public class CollectingCrateMenu extends AbstractContainerMenu {
 
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return stack.is(ModItems.RANGE_MODULE.get());
+                return stack.is(ModItems.RANGE_MODULE.get()) && moduleHandler.getSlotLimit(0) > 0;
             }
         });
     }

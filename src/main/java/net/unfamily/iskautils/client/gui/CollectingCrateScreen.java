@@ -337,6 +337,7 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         renderGhostModule(guiGraphics);
+        GuiSlotLock.renderIfLocked(guiGraphics, leftPos, topPos, menu.getSlot(CollectingCrateMenu.MODULE_SLOT_INDEX));
         this.renderTooltip(guiGraphics, mouseX, mouseY);
         renderButtonTooltips(guiGraphics, mouseX, mouseY);
     }
@@ -388,7 +389,14 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
     protected void renderTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         super.renderTooltip(guiGraphics, mouseX, mouseY);
         Slot moduleSlot = menu.getSlot(CollectingCrateMenu.MODULE_SLOT_INDEX);
-        if (moduleSlot.getItem().isEmpty() && isMouseOverSlot(moduleSlot, mouseX, mouseY)) {
+        if (!isMouseOverSlot(moduleSlot, mouseX, mouseY)) {
+            return;
+        }
+        if (GuiSlotLock.isLocked(moduleSlot)) {
+            guiGraphics.renderTooltip(this.font, GuiSlotLock.lockedTooltip(), mouseX, mouseY);
+            return;
+        }
+        if (moduleSlot.getItem().isEmpty()) {
             guiGraphics.renderTooltip(this.font, GHOST_RANGE_MODULE.getHoverName(), mouseX, mouseY);
         }
     }

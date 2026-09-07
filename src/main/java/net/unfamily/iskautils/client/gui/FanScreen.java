@@ -515,6 +515,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         
         // Render ghost items on top of empty module slots
         renderGhostItems(guiGraphics);
+        renderModuleLockOverlays(guiGraphics);
         
         // Render tooltips
         this.renderTooltip(guiGraphics, mouseX, mouseY);
@@ -531,18 +532,36 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
 
     private void renderEmptyModuleSlotTooltips(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         Slot rangeSlot = menu.getSlot(0);
-        if (rangeSlot.getItem().isEmpty() && isMouseOverSlot(rangeSlot, mouseX, mouseY)) {
-            guiGraphics.renderTooltip(this.font, GHOST_RANGE_MODULE.getHoverName(), mouseX, mouseY);
-            return;
+        if (isMouseOverSlot(rangeSlot, mouseX, mouseY)) {
+            if (GuiSlotLock.isLocked(rangeSlot)) {
+                guiGraphics.renderTooltip(this.font, GuiSlotLock.lockedTooltip(), mouseX, mouseY);
+                return;
+            }
+            if (rangeSlot.getItem().isEmpty()) {
+                guiGraphics.renderTooltip(this.font, GHOST_RANGE_MODULE.getHoverName(), mouseX, mouseY);
+                return;
+            }
         }
         Slot ghostSlot = menu.getSlot(1);
-        if (ghostSlot.getItem().isEmpty() && isMouseOverSlot(ghostSlot, mouseX, mouseY)) {
-            guiGraphics.renderTooltip(this.font, GHOST_GHOST_MODULE.getHoverName(), mouseX, mouseY);
-            return;
+        if (isMouseOverSlot(ghostSlot, mouseX, mouseY)) {
+            if (GuiSlotLock.isLocked(ghostSlot)) {
+                guiGraphics.renderTooltip(this.font, GuiSlotLock.lockedTooltip(), mouseX, mouseY);
+                return;
+            }
+            if (ghostSlot.getItem().isEmpty()) {
+                guiGraphics.renderTooltip(this.font, GHOST_GHOST_MODULE.getHoverName(), mouseX, mouseY);
+                return;
+            }
         }
         Slot speedSlot = menu.getSlot(2);
-        if (speedSlot.getItem().isEmpty() && isMouseOverSlot(speedSlot, mouseX, mouseY)) {
-            guiGraphics.renderTooltip(this.font, SPEED_MODULES[speedModuleCycleIndex].getHoverName(), mouseX, mouseY);
+        if (isMouseOverSlot(speedSlot, mouseX, mouseY)) {
+            if (GuiSlotLock.isLocked(speedSlot)) {
+                guiGraphics.renderTooltip(this.font, GuiSlotLock.lockedTooltip(), mouseX, mouseY);
+                return;
+            }
+            if (speedSlot.getItem().isEmpty()) {
+                guiGraphics.renderTooltip(this.font, SPEED_MODULES[speedModuleCycleIndex].getHoverName(), mouseX, mouseY);
+            }
         }
     }
 
@@ -659,19 +678,19 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
     private void renderGhostItems(GuiGraphics guiGraphics) {
         // Slot 1: range_module ghost
         net.minecraft.world.inventory.Slot slot0 = this.menu.getSlot(0);
-        if (slot0.getItem().isEmpty()) {
+        if (slot0.getItem().isEmpty() && !GuiSlotLock.isLocked(slot0)) {
             renderGhostItem(guiGraphics, GHOST_RANGE_MODULE, slot0.x, slot0.y);
         }
         
         // Slot 2: ghost_module ghost
         net.minecraft.world.inventory.Slot slot1 = this.menu.getSlot(1);
-        if (slot1.getItem().isEmpty()) {
+        if (slot1.getItem().isEmpty() && !GuiSlotLock.isLocked(slot1)) {
             renderGhostItem(guiGraphics, GHOST_GHOST_MODULE, slot1.x, slot1.y);
         }
         
         // Slot 3: speed module ghost (cycles through vector plates)
         net.minecraft.world.inventory.Slot slot2 = this.menu.getSlot(2);
-        if (slot2.getItem().isEmpty()) {
+        if (slot2.getItem().isEmpty() && !GuiSlotLock.isLocked(slot2)) {
             // Cycle through speed modules
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastCycleTime >= CYCLE_INTERVAL) {
@@ -681,6 +700,12 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             
             ItemStack currentSpeedModule = SPEED_MODULES[speedModuleCycleIndex];
             renderGhostItem(guiGraphics, currentSpeedModule, slot2.x, slot2.y);
+        }
+    }
+
+    private void renderModuleLockOverlays(GuiGraphics guiGraphics) {
+        for (int i = 0; i < 3; i++) {
+            GuiSlotLock.renderIfLocked(guiGraphics, this.leftPos, this.topPos, this.menu.getSlot(i));
         }
     }
     

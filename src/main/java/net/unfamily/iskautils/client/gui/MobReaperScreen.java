@@ -106,6 +106,7 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         renderGhostModules(guiGraphics);
+        renderModuleLockOverlays(guiGraphics);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
         renderButtonTooltips(guiGraphics, mouseX, mouseY);
     }
@@ -173,11 +174,17 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
         };
         for (int i = 0; i < ghosts.length; i++) {
             Slot slot = menu.getSlot(i);
-            if (!slot.getItem().isEmpty() || !isMouseOverSlot(slot, mouseX, mouseY)) {
+            if (!isMouseOverSlot(slot, mouseX, mouseY)) {
                 continue;
             }
-            guiGraphics.renderTooltip(this.font, ghosts[i].getHoverName(), mouseX, mouseY);
-            return;
+            if (GuiSlotLock.isLocked(slot)) {
+                guiGraphics.renderTooltip(this.font, GuiSlotLock.lockedTooltip(), mouseX, mouseY);
+                return;
+            }
+            if (slot.getItem().isEmpty()) {
+                guiGraphics.renderTooltip(this.font, ghosts[i].getHoverName(), mouseX, mouseY);
+                return;
+            }
         }
     }
 
@@ -216,9 +223,15 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
         };
         for (int i = 0; i < 5; i++) {
             Slot slot = menu.getSlot(i);
-            if (slot.getItem().isEmpty()) {
+            if (slot.getItem().isEmpty() && !GuiSlotLock.isLocked(slot)) {
                 renderGhostItem(guiGraphics, ghosts[i], slot.x, slot.y);
             }
+        }
+    }
+
+    private void renderModuleLockOverlays(GuiGraphics guiGraphics) {
+        for (int i = 0; i < 5; i++) {
+            GuiSlotLock.renderIfLocked(guiGraphics, this.leftPos, this.topPos, menu.getSlot(i));
         }
     }
 

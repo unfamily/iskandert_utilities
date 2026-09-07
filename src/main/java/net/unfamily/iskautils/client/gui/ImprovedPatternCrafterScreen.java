@@ -58,8 +58,6 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                     "textures/gui/energy_bar.png");
     private static final ResourceLocation SINGLE_SLOT =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
-    private static final ResourceLocation SLOT_LOCK =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/slot_lock.png");
     private static final ResourceLocation ENTRY_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/enrty_wide_wide_wide.png");
     private static final ResourceLocation SCROLLBAR_TEXTURE =
@@ -379,14 +377,13 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 .build();
         addRenderableWidget(closeButton);
 
-        // Output column: Forbidden → 3×3 (player-inv aligned) → page → Mark Output
-        int outputCtrlH = 14;
-        int markOutH = 12;
-        int outputPageY = ImprovedPatternCrafterMenu.OUTPUT_SLOT_Y + 54 + 1;
-        int markOutputY = outputPageY + outputCtrlH + 1;
+        // Output column: Forbidden → 3×3 → page → Mark Output (aligned to hotbar), with gaps
+        int markOutputY = ImprovedPatternCrafterMenu.MARK_OUTPUT_Y;
+        int outputPageY = ImprovedPatternCrafterMenu.OUTPUT_PAGE_Y;
         markOutputButton = Button.builder(Component.translatable("gui.iska_utils.mark_output"),
                         btn -> onMarkOutputPressed())
-                .bounds(this.leftPos + OUTPUT_SIDE_BTN_X, this.topPos + markOutputY, OUTPUT_SIDE_BTN_W, markOutH)
+                .bounds(this.leftPos + OUTPUT_SIDE_BTN_X, this.topPos + markOutputY,
+                        OUTPUT_SIDE_BTN_W, ImprovedPatternCrafterMenu.MARK_OUTPUT_H)
                 .tooltip(Tooltip.create(
                         Component.translatable("gui.iska_utils.mark_output.tooltip.line1")
                                 .append(Component.literal("\n"))
@@ -417,7 +414,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         int gridPad = (patternNavWidth - gridWidth) / 2;
         int navStartX = this.leftPos + patternColX;
         int gridStartX = navStartX + gridPad;
-        int gridStartY = this.topPos + ImprovedPatternCrafterMenu.MACHINE_INPUT_Y;
+        int gridStartY = this.topPos + ImprovedPatternCrafterMenu.PATTERN_GRID_Y;
         int btnH = 12;
         int btnGap = 1;
         int arrowWidth = 12;
@@ -508,11 +505,11 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 .build();
         addRenderableWidget(autoclearVariablesButton);
 
-        // Forbidden above the output grid
+        // Forbidden above the output grid (extra gap — not packed against the slots)
         forbiddenButton = Button.builder(Component.translatable("gui.iska_utils.forbidden_outputs"),
                         btn -> onForbiddenPressed())
-                .bounds(this.leftPos + OUTPUT_SIDE_BTN_X, this.topPos + ImprovedPatternCrafterMenu.OUTPUT_SLOT_Y - 14 - 1,
-                        OUTPUT_SIDE_BTN_W, 14)
+                .bounds(this.leftPos + OUTPUT_SIDE_BTN_X, this.topPos + ImprovedPatternCrafterMenu.FORBIDDEN_Y,
+                        OUTPUT_SIDE_BTN_W, ImprovedPatternCrafterMenu.OUTPUT_CTRL_H)
                 .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.forbidden.tooltip")))
                 .build();
         addRenderableWidget(forbiddenButton);
@@ -570,11 +567,6 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                     editX, editY, 18,
                     btn -> openVariableInlineEdit(resolveFilterIndex(localIndex)),
                     () -> variablePreviews[localIndex],
-                    () -> {
-                        int idx = resolveFilterIndex(localIndex);
-                        return idx < menu.getEffectiveKeyInputCount()
-                                && menu.getFilterLetter(idx) <= PatternData.EMPTY ? SLOT_LOCK : null;
-                    },
                     Component.empty());
             addRenderableWidget(variableButtons[i]);
         }
@@ -601,11 +593,13 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         }
 
         prevOutputPageButton = Button.builder(Component.literal("←"), btn -> setOutputPage(currentOutputPage - 1))
-                .bounds(this.leftPos + OUTPUT_SIDE_BTN_X, this.topPos + outputPageY, 12, 14)
+                .bounds(this.leftPos + OUTPUT_SIDE_BTN_X, this.topPos + outputPageY, 12,
+                        ImprovedPatternCrafterMenu.OUTPUT_CTRL_H)
                 .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.output_page.previous")))
                 .build();
         nextOutputPageButton = Button.builder(Component.literal("→"), btn -> setOutputPage(currentOutputPage + 1))
-                .bounds(this.leftPos + OUTPUT_SIDE_BTN_X + OUTPUT_SIDE_BTN_W - 12, this.topPos + outputPageY, 12, 14)
+                .bounds(this.leftPos + OUTPUT_SIDE_BTN_X + OUTPUT_SIDE_BTN_W - 12, this.topPos + outputPageY, 12,
+                        ImprovedPatternCrafterMenu.OUTPUT_CTRL_H)
                 .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.output_page.next")))
                 .build();
         addRenderableWidget(prevOutputPageButton);
@@ -958,8 +952,8 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             variablePreviews[i] = preview;
             if (variableButtons[i] != null) {
                 variableButtons[i].visible = showMain;
-                // Locked (letter==0): enter-edit disabled; unlocked: opens editor.
-                variableButtons[i].active = showMain && letterValue > PatternData.EMPTY;
+                // Keep active when locked so Shift+click can clear filter content; open edit still requires a letter.
+                variableButtons[i].active = showMain;
                 var varTip = Component.translatable("gui.iska_utils.variable_open_tooltip")
                         .append(Component.literal("\n"))
                         .append(Component.translatable("gui.iska_utils.variable_shift_clear_filter"));
@@ -1028,7 +1022,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     }
 
     private void onFilterLabelClick(PatternCellWidget widget) {
-        if (menu.getBlockEntity() == null || variableInlineEdit) return;
+        if (menu.getBlockEntity() == null) return;
         int filterIndex = resolveFilterIndex(widget.getCellIndex());
         if (filterIndex < 0 || filterIndex >= menu.getEffectiveKeyInputCount()) return;
         PacketDistributor.sendToServer(new FilterLetterUpdateC2SPacket(
@@ -1149,7 +1143,14 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     private void renderEmptyUpgradeSlotTooltips(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         for (int i = 0; i < 3; i++) {
             Slot slot = menu.getSlot(menu.getUpgradeStart() + i);
-            if (slot.getItem().isEmpty() && isMouseOverSlot(slot, mouseX, mouseY)) {
+            if (!isMouseOverSlot(slot, mouseX, mouseY)) {
+                continue;
+            }
+            if (GuiSlotLock.isLocked(slot)) {
+                guiGraphics.renderTooltip(this.font, GuiSlotLock.lockedTooltip(), mouseX, mouseY);
+                return;
+            }
+            if (slot.getItem().isEmpty()) {
                 guiGraphics.renderTooltip(this.font, currentUpgradeGhost(i).getHoverName(), mouseX, mouseY);
                 return;
             }
@@ -1188,9 +1189,6 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
      * DeepDrawerExtractor scrollbar, the visible content is derived from scroll/page + backend,
      * not from container slot sync timing.
      */
-    /** Slight darkening under lock icon on disabled upgrade slots. */
-    private static final int UPGRADE_LOCK_OVERLAY = 0x40000000;
-
     /**
      * Empty upgrade slots: Fan-style semi-transparent ItemStack ghosts.
      */
@@ -1213,27 +1211,19 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 ImprovedPatternCrafterMenu.UPGRADE_SLOT_Y2
         };
         for (int i = 0; i < 3; i++) {
-            if (menu.getSlot(menu.getUpgradeStart() + i).getItem().isEmpty()) {
-                GhostItemRenderer.render(guiGraphics, currentUpgradeGhost(i),
-                        this.leftPos + slotX, this.topPos + ys[i], GuiGhostItem.DEFAULT_ARGB);
+            Slot slot = menu.getSlot(menu.getUpgradeStart() + i);
+            if (GuiSlotLock.isLocked(slot) || !slot.getItem().isEmpty()) {
+                continue;
             }
+            GhostItemRenderer.render(guiGraphics, currentUpgradeGhost(i),
+                    this.leftPos + slotX, this.topPos + ys[i], GuiGhostItem.DEFAULT_ARGB);
         }
     }
 
     private void renderUpgradeLockOverlays(GuiGraphics guiGraphics) {
-        var be = menu.getBlockEntity();
-        if (be == null) return;
-        int[] ys = {
-                ImprovedPatternCrafterMenu.UPGRADE_SLOT_Y0,
-                ImprovedPatternCrafterMenu.UPGRADE_SLOT_Y1,
-                ImprovedPatternCrafterMenu.UPGRADE_SLOT_Y2
-        };
         for (int i = 0; i < 3; i++) {
-            if (be.getUpgradeHandler().getSlotLimit(i) > 0) continue;
-            int x = this.leftPos + ImprovedPatternCrafterMenu.UPGRADE_SLOT_X;
-            int y = this.topPos + ys[i];
-            guiGraphics.fill(x, y, x + 16, y + 16, UPGRADE_LOCK_OVERLAY);
-            guiGraphics.blit(SLOT_LOCK, x, y, 0, 0, 16, 16, 16, 16);
+            GuiSlotLock.renderIfLocked(guiGraphics, this.leftPos, this.topPos,
+                    menu.getSlot(menu.getUpgradeStart() + i));
         }
     }
 
@@ -1331,7 +1321,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // Shift+LMB on variable edit buttons clears filter content (even when locked/inactive).
+        // Shift+LMB on variable edit buttons clears filter content (works while letter-locked too).
         if (subView == SubView.MAIN && button == 0 && Screen.hasShiftDown() && menu.getBlockEntity() != null) {
             for (int i = 0; i < variableButtons.length; i++) {
                 ItemIconButton btn = variableButtons[i];
@@ -1521,7 +1511,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
         int maxPages = Math.max(1, (menu.getOutputSlotCount() + 8) / 9);
         String outputPage = (currentOutputPage + 1) + "/" + maxPages;
-        int outputPageY = ImprovedPatternCrafterMenu.OUTPUT_SLOT_Y + 54 + 1 + 3;
+        int outputPageY = ImprovedPatternCrafterMenu.OUTPUT_PAGE_Y + 3;
         int outputPageX = OUTPUT_SIDE_BTN_X + (OUTPUT_SIDE_BTN_W - this.font.width(outputPage)) / 2;
         guiGraphics.drawString(this.font, outputPage, outputPageX, outputPageY, 4210752, false);
     }
@@ -1680,6 +1670,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         resetEditorGhost();
         createEditModeUI(true);
         if (filterEditBox != null) filterEditBox.setValue(draftVariableFilter);
+        seedEditorGhostFromFilter(draftVariableFilter);
         applySubViewVisibility();
         playButtonSound();
     }
@@ -1716,11 +1707,13 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                     createEditModeUI(false);
                     if (filterEditBox != null && nestedEditIndex >= 0 && nestedEditIndex < draftForbidden.size()) {
                         filterEditBox.setValue(draftForbidden.get(nestedEditIndex));
+                        seedEditorGhostFromFilter(draftForbidden.get(nestedEditIndex));
                     }
                 }
             } else if (variableInlineEdit) {
                 createEditModeUI(true);
                 if (filterEditBox != null) filterEditBox.setValue(draftVariableFilter);
+                seedEditorGhostFromFilter(draftVariableFilter);
             }
             applySubViewVisibility();
             if (subView == SubView.FORBIDDEN) updateForbiddenEditButtons();
@@ -1906,6 +1899,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         resetEditorGhost();
         createEditModeUI(false);
         if (filterEditBox != null) filterEditBox.setValue(nestedOriginalValue);
+        seedEditorGhostFromFilter(nestedOriginalValue);
         // Clamp scroll so visible window fits with fewer rows
         int maxScroll = Math.max(0, getForbiddenSlotCount() - getVisibleForbiddenEntries());
         filterListScroll = Math.min(filterListScroll, maxScroll);
@@ -1987,6 +1981,24 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         editorGhostItem = ItemStack.EMPTY;
         filterVariants.clear();
         filterVariantIndex = 0;
+    }
+
+    /**
+     * When opening an existing {@code -id} filter, load that item into the selector so the player
+     * can cycle to tags / other variants. Leaves textbox unchanged; empty / non-id filters stay empty.
+     */
+    private void seedEditorGhostFromFilter(String filter) {
+        ItemStack fromId = net.unfamily.iskautils.util.DeepDrawerFilterVariants.itemStackFromIdFilter(filter);
+        if (fromId.isEmpty()) {
+            return;
+        }
+        editorGhostItem = fromId.copyWithCount(1);
+        var registries = minecraft != null && minecraft.level != null ? minecraft.level.registryAccess() : null;
+        filterVariants.clear();
+        filterVariants.addAll(net.unfamily.iskautils.util.DeepDrawerFilterVariants.generateAllFilterVariants(
+                editorGhostItem, registries));
+        filterVariantIndex = net.unfamily.iskautils.util.DeepDrawerFilterVariants.indexOfVariant(
+                filterVariants, filter);
     }
 
     private void acceptEditorGhost(ItemStack stack) {

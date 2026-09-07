@@ -117,6 +117,7 @@ public class EntropicSpawnerScreen extends AbstractContainerScreen<EntropicSpawn
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
         renderGhostItems(graphics);
+        renderModuleLockOverlays(graphics);
         renderTooltip(graphics, mouseX, mouseY);
         renderButtonTooltips(graphics, mouseX, mouseY);
     }
@@ -136,7 +137,14 @@ public class EntropicSpawnerScreen extends AbstractContainerScreen<EntropicSpawn
         };
         for (int i = 0; i < indices.length; i++) {
             Slot slot = menu.getSlot(indices[i]);
-            if (slot.getItem().isEmpty() && isMouseOverSlot(slot, mouseX, mouseY)) {
+            if (!isMouseOverSlot(slot, mouseX, mouseY)) {
+                continue;
+            }
+            if (GuiSlotLock.isLocked(slot)) {
+                graphics.renderTooltip(font, GuiSlotLock.lockedTooltip(), mouseX, mouseY);
+                return;
+            }
+            if (slot.getItem().isEmpty()) {
                 graphics.renderTooltip(font, ghosts[i].getHoverName(), mouseX, mouseY);
                 return;
             }
@@ -163,17 +171,24 @@ public class EntropicSpawnerScreen extends AbstractContainerScreen<EntropicSpawn
 
     private void renderGhostItems(GuiGraphics graphics) {
         Slot clockSlot = menu.getSlot(EntropicSpawnerBlockEntity.CLOCK_SLOT_INDEX);
-        if (clockSlot.getItem().isEmpty()) {
+        if (clockSlot.getItem().isEmpty() && !GuiSlotLock.isLocked(clockSlot)) {
             renderGhostItem(graphics, GHOST_CLOCK, clockSlot.x, clockSlot.y);
         }
         Slot prodSlot = menu.getSlot(EntropicSpawnerBlockEntity.PRODUCTION_SLOT_INDEX);
-        if (prodSlot.getItem().isEmpty()) {
+        if (prodSlot.getItem().isEmpty() && !GuiSlotLock.isLocked(prodSlot)) {
             renderGhostItem(graphics, GHOST_PRODUCTION, prodSlot.x, prodSlot.y);
         }
         Slot fuelSlot = menu.getSlot(EntropicSpawnerBlockEntity.FUEL_SLOT_INDEX);
-        if (fuelSlot.getItem().isEmpty()) {
+        if (fuelSlot.getItem().isEmpty() && !GuiSlotLock.isLocked(fuelSlot)) {
             renderGhostItem(graphics, GHOST_FUEL, fuelSlot.x, fuelSlot.y);
         }
+    }
+
+    private void renderModuleLockOverlays(GuiGraphics graphics) {
+        GuiSlotLock.renderIfLocked(graphics, leftPos, topPos,
+                menu.getSlot(EntropicSpawnerBlockEntity.CLOCK_SLOT_INDEX));
+        GuiSlotLock.renderIfLocked(graphics, leftPos, topPos,
+                menu.getSlot(EntropicSpawnerBlockEntity.PRODUCTION_SLOT_INDEX));
     }
 
     @Override

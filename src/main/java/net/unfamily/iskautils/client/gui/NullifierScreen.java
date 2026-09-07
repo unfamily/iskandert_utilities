@@ -288,6 +288,7 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
+        GuiSlotLock.renderIfLocked(graphics, leftPos, topPos, menu.getSlot(NullifierMenu.MODULE_SLOT_INDEX));
         this.renderTooltip(graphics, mouseX, mouseY);
         renderModuleGhostTooltip(graphics, mouseX, mouseY);
     }
@@ -324,7 +325,14 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
 
     private void renderModuleGhostTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
         Slot moduleSlot = menu.getSlot(NullifierMenu.MODULE_SLOT_INDEX);
-        if (!moduleSlot.getItem().isEmpty() || !isMouseOverSlot(moduleSlot, mouseX, mouseY)) {
+        if (!isMouseOverSlot(moduleSlot, mouseX, mouseY)) {
+            return;
+        }
+        if (GuiSlotLock.isLocked(moduleSlot)) {
+            graphics.renderTooltip(font, GuiSlotLock.lockedTooltip(), mouseX, mouseY);
+            return;
+        }
+        if (!moduleSlot.getItem().isEmpty()) {
             return;
         }
         graphics.renderTooltip(

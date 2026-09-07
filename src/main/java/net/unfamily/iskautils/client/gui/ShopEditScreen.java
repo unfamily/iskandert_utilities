@@ -33,6 +33,7 @@ import net.unfamily.iskautils.shop.ShopStage;
 import net.unfamily.iskautils.shop.edit.ShopEditResourceFormats;
 import net.unfamily.iskautils.shop.edit.ShopEditSession;
 import net.unfamily.iskautils.shop.edit.ShopEditWorkspace;
+import net.unfamily.iskautils.util.DeepDrawerFilterVariants;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -1733,7 +1734,17 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             menu.setGhostStack(ItemStack.EMPTY);
             return;
         }
-        ItemStack stack = ItemConverter.parseItemString(resource, 1);
+        // Valid Keys -id form (e.g. from paste) → load item into selector
+        ItemStack fromId = DeepDrawerFilterVariants.itemStackFromIdFilter(resource);
+        if (!fromId.isEmpty()) {
+            menu.setGhostStack(fromId);
+            return;
+        }
+        String toParse = resource.trim();
+        if (toParse.startsWith("-")) {
+            toParse = toParse.substring(1).trim();
+        }
+        ItemStack stack = ItemConverter.parseItemString(toParse, 1);
         menu.setGhostStack(stack);
     }
 
