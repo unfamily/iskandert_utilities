@@ -62,7 +62,13 @@ public class ItemIconButton extends Button {
             float scale = iconSize / 16.0f;
             graphics.pose().translate(ix, iy, 0);
             graphics.pose().scale(scale, scale, 1);
+            if (!this.active) {
+                graphics.setColor(1.0F, 1.0F, 1.0F, 0.4F);
+            }
             graphics.renderItem(stack, 0, 0);
+            if (!this.active) {
+                graphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+            }
             graphics.pose().popPose();
         }
     }
