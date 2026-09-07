@@ -497,6 +497,7 @@ public class ModMessages {
         registrar.playToServer(ToolSafeguardC2SPacket.TYPE, ToolSafeguardC2SPacket.STREAM_CODEC, ToolSafeguardC2SPacket::handle);
         registrar.playToServer(AutoclearVariablesC2SPacket.TYPE, AutoclearVariablesC2SPacket.STREAM_CODEC, AutoclearVariablesC2SPacket::handle);
         registrar.playToServer(ForbiddenFiltersC2SPacket.TYPE, ForbiddenFiltersC2SPacket.STREAM_CODEC, ForbiddenFiltersC2SPacket::handle);
+        registrar.playToServer(PatternCrafterSettingsCopierC2SPacket.TYPE, PatternCrafterSettingsCopierC2SPacket.STREAM_CODEC, PatternCrafterSettingsCopierC2SPacket::handle);
         registrar.playToServer(VariableFilterSetC2SPacket.TYPE, VariableFilterSetC2SPacket.STREAM_CODEC, VariableFilterSetC2SPacket::handle);
         registrar.playToServer(RecursiveOutputModeC2SPacket.TYPE, RecursiveOutputModeC2SPacket.STREAM_CODEC, RecursiveOutputModeC2SPacket::handle);
         registrar.playToServer(RedstoneModeC2SPacket.TYPE, RedstoneModeC2SPacket.STREAM_CODEC, RedstoneModeC2SPacket::handle);

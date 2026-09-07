@@ -14,8 +14,9 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.client.gui.ImprovedPatternCrafterMenu;
 
-/** Transfers a resolved JEI 3x3 crafting grid (and crafting mode) to the current Pattern Crafter pattern. */
-public record PatternCrafterJeiTransferC2SPacket(BlockPos pos, List<ItemStack> ingredients, int craftingMode)
+/** Applies JEI variable filters/letters immediately. Pattern grid stays pending until Save. */
+public record PatternCrafterJeiTransferC2SPacket(
+        BlockPos pos, List<ItemStack> ingredients, List<String> filterSpecs, int craftingMode)
         implements CustomPacketPayload {
     public static final Type<PatternCrafterJeiTransferC2SPacket> TYPE = new Type<>(
             Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "pc_jei_transfer"));
@@ -28,8 +29,12 @@ public record PatternCrafterJeiTransferC2SPacket(BlockPos pos, List<ItemStack> i
                     for (int i = 0; i < 9; i++) {
                         stacks.add(ItemStack.OPTIONAL_STREAM_CODEC.decode((RegistryFriendlyByteBuf) buffer));
                     }
+                    List<String> specs = new ArrayList<>(9);
+                    for (int i = 0; i < 9; i++) {
+                        specs.add(buffer.readUtf(256));
+                    }
                     int craftingMode = buffer.readVarInt();
-                    return new PatternCrafterJeiTransferC2SPacket(pos, stacks, craftingMode);
+                    return new PatternCrafterJeiTransferC2SPacket(pos, stacks, specs, craftingMode);
                 }
 
                 @Override
@@ -39,11 +44,19 @@ public record PatternCrafterJeiTransferC2SPacket(BlockPos pos, List<ItemStack> i
                         ItemStack stack = i < packet.ingredients().size() ? packet.ingredients().get(i) : ItemStack.EMPTY;
                         ItemStack.OPTIONAL_STREAM_CODEC.encode((RegistryFriendlyByteBuf) buffer, stack);
                     }
+                    for (int i = 0; i < 9; i++) {
+                        String spec = i < packet.filterSpecs().size() && packet.filterSpecs().get(i) != null
+                                ? packet.filterSpecs().get(i) : "";
+                        buffer.writeUtf(spec, 256);
+                    }
                     buffer.writeVarInt(packet.craftingMode());
                 }
             };
 
-    @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
 
     public static void handle(PatternCrafterJeiTransferC2SPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
@@ -51,7 +64,7 @@ public record PatternCrafterJeiTransferC2SPacket(BlockPos pos, List<ItemStack> i
             if (!(player.containerMenu instanceof ImprovedPatternCrafterMenu menu)
                     || menu.getBlockEntity() == null
                     || !menu.getBlockEntity().getBlockPos().equals(packet.pos())) return;
-            menu.getBlockEntity().applyJeiVariablesOnly(packet.ingredients());
+            menu.getBlockEntity().applyJeiVariablesOnly(packet.ingredients(), packet.filterSpecs());
             menu.broadcastFullState();
         });
     }

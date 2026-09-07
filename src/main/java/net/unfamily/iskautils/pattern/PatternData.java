@@ -23,7 +23,7 @@ public class PatternData {
     /** Default: only shaped (1); user can change to both (0) or shapeless only (2) */
     private int craftingMode = CRAFTING_MODE_SHAPED_ONLY;
 
-    /** Result mode (per pattern): 1 = Eject, 2 = Keep (recursive), 3 = Smart (no recursion) */
+    /** Result mode (per pattern): 1 = Eject, 2 = Keep (always input-first), 3 = Smart (input-first only if active variable matches) */
     private int resultMode = 1;
     /** Ingredient mode (per pattern): 1 = Keep, 2 = Eject */
     private int ingredientMode = 1;

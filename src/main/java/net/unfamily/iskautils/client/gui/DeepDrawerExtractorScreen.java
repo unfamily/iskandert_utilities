@@ -210,6 +210,18 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         this.titleLabelX = (this.imageWidth - this.font.width(this.title)) / 2;
         this.titleLabelY = TITLE_Y;
 
+        // Snapshot in-progress edit text before cache/widget rebuild (JEI re-init).
+        String pendingEditDraft = null;
+        if (inEditMode()) {
+            if (editModeTextBox != null) {
+                pendingEditDraft = editModeTextBox.getValue();
+            } else if (editModeFilterIndex < cachedFilterFields.size()) {
+                pendingEditDraft = cachedFilterFields.get(editModeFilterIndex);
+            } else {
+                pendingEditDraft = originalFilterValue;
+            }
+        }
+
         cachedFilterFields.clear();
         cachedInvertedFilterFields.clear();
 
@@ -259,6 +271,28 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         applySubViewVisibility();
         tryRestoreSavedFilterSubview();
         initSettingsCopierButtons();
+
+        // JEI (and some UI transitions) can cause a screen re-init that clears widgets.
+        // If we are mid edit-mode, restore the edit widgets without grabbing keyboard focus.
+        if (isFilterListOpen() || inEditMode()) {
+            menu.updateCachedFilters();
+            updateCachedFiltersForMode();
+            updateEditButtons();
+        }
+        if (inEditMode()) {
+            if (pendingEditDraft != null) {
+                while (cachedFilterFields.size() <= editModeFilterIndex) {
+                    cachedFilterFields.add("");
+                }
+                cachedFilterFields.set(editModeFilterIndex, pendingEditDraft);
+            }
+            createEditModeUI();
+            if (editModeTextBox != null) {
+                editModeTextBox.setFocused(false);
+            }
+            applySubViewVisibility();
+            updateEditButtons();
+        }
     }
 
     private void initSettingsCopierButtons() {

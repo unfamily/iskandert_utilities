@@ -119,8 +119,7 @@ public class ModBlocks {
     private static final UnaryOperator<BlockBehaviour.Properties> PATTERN_CRAFTER_PROPERTIES = p -> p
             .mapColor(MapColor.METAL)
             .strength(3.0f, 6.0f)
-            .sound(SoundType.METAL)
-            .requiresCorrectToolForDrops();
+            .sound(SoundType.METAL);
 
     // Wither Proof Block
     public static final DeferredBlock<WitherProofBlock> WITHER_PROOF_BLOCK = BLOCKS.register("wither_proof_block",
@@ -329,8 +328,7 @@ public class ModBlocks {
     private static final UnaryOperator<BlockBehaviour.Properties> COLLECTING_CRATE_PROPERTIES = p -> p
             .mapColor(MapColor.WOOD)
             .strength(3.0f, 6.0f)
-            .sound(SoundType.WOOD)
-            .requiresCorrectToolForDrops();
+            .sound(SoundType.WOOD);
 
     public static final DeferredBlock<CollectingCrateBlock> COLLECTING_CRATE = BLOCKS.register("collecting_crate",
             key -> new CollectingCrateBlock(assignBlockId(key, COLLECTING_CRATE_PROPERTIES)));

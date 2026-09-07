@@ -1415,7 +1415,7 @@ public class Config {
     public static final ModConfigSpec.IntValue NORMAL_MAX_PATTERNS = BUILDER
             .defineInRange("maxPatterns", 4, 1, 64);
     public static final ModConfigSpec.IntValue NORMAL_BASE_PATTERNS = BUILDER
-            .defineInRange("basePatterns", 2, 1, 64);
+            .defineInRange("basePatterns", 4, 1, 64);
     public static final ModConfigSpec.IntValue NORMAL_MAX_LOGIC_MODULES = BUILDER
             .defineInRange("maxLogicModules", 0, 0, 64);
     public static final ModConfigSpec.IntValue NORMAL_MAX_SPEED_MODULES = BUILDER
@@ -1446,9 +1446,9 @@ public class Config {
     public static final ModConfigSpec.IntValue MAX_PATTERNS = BUILDER
             .defineInRange("maxPatterns", 16, 1, 64);
     public static final ModConfigSpec.IntValue BASE_PATTERNS = BUILDER
-            .defineInRange("basePatterns", 4, 1, 64);
+            .defineInRange("basePatterns", 6, 1, 64);
     public static final ModConfigSpec.IntValue MAX_LOGIC_MODULES = BUILDER
-            .defineInRange("maxLogicModules", 3, 0, 64);
+            .defineInRange("maxLogicModules", 4, 0, 64);
     public static final ModConfigSpec.IntValue MAX_SPEED_MODULES = BUILDER
             .defineInRange("maxSpeedModules", 1, 0, 64);
     public static final ModConfigSpec.DoubleValue SPEED_MULTIPLIER_SLOW = BUILDER
@@ -1462,7 +1462,8 @@ public class Config {
     public static final ModConfigSpec.DoubleValue SPEED_MULTIPLIER_ULTRA = BUILDER
             .defineInRange("ultraSpeedMultiplier", 0.1D, 0.01D, 100.0D);
     public static final ModConfigSpec.IntValue IMPROVED_MAX_KEY_INPUTS = BUILDER
-            .defineInRange("maxKeyInputs", 36, 1, 256);
+            .comment("Hard cap on variable keys. Default allows baseKeyInputs + 18 per Logic Module (up to maxLogicModules).")
+            .defineInRange("maxKeyInputs", 90, 1, 256);
     public static final ModConfigSpec.IntValue BASE_KEY_INPUTS = BUILDER
             .defineInRange("baseKeyInputs", 18, 1, 256);
     public static final ModConfigSpec.IntValue MAX_PRODUCTION_MODULES = BUILDER

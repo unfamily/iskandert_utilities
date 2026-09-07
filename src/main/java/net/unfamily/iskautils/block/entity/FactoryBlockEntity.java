@@ -57,8 +57,11 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer,
 
     /** Last neighbor redstone level for PULSE edge detection (high = powered). */
     private boolean pulsePreviousRedstone = false;
-    /** Set at tick start when mode==3: craft allowed only if true (rising edge). */
-    private boolean pulseEdgeAllowsCraft = false;
+    /**
+     * Armed on a rising redstone edge in PULSE mode; cleared after one successful craft
+     * or when the signal goes low. While armed, the machine may retry until one op succeeds.
+     */
+    private boolean pulsePendingCraft = false;
     @Nullable
     private UUID ownerPlayerUuid;
 
@@ -171,21 +174,28 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer,
 
     private void applyRedstoneMode(int mode) {
         this.redstoneMode = mode;
+        this.pulsePendingCraft = false;
         if (mode == 3 && level != null && !level.isClientSide()) {
             pulsePreviousRedstone = level.getBestNeighborSignal(worldPosition) > 0;
-        } else if (mode != 3) {
+        } else {
             pulsePreviousRedstone = false;
         }
     }
 
     /** Runs every server tick so PULSE tracks edges even when the machine has no input. */
     private void tickPulseRedstone(Level level) {
-        pulseEdgeAllowsCraft = false;
         if (redstoneMode != 3 || level == null || level.isClientSide()) {
+            pulsePendingCraft = false;
             return;
         }
         boolean sig = level.getBestNeighborSignal(worldPosition) > 0;
-        pulseEdgeAllowsCraft = sig && !pulsePreviousRedstone;
+        if (sig && !pulsePreviousRedstone) {
+            // Rising edge: arm exactly one conversion/craft.
+            pulsePendingCraft = true;
+        }
+        if (!sig) {
+            pulsePendingCraft = false;
+        }
         pulsePreviousRedstone = sig;
     }
 
@@ -194,7 +204,7 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer,
             return false;
         }
         if (redstoneMode == 3) {
-            return pulseEdgeAllowsCraft;
+            return pulsePendingCraft;
         }
         int power = level.getBestNeighborSignal(worldPosition);
         boolean sig = power > 0;
@@ -322,6 +332,10 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer,
 
         if (bufferCap > 0 && perOpEnergy > 0) {
             be.energyStorage.extractEnergy(ops * perOpEnergy, false);
+        }
+
+        if (be.redstoneMode == 3) {
+            be.pulsePendingCraft = false;
         }
 
         be.setChangedAndSync();

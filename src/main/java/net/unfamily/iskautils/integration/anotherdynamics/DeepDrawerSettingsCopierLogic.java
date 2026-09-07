@@ -11,7 +11,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.block.entity.DeepDrawerExtractorBlockEntity;
+import net.unfamily.iskautils.block.entity.ImprovedPatternCrafterBlockEntity;
 import net.unfamily.iskautils.client.gui.DeepDrawerExtractorMenu;
+import net.unfamily.iskautils.client.gui.ImprovedPatternCrafterMenu;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -98,6 +100,80 @@ public final class DeepDrawerSettingsCopierLogic {
             player.sendSystemMessage(Component.translatable("gui.iska_utils.deep_drawer_extractor.settings_copier.pasted"), true);
         } catch (ReflectiveOperationException e) {
             LOGGER.warn("Settings copier paste failed", e);
+        }
+    }
+
+    /** Copy Pattern Crafter Forbidden Outputs list into a Settings Copier. */
+    public static void copyForbiddenToCopier(ServerPlayer player, ImprovedPatternCrafterMenu menu) {
+        if (!AnotherDynamicsCompat.isLoaded()) {
+            return;
+        }
+        int slotIdx = menu.copySettingsSlotIndex();
+        if (slotIdx < 0) {
+            return;
+        }
+        ItemStack copier = menu.getSlot(slotIdx).getItem();
+        if (copier.isEmpty() || !isSettingsCopier(copier)) {
+            player.sendSystemMessage(Component.translatable("gui.iska_utils.deep_drawer_extractor.settings_copier.empty_copier"), true);
+            return;
+        }
+        ImprovedPatternCrafterBlockEntity be = menu.getBlockEntity();
+        if (be == null) {
+            return;
+        }
+        List<String> lines = collectNonEmptyLines(be.getForbiddenFilters());
+        List<Integer> concat = new ArrayList<>();
+        for (int i = 0; i < lines.size(); i++) {
+            concat.add(0);
+        }
+        try {
+            HolderLookup.Provider registries = player.registryAccess();
+            CompoundTag snap = buildPortableSnapshot(lines, concat, registries);
+            if (snap == null) {
+                return;
+            }
+            writeToCopier(copier, snap, registries);
+            menu.getSlot(slotIdx).set(copier);
+            player.sendSystemMessage(Component.translatable("gui.iska_utils.deep_drawer_extractor.settings_copier.copied"), true);
+        } catch (ReflectiveOperationException e) {
+            LOGGER.warn("Settings copier copy failed (pattern crafter forbidden)", e);
+        }
+    }
+
+    /** Paste item filter list from Settings Copier into Pattern Crafter Forbidden Outputs. */
+    public static void pasteForbiddenFromCopier(ServerPlayer player, ImprovedPatternCrafterMenu menu) {
+        if (!AnotherDynamicsCompat.isLoaded()) {
+            return;
+        }
+        int slotIdx = menu.copySettingsSlotIndex();
+        if (slotIdx < 0) {
+            return;
+        }
+        ItemStack copier = menu.getSlot(slotIdx).getItem();
+        if (copier.isEmpty() || !isSettingsCopier(copier)) {
+            player.sendSystemMessage(Component.translatable("gui.iska_utils.deep_drawer_extractor.settings_copier.empty_copier"), true);
+            return;
+        }
+        ImprovedPatternCrafterBlockEntity be = menu.getBlockEntity();
+        if (be == null) {
+            return;
+        }
+        try {
+            HolderLookup.Provider registries = player.registryAccess();
+            CompoundTag snap = readFromCopier(copier, registries);
+            if (snap == null || !isFilterPayload(snap)) {
+                player.sendSystemMessage(Component.translatable("gui.iska_utils.deep_drawer_extractor.settings_copier.paste.invalid_kind"), true);
+                return;
+            }
+            if (!isItemMaterialKind(snap)) {
+                player.sendSystemMessage(Component.translatable("gui.iska_utils.deep_drawer_extractor.settings_copier.paste.invalid_kind"), true);
+                return;
+            }
+            List<String> lines = readStringList(snap, "Lines");
+            be.setForbiddenFilters(lines);
+            player.sendSystemMessage(Component.translatable("gui.iska_utils.deep_drawer_extractor.settings_copier.pasted"), true);
+        } catch (ReflectiveOperationException e) {
+            LOGGER.warn("Settings copier paste failed (pattern crafter forbidden)", e);
         }
     }
 

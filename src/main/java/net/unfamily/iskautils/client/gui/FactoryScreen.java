@@ -114,7 +114,7 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
         if (redstoneModeButton != null && redstoneModeButton.isMouseOver(mouseX, mouseY)) {
             MachineGuiButtons.renderTooltipLine(
                     guiGraphics, font, mouseX, mouseY,
-                    MachineGuiButtons.redstoneTooltip(menu.getRedstoneMode(), false));
+                    MachineGuiButtons.redstoneTooltip(menu.getRedstoneMode(), true));
         }
     }
 
@@ -224,12 +224,13 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
         lastGridRebuildKey = Integer.MIN_VALUE;
         clearColorGridButtons();
 
+        // Factory supports Pulse (mode 3); allowPulse must match cycle % 5 or Disabled→Pulse looks like a no-op.
         redstoneModeButton = addRenderableWidget(MachineGuiButtons.redstoneIconButton(
                 leftPos + REDSTONE_BUTTON_X,
                 topPos + REDSTONE_BUTTON_Y,
                 b -> onRedstoneModePressed(false),
                 menu::getRedstoneMode,
-                false));
+                true));
     }
 
     private void onRedstoneModePressed(boolean backward) {
