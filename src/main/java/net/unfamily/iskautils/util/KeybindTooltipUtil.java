@@ -2,15 +2,27 @@ package net.unfamily.iskautils.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * Resolves a player-configured keybind for tooltips.
+ * Always applies yellow so the key stays visible when the surrounding line uses lore/tech/gray style.
+ */
 public final class KeybindTooltipUtil {
     private KeybindTooltipUtil() {}
 
     public static Component keybindOrTranslation(String translationKey, String clientKeybindingsFieldName) {
         Component resolved = resolveClientKeybinding(clientKeybindingsFieldName);
-        return resolved != null ? resolved : Component.translatable(translationKey);
+        Component base = resolved != null ? resolved : Component.translatable(translationKey);
+        return withKeybindColor(base);
+    }
+
+    /** Explicit yellow so parent line styles (lore/tech/gray) do not wash out the key. */
+    public static MutableComponent withKeybindColor(Component keybind) {
+        return keybind.copy().withStyle(ChatFormatting.YELLOW);
     }
 
     private static @Nullable Component resolveClientKeybinding(String clientKeybindingsFieldName) {
@@ -44,4 +56,3 @@ public final class KeybindTooltipUtil {
         }
     }
 }
-

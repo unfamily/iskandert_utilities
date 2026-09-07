@@ -4,6 +4,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.ArtifactBalanceFormat;
+import net.unfamily.iskautils.util.ArtifactTooltipUtil;
 
 import java.util.function.Consumer;
 
@@ -20,22 +21,22 @@ public final class EntropicTooltip {
         appendUnbreakable(tooltip);
         switch (path) {
             case "entropic_helmet" -> {
-                tooltip.accept(Component.translatable(
+                ArtifactTooltipUtil.addTechLine(tooltip,
                         "tooltip.iska_utils.entropic.helmet.hp",
-                        ArtifactBalanceFormat.flatBonus(Config.entropicHelmetBaseHp)));
-                tooltip.accept(Component.translatable(
+                        ArtifactBalanceFormat.flatBonus(Config.entropicHelmetBaseHp));
+                ArtifactTooltipUtil.addTechLine(tooltip,
                         "tooltip.iska_utils.entropic.helmet.hp_per_piece",
-                        ArtifactBalanceFormat.flatBonus(Config.entropicHelmetHpPerEntropicPiece)));
+                        ArtifactBalanceFormat.flatBonus(Config.entropicHelmetHpPerEntropicPiece));
             }
-            case "entropic_chestplate" -> tooltip.accept(Component.translatable(
+            case "entropic_chestplate" -> ArtifactTooltipUtil.addTechLine(tooltip,
                     "tooltip.iska_utils.entropic.chestplate.toughness",
                     ArtifactBalanceFormat.flatBonus(Config.entropicChestplateToughnessBonusPerStep),
-                    ArtifactBalanceFormat.flatBonus(Config.entropicChestplateMissingHpPerStep)));
-            case "entropic_leggings" -> tooltip.accept(Component.translatable(
+                    ArtifactBalanceFormat.flatBonus(Config.entropicChestplateMissingHpPerStep));
+            case "entropic_leggings" -> ArtifactTooltipUtil.addTechLine(tooltip,
                     "tooltip.iska_utils.entropic.leggings.armor",
                     ArtifactBalanceFormat.flatBonus(Config.entropicLeggingsArmorBonusPerStep),
-                    ArtifactBalanceFormat.flatBonus(Config.entropicLeggingsMissingHpPerStep)));
-            case "entropic_boots" -> tooltip.accept(Component.translatable("tooltip.iska_utils.entropic.boots.fall"));
+                    ArtifactBalanceFormat.flatBonus(Config.entropicLeggingsMissingHpPerStep));
+            case "entropic_boots" -> ArtifactTooltipUtil.addTechLine(tooltip, "tooltip.iska_utils.entropic.boots.fall");
             case "entropic_axe" -> {
                 appendAxeStrip(tooltip);
                 appendArmorPen(tooltip);
@@ -43,8 +44,19 @@ public final class EntropicTooltip {
             case "entropic_sword", "entropic_spear" -> appendArmorPen(tooltip);
             case "entropic_pickaxe" -> appendPickaxeFortune(tooltip);
             case "entropic_shovel" -> appendShovelBrush(tooltip);
-            case "entropic_hoe" -> tooltip.accept(Component.translatable("tooltip.iska_utils.entropic.hoe.crop"));
+            case "entropic_hoe" -> appendHoeCrop(tooltip);
             default -> {}
+        }
+    }
+
+    private static void appendHoeCrop(Consumer<Component> tooltip) {
+        if (!Config.entropicHoeCropPowerEnabled) {
+            return;
+        }
+        if (Config.entropicHoeRequireMatureCrop) {
+            ArtifactTooltipUtil.addTechLine(tooltip, "tooltip.iska_utils.entropic.hoe.crop.mature");
+        } else {
+            ArtifactTooltipUtil.addTechLine(tooltip, "tooltip.iska_utils.entropic.hoe.crop.any");
         }
     }
 
@@ -55,7 +67,7 @@ public final class EntropicTooltip {
 
     private static void appendPaxelLines(Consumer<Component> tooltip) {
         appendUnbreakable(tooltip);
-        tooltip.accept(Component.translatable("tooltip.iska_utils.entropic.paxel.combo"));
+        ArtifactTooltipUtil.addTechLine(tooltip, "tooltip.iska_utils.entropic.paxel.combo");
         appendPickaxeFortune(tooltip);
         appendAxeStrip(tooltip);
         appendArmorPen(tooltip);
@@ -66,32 +78,32 @@ public final class EntropicTooltip {
         if (Config.entropicPickaxeBonusFortuneLevels <= 0) {
             return;
         }
-        tooltip.accept(Component.translatable(
+        ArtifactTooltipUtil.addTechLine(tooltip,
                 "tooltip.iska_utils.entropic.pickaxe.fortune",
-                ArtifactBalanceFormat.flatBonus(Config.entropicPickaxeBonusFortuneLevels)));
+                ArtifactBalanceFormat.flatBonus(Config.entropicPickaxeBonusFortuneLevels));
     }
 
     private static void appendAxeStrip(Consumer<Component> tooltip) {
         if (!Config.entropicAxeStripEnabled) {
             return;
         }
-        tooltip.accept(Component.translatable("tooltip.iska_utils.entropic.axe.strip"));
+        ArtifactTooltipUtil.addTechLine(tooltip, "tooltip.iska_utils.entropic.axe.strip");
     }
 
     private static void appendShovelBrush(Consumer<Component> tooltip) {
         if (!Config.entropicShovelBrushEnabled) {
             return;
         }
-        tooltip.accept(Component.translatable("tooltip.iska_utils.entropic.shovel.brush"));
+        ArtifactTooltipUtil.addTechLine(tooltip, "tooltip.iska_utils.entropic.shovel.brush");
     }
 
     private static void appendArmorPen(Consumer<Component> tooltip) {
         if (Config.entropicArmorPenChance <= 0.0D || Config.entropicArmorPenIgnoreFraction <= 0.0D) {
             return;
         }
-        tooltip.accept(Component.translatable(
+        ArtifactTooltipUtil.addTechLine(tooltip,
                 "tooltip.iska_utils.entropic.armor_pen",
                 ArtifactBalanceFormat.percent(Config.entropicArmorPenChance),
-                ArtifactBalanceFormat.percent(Config.entropicArmorPenIgnoreFraction)));
+                ArtifactBalanceFormat.percent(Config.entropicArmorPenIgnoreFraction));
     }
 }

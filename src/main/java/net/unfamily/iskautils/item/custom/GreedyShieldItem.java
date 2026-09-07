@@ -1,6 +1,5 @@
 package net.unfamily.iskautils.item.custom;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.Entity;
@@ -11,6 +10,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
+import net.unfamily.iskautils.util.ArtifactTooltipUtil;
 import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskalib.stage.StageRegistry;
 import net.unfamily.iskautils.Config;
@@ -41,13 +41,10 @@ public class GreedyShieldItem extends Item {
         int reduceAmountPercent = (int) Math.round((1.0 - Config.greedyShieldReduceAmount) * 100); // Percentage blocked
         int remainingPercent = (int) Math.round(Config.greedyShieldReduceAmount * 100); // Percentage remaining
         
-        tooltipComponents.accept(Component.translatable("tooltip.iska_utils.greedy_shield.desc0"));
-        tooltipComponents.accept(Component.translatable("tooltip.iska_utils.greedy_shield.desc1", blockChancePercent)
-                .withStyle(ChatFormatting.GRAY));
-        tooltipComponents.accept(Component.translatable("tooltip.iska_utils.greedy_shield.desc2", reduceChancePercent)
-                .withStyle(ChatFormatting.GRAY));
-        tooltipComponents.accept(Component.translatable("tooltip.iska_utils.greedy_shield.desc3", reduceAmountPercent, remainingPercent)
-                .withStyle(ChatFormatting.GRAY));
+        ArtifactTooltipUtil.addLoreLine(tooltipComponents, "tooltip.iska_utils.greedy_shield.desc0");
+        ArtifactTooltipUtil.addTechLine(tooltipComponents, "tooltip.iska_utils.greedy_shield.desc1", blockChancePercent);
+        ArtifactTooltipUtil.addTechLine(tooltipComponents, "tooltip.iska_utils.greedy_shield.desc2", reduceChancePercent);
+        ArtifactTooltipUtil.addTechLine(tooltipComponents, "tooltip.iska_utils.greedy_shield.desc3", reduceAmountPercent, remainingPercent);
         
         if (Config.greedyShieldInfo) {
             tooltipComponents.accept(Component.translatable("tooltip.iska_utils.greedy_shield.info"));
