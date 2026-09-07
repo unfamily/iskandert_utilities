@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.client.gui;
 
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -13,6 +14,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
 import net.unfamily.iskautils.block.entity.ImprovedPatternCrafterBlockEntity;
+import net.unfamily.iskautils.integration.anotherdynamics.AnotherDynamicsCompat;
+import net.unfamily.iskautils.integration.anotherdynamics.DeepDrawerSettingsCopierLogic;
 import net.unfamily.iskautils.pattern.PatternData;
 
 /**
@@ -63,6 +66,45 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
     /** Forbidden sits a bit higher than a single gap above the output grid. */
     public static final int FORBIDDEN_Y = OUTPUT_SLOT_Y - OUTPUT_COL_GAP - 2 - OUTPUT_CTRL_H;
 
+    /** Settings copier column (Forbidden Outputs only) — right of the Forbidden scrollbar. */
+    public static final int GUI_WIDTH = 340;
+    public static final int FORBIDDEN_ENTRY_WIDTH = 220;
+    public static final int FORBIDDEN_SCROLLBAR_WIDTH = 8;
+    public static final int FORBIDDEN_ENTRY_X =
+            (GUI_WIDTH - (FORBIDDEN_ENTRY_WIDTH + 4 + FORBIDDEN_SCROLLBAR_WIDTH)) / 2;
+    public static final int FORBIDDEN_SCROLLBAR_X = FORBIDDEN_ENTRY_X + FORBIDDEN_ENTRY_WIDTH + 4;
+    public static final int FORBIDDEN_LIST_FIRST_ROW_Y = 28;
+    public static final int COPY_COLUMN_GAP = 2;
+    public static final int COPIER_ACTION_BUTTON_W = 18;
+    public static final int COPIER_ACTION_BUTTON_H = 12;
+    public static final int COPIER_COLUMN_X =
+            FORBIDDEN_SCROLLBAR_X + FORBIDDEN_SCROLLBAR_WIDTH + COPY_COLUMN_GAP;
+    public static final int COPIER_SLOT_BACKGROUND_Y = FORBIDDEN_LIST_FIRST_ROW_Y;
+    public static final int COPIER_SLOT_X = COPIER_COLUMN_X;
+    public static final int COPIER_SLOT_Y = COPIER_SLOT_BACKGROUND_Y;
+    public static final int COPIER_SLOT_SIZE = 18;
+    public static final int COPIER_SLOT_HIGHLIGHT_SIZE = 16;
+    public static final int COPIER_SLOT_HIGHLIGHT_INSET = (COPIER_SLOT_SIZE - COPIER_SLOT_HIGHLIGHT_SIZE) / 2;
+    public static final int COPIER_ITEM_INSET = COPIER_SLOT_HIGHLIGHT_INSET;
+    public static final int COPIER_SAVE_BUTTON_Y = COPIER_SLOT_BACKGROUND_Y + COPIER_SLOT_SIZE + COPY_COLUMN_GAP;
+    public static final int COPIER_LOAD_BUTTON_Y = COPIER_SAVE_BUTTON_Y + COPIER_ACTION_BUTTON_H + COPY_COLUMN_GAP;
+
+    public static int copierSlotHighlightX(int frameX) {
+        return frameX + COPIER_SLOT_HIGHLIGHT_INSET;
+    }
+
+    public static int copierSlotHighlightY(int frameY) {
+        return frameY + COPIER_SLOT_HIGHLIGHT_INSET;
+    }
+
+    public static int copierSlotItemX(int frameX) {
+        return frameX + COPIER_ITEM_INSET;
+    }
+
+    public static int copierSlotItemY(int frameY) {
+        return frameY + COPIER_ITEM_INSET;
+    }
+
     /** Filter edit chrome — exact DeepDrawer Extractor proportions. */
     public static final int EDIT_SLOT_SIZE = 18;
     public static final int EDIT_TEXTBOX_HEIGHT = 15;
@@ -95,6 +137,11 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
     private boolean machineSlotsActive = true;
     /** When false, only the 27 machine input inventory slots are inactive (variable editor). */
     private boolean machineInventoryActive = true;
+    /** When true, the settings-copier slot accepts interaction (Forbidden Outputs subview). */
+    private boolean settingsCopierActive = false;
+
+    private final SimpleContainer copierContainer = new SimpleContainer(1);
+    private final boolean includeCopierSlot = AnotherDynamicsCompat.isLoaded();
 
     public void setMachineSlotsActive(boolean active) {
         this.machineSlotsActive = active;
@@ -110,6 +157,25 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
 
     public boolean isMachineInventoryActive() {
         return machineInventoryActive;
+    }
+
+    public void setSettingsCopierActive(boolean active) {
+        this.settingsCopierActive = active;
+    }
+
+    public boolean isSettingsCopierActive() {
+        return settingsCopierActive;
+    }
+
+    public boolean includesCopierSlot() {
+        return includeCopierSlot;
+    }
+
+    public int copySettingsSlotIndex() {
+        if (!includeCopierSlot) {
+            return -1;
+        }
+        return slots.size() - 1;
     }
 
     // Slot index ranges (INPUT_FILTER_END is dynamic)
@@ -320,6 +386,29 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
         addDataSlots(patternContainerData);
         addPlayerInventory(playerInventory);
         addPlayerHotbar(playerInventory);
+        addCopierSlot();
+    }
+
+    private void addCopierSlot() {
+        if (!includeCopierSlot) {
+            return;
+        }
+        addSlot(new Slot(copierContainer, 0, COPIER_SLOT_X, COPIER_SLOT_Y) {
+            @Override
+            public boolean isHighlightable() {
+                return false;
+            }
+
+            @Override
+            public boolean isActive() {
+                return ImprovedPatternCrafterMenu.this.settingsCopierActive;
+            }
+
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return DeepDrawerSettingsCopierLogic.isSettingsCopier(stack);
+            }
+        });
     }
 
     // ===== Pattern Data Accessors (read from synced ContainerData) =====
@@ -402,6 +491,9 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
     @Override
     public void removed(Player player) {
         super.removed(player);
+        if (includeCopierSlot && player instanceof net.minecraft.server.level.ServerPlayer) {
+            clearContainer(player, copierContainer);
+        }
         if (!player.level().isClientSide && blockEntity != null && blockEntity.isAutoclearVariables()) {
             blockEntity.clearUnusedVariables();
         }
@@ -520,6 +612,8 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
             return result;
         }
 
+        int copierIdx = copySettingsSlotIndex();
+
         // Ghost slots: no shift-click behavior
         if (index < getUpgradeStart()) {
             return result;
@@ -528,10 +622,35 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
         ItemStack stackInSlot = slot.getItem();
         result = stackInSlot.copy();
 
-        if (index < getPlayerInvStart()) {
+        if (copierIdx >= 0 && index == copierIdx) {
+            if (!moveItemStackTo(stackInSlot, getPlayerInvStart(), getPlayerHotbarEnd(), true)) {
+                return ItemStack.EMPTY;
+            }
+        } else if (index < getPlayerInvStart()) {
             // From machine slots (upgrade/output/input) -> to player inventory/hotbar
             if (!moveItemStackTo(stackInSlot, getPlayerInvStart(), getPlayerHotbarEnd(), true)) {
                 return ItemStack.EMPTY;
+            }
+        } else if (DeepDrawerSettingsCopierLogic.isSettingsCopier(stackInSlot) && copierIdx >= 0
+                && settingsCopierActive) {
+            if (!moveItemStackTo(stackInSlot, copierIdx, copierIdx + 1, false)) {
+                if (index < getPlayerHotbarStart()) {
+                    if (!moveItemStackTo(stackInSlot, getInputStart(), getInputEnd(), false)) {
+                        if (!moveItemStackTo(stackInSlot, getUpgradeStart(), getUpgradeEnd(), false)) {
+                            if (!moveItemStackTo(stackInSlot, getPlayerHotbarStart(), getPlayerHotbarEnd(), false)) {
+                                return ItemStack.EMPTY;
+                            }
+                        }
+                    }
+                } else {
+                    if (!moveItemStackTo(stackInSlot, getInputStart(), getInputEnd(), false)) {
+                        if (!moveItemStackTo(stackInSlot, getUpgradeStart(), getUpgradeEnd(), false)) {
+                            if (!moveItemStackTo(stackInSlot, getPlayerInvStart(), getPlayerInvEnd(), false)) {
+                                return ItemStack.EMPTY;
+                            }
+                        }
+                    }
+                }
             }
         } else if (index < getPlayerHotbarStart()) {
             // From player inventory -> try machine input first, then upgrade, then hotbar

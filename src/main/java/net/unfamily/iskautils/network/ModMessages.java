@@ -539,6 +539,9 @@ public class ModMessages {
         registrar.playToServer(net.unfamily.iskautils.network.packet.ForbiddenFiltersC2SPacket.TYPE,
                 net.unfamily.iskautils.network.packet.ForbiddenFiltersC2SPacket.STREAM_CODEC,
                 net.unfamily.iskautils.network.packet.ForbiddenFiltersC2SPacket::handle);
+        registrar.playToServer(net.unfamily.iskautils.network.packet.PatternCrafterSettingsCopierC2SPacket.TYPE,
+                net.unfamily.iskautils.network.packet.PatternCrafterSettingsCopierC2SPacket.STREAM_CODEC,
+                net.unfamily.iskautils.network.packet.PatternCrafterSettingsCopierC2SPacket::handle);
         registrar.playToServer(net.unfamily.iskautils.network.packet.VariableFilterSetC2SPacket.TYPE,
                 net.unfamily.iskautils.network.packet.VariableFilterSetC2SPacket.STREAM_CODEC,
                 net.unfamily.iskautils.network.packet.VariableFilterSetC2SPacket::handle);

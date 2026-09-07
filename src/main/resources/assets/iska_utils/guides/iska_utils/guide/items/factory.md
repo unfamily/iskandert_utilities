@@ -36,5 +36,5 @@ Some actions exist **only** on the Factory — for example dye berries into dyes
 ## Tips
 
 - Scroll the output grid when there are many variants.
-- Use redstone modes on the machine if you want to control when it runs.
+- Redstone modes: Ignore / Low / High / **Pulse** (one craft per rising edge) / Disabled.
 - Hopper automation: insert from the top or sides, take output from the bottom.

@@ -27,16 +27,19 @@ Craft a **Pattern Crafter Improver** (same gem frame as Improved, centre is any 
 
 ## Patterns
 
-- The left column holds the **current pattern**: mode controls, pattern browser, 3×3 letter grid, **Save**, and **Mark Input**.
+- The left column holds the **current pattern**: mode controls, pattern browser, 3×3 letter grid, **Save** / **Discard**, and **Mark Input**.
+- **Improved** starts with **6** pattern slots (configurable). Each **Logic Module** adds **+1** pattern (up to the configured max).
 - Each cell is a letter (or empty). Letters link to **variables** in the filter area.
 - Cycle a cell with left/right click; **Shift+click** clears it. You can also place an item on a cell to assign a matching letter from your variables.
 - Switch between stored patterns with the pattern arrows / label. **Shift+click** the pattern label clears the current pattern.
-- **Save** writes pending grid edits to the selected pattern slot.
+- **Save** writes pending grid edits to the selected pattern slot; **Discard** cancels unsaved edits.
 
 ## Variables (filters)
 
 Above the machine inventory sit the **variable** slots (paginated when you unlock many keys):
 
+- **Improved** starts with **one page** of **18** variable keys.
+- Each **Logic Module** unlocks **one extra page** (+18 keys). With the default max of **4** Logic Modules you can reach **5 pages** (90 keys), capped by config.
 - Small **letter** buttons above/below each slot unlock and cycle the letter for that variable.
 - While locked (no letter), the large button is inactive.
 - When unlocked, click the large button to open the **inline editor** for that variable’s filter string.
@@ -103,7 +106,7 @@ Three upgrade slots (ghost icons when empty):
 
 | Slot | Module | Effect |
 | ---- | ------ | ------ |
-| Logic | <ItemImage id="iska_utils:logic_module" /> **Logic Module** | Unlocks more variable keys / pattern capacity. |
+| Logic | <ItemImage id="iska_utils:logic_module" /> **Logic Module** | **+1 pattern** and **+1 variable page** (18 keys) each. Default max **4** on Improved. |
 | Speed | **Vector modules** (**Slow** → **Ultra**) | Shortens crafting time (higher tiers are faster). |
 | Production | <ItemImage id="iska_utils:production_module" /> **Production Module** | Increases how many crafts run concurrently. |
 
@@ -113,11 +116,11 @@ See **Modules** → **Logic Module**, **Vector modules**, and **Production Modul
 
 With the Pattern Crafter GUI open, use JEI’s recipe transfer (**+**) on a crafting recipe:
 
-- Related **variables** (filters / letters) are applied **immediately**.
-- The **pattern** grid (and crafting mode from the transfer) stay **pending** until you confirm.
-- **Save** confirms **only the pattern** into the selected pattern slot.
+- **Variables** (filters / letters, including `#tag` when the recipe uses tags) apply **immediately**.
+- The **pattern** grid and **crafting mode** stay **pending** until you confirm.
+- **Save** commits only the pattern (and mode); **Discard** cancels pending pattern edits (variables stay).
 
-Requires free variable slots and unused letters for any new ingredient types; the pattern grid cells must be empty before transfer.
+Requires free variable slots and unused letters for any new ingredient types.
 
 <ItemGrid>
   <ItemIcon id="iska_utils:pattern_crafter" />

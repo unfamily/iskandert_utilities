@@ -13,8 +13,10 @@ categories:
 
 <ItemImage id="iska_utils:logic_module" />
 
-Unlocks more pattern / filter capacity on supported machines.
+Expands capacity on supported machines.
 
 | Machine | Role |
 | ------- | ---- |
-| **Pattern Crafter** | Unlocks more variable keys / pattern capacity. |
+| **Improved Pattern Crafter** | Each module adds **+1 pattern slot** and **+1 variable page** (**18** keys). Default max install: **4**. |
+
+Base Improved capacity without modules: **6** patterns and **1** variable page (18 keys).

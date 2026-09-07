@@ -16,6 +16,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.integration.anotherdynamics.AnotherDynamicsCompat;
+import net.unfamily.iskautils.integration.anotherdynamics.client.DeepDrawerSettingsCopierClient;
 import net.unfamily.iskautils.network.packet.AutoclearVariablesC2SPacket;
 import net.unfamily.iskautils.network.packet.CraftingModeSetC2SPacket;
 import net.unfamily.iskautils.network.packet.CraftingModeSwitchC2SPacket;
@@ -27,6 +29,7 @@ import net.unfamily.iskautils.network.packet.MarkFilterSetC2SPacket;
 import net.unfamily.iskautils.network.packet.OutputPageC2SPacket;
 import net.unfamily.iskautils.network.packet.PatternCellUpdateC2SPacket;
 import net.unfamily.iskautils.network.packet.PatternCellItemAssignC2SPacket;
+import net.unfamily.iskautils.network.packet.PatternCrafterSettingsCopierC2SPacket;
 import net.unfamily.iskautils.network.packet.PatternSwitchC2SPacket;
 import net.unfamily.iskautils.network.packet.RecursiveOutputModeC2SPacket;
 import net.unfamily.iskautils.network.packet.RemainderRoutingModeC2SPacket;
@@ -37,6 +40,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.unfamily.iskautils.pattern.PatternData;
 import net.unfamily.iskautils.integration.jei.ghost.IIskaUtilsGhostTarget;
 import net.unfamily.iskautils.util.DeepDrawerItemFilter;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -122,10 +126,17 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     private Button nextPatternButton;
     private Button toolSafeguardButton;
     private Button savePatternButton;
+    private Button discardPatternButton;
     private Button forbiddenButton;
+    private Button settingsCopierSaveButton;
+    private Button settingsCopierLoadButton;
+    /** Ticks to wait after settings-copier paste before reloading Forbidden draft from BE. */
+    private int pendingForbiddenReloadTicks = 0;
     /** Pending pattern grid letter edits; flushed on Save. */
     private final boolean[] pendingGridDirty = new boolean[9];
     private final int[] pendingGridValues = new int[9];
+    /** Immediate JEI ghost stacks for pending pattern cells (until Save). */
+    private final ItemStack[] pendingGridDisplays = new ItemStack[9];
     private boolean pendingCraftingModeDirty = false;
     private int pendingCraftingMode = 0;
 
@@ -298,8 +309,8 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
     /**
      * Layout for ← · ghost · → · C · A · ✕ · Valid Keys (Extractor 12px chrome; no Back on this row).
-     * Forbidden: centered on the entry list band (elements shift as a group, Valid Keys keeps default width).
-     * Variable inline: Valid Keys stretches to fill remaining width in the player-inv band (former Back space).
+     * Forbidden: centered on the entry list band (Valid Keys keeps default width when it fits).
+     * Variable inline: Valid Keys is shortened so the chrome row never exceeds the editbox width below.
      */
     private EditChromeLayout computeEditChromeLayout(boolean variableInline) {
         int buttonSize = ImprovedPatternCrafterMenu.EDIT_BTN_SIZE;
@@ -325,8 +336,8 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         if (variableInline) {
             zoneLeft = this.leftPos + ImprovedPatternCrafterMenu.PLAYER_INV_X;
             zoneWidth = PLAYER_INV_WIDTH;
-            // Stretch Valid Keys across the space formerly used by Valid Keys + gap + Back.
-            helpW = Math.max(NAV_HELP_DEFAULT_WIDTH, zoneWidth - widthBeforeHelp);
+            // Shrink Valid Keys to fit remaining space in the player-inv / editbox band.
+            helpW = Math.max(buttonSize, zoneWidth - widthBeforeHelp);
             int chromeH = slotSize + ImprovedPatternCrafterMenu.EDIT_ROW_GAP
                     + ImprovedPatternCrafterMenu.EDIT_TEXTBOX_HEIGHT;
             int areaY = this.topPos + ImprovedPatternCrafterMenu.MACHINE_INPUT_Y;
@@ -339,7 +350,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         } else {
             zoneLeft = this.leftPos + ENTRY_X;
             zoneWidth = ENTRY_WIDTH + 4 + SCROLLBAR_WIDTH;
-            helpW = NAV_HELP_DEFAULT_WIDTH;
+            helpW = Math.min(NAV_HELP_DEFAULT_WIDTH, Math.max(buttonSize, zoneWidth - widthBeforeHelp));
             ghostY = this.topPos + ImprovedPatternCrafterMenu.EDIT_MODE_PANEL_Y;
             textBoxX = this.leftPos + ImprovedPatternCrafterMenu.PLAYER_INV_X;
             textBoxY = this.topPos + ImprovedPatternCrafterMenu.EDIT_TEXTBOX_Y;
@@ -459,6 +470,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         prevPatternButton = Button.builder(Component.literal("←"),
                         btn -> switchPattern(-1))
                 .bounds(navStartX, browserY, arrowWidth, btnH)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.pattern_nav.previous")))
                 .build();
         addRenderableWidget(prevPatternButton);
 
@@ -472,6 +484,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         nextPatternButton = Button.builder(Component.literal("→"),
                         btn -> switchPattern(1))
                 .bounds(navStartX + arrowWidth + labelWidth, browserY, arrowWidth, btnH)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.pattern_nav.next")))
                 .build();
         addRenderableWidget(nextPatternButton);
 
@@ -480,8 +493,16 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         savePatternButton = Button.builder(Component.translatable("gui.iska_utils.save_pattern"),
                         btn -> savePendingPattern())
                 .bounds(gridStartX, saveY, gridWidth, btnH)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.save_pattern.tooltip")))
                 .build();
         addRenderableWidget(savePatternButton);
+
+        discardPatternButton = Button.builder(Component.translatable("gui.iska_utils.discard_pattern"),
+                        btn -> discardPendingPattern())
+                .bounds(gridStartX, saveY + btnH + btnGap, gridWidth, btnH)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.discard_pattern.tooltip")))
+                .build();
+        addRenderableWidget(discardPatternButton);
 
         // Mark Input + Autoclear (equal width) just under the machine inventory
         int markGap = 2;
@@ -533,6 +554,8 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                                 .append(Component.translatable("gui.iska_utils.cycle_hint.line1"))
                                 .append(Component.literal("\n"))
                                 .append(Component.translatable("gui.iska_utils.cycle_hint.line2"))
+                                .append(Component.literal("\n"))
+                                .append(Component.translatable("gui.iska_utils.pattern_cell.pending_hint"))
                 ));
                 addRenderableWidget(gridCells[row][col]);
             }
@@ -605,6 +628,19 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         addRenderableWidget(prevOutputPageButton);
         addRenderableWidget(nextOutputPageButton);
 
+        // Snapshot in-progress edit text before dropping stale widget refs (JEI re-init).
+        if (filterEditBox != null) {
+            if (variableInlineEdit) {
+                draftVariableFilter = filterEditBox.getValue() != null ? filterEditBox.getValue() : "";
+            } else if (nestedFilterEdit && nestedEditIndex >= 0) {
+                while (draftForbidden.size() <= nestedEditIndex) {
+                    draftForbidden.add("");
+                }
+                draftForbidden.set(nestedEditIndex,
+                        filterEditBox.getValue() != null ? filterEditBox.getValue() : "");
+            }
+        }
+
         // Edit chrome widgets are created dynamically in createEditModeUI()
         filterBackButton = null;
         filterHelpButton = null;
@@ -616,11 +652,120 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         filterNextVariantButton = null;
 
         applySubViewVisibility();
+
+        // JEI (and some UI transitions) can cause a screen re-init that clears widgets.
+        // If we are mid edit-mode, restore the edit widgets without grabbing keyboard focus.
+        restoreEditChromeAfterReinit();
+        initSettingsCopierButtons();
+    }
+
+    private void initSettingsCopierButtons() {
+        if (!AnotherDynamicsCompat.isLoaded() || !menu.includesCopierSlot()) {
+            return;
+        }
+        int colX = this.leftPos + ImprovedPatternCrafterMenu.COPIER_COLUMN_X;
+        settingsCopierSaveButton = Button.builder(
+                        Component.translatable("gui.iska_utils.deep_drawer_extractor.settings_copier.copy"),
+                        b -> sendSettingsCopierAction(PatternCrafterSettingsCopierC2SPacket.ACTION_COPY))
+                .tooltip(Tooltip.create(DeepDrawerExtractorGuiTooltips.grayLine(
+                        "gui.iska_utils.deep_drawer_extractor.settings_copier.copy.tooltip")))
+                .bounds(colX, this.topPos + ImprovedPatternCrafterMenu.COPIER_SAVE_BUTTON_Y,
+                        ImprovedPatternCrafterMenu.COPIER_ACTION_BUTTON_W, ImprovedPatternCrafterMenu.COPIER_ACTION_BUTTON_H)
+                .build();
+        settingsCopierLoadButton = Button.builder(
+                        Component.translatable("gui.iska_utils.deep_drawer_extractor.settings_copier.paste"),
+                        b -> sendSettingsCopierAction(PatternCrafterSettingsCopierC2SPacket.ACTION_PASTE))
+                .tooltip(Tooltip.create(DeepDrawerExtractorGuiTooltips.grayLine(
+                        "gui.iska_utils.deep_drawer_extractor.settings_copier.paste.tooltip")))
+                .bounds(colX, this.topPos + ImprovedPatternCrafterMenu.COPIER_LOAD_BUTTON_Y,
+                        ImprovedPatternCrafterMenu.COPIER_ACTION_BUTTON_W, ImprovedPatternCrafterMenu.COPIER_ACTION_BUTTON_H)
+                .build();
+        addRenderableWidget(settingsCopierSaveButton);
+        addRenderableWidget(settingsCopierLoadButton);
+        refreshCopierPasteUi();
+        applySubViewVisibility();
+    }
+
+    private void sendSettingsCopierAction(int action) {
+        if (menu.getBlockEntity() == null) {
+            return;
+        }
+        PacketDistributor.sendToServer(new PatternCrafterSettingsCopierC2SPacket(
+                menu.getBlockEntity().getBlockPos(), action));
+        if (action == PatternCrafterSettingsCopierC2SPacket.ACTION_PASTE) {
+            pendingForbiddenReloadTicks = 5;
+        }
+        refreshCopierPasteUi();
+    }
+
+    private void refreshCopierPasteUi() {
+        if (settingsCopierLoadButton == null) {
+            return;
+        }
+        boolean allowPaste = showsSettingsCopierColumn();
+        settingsCopierLoadButton.active = allowPaste;
+    }
+
+    private void layoutSettingsCopierButtons() {
+        if (settingsCopierSaveButton == null || settingsCopierLoadButton == null) {
+            return;
+        }
+        int colX = this.leftPos + ImprovedPatternCrafterMenu.COPIER_COLUMN_X;
+        settingsCopierSaveButton.setX(colX);
+        settingsCopierSaveButton.setY(this.topPos + ImprovedPatternCrafterMenu.COPIER_SAVE_BUTTON_Y);
+        settingsCopierSaveButton.setWidth(ImprovedPatternCrafterMenu.COPIER_ACTION_BUTTON_W);
+        settingsCopierSaveButton.setHeight(ImprovedPatternCrafterMenu.COPIER_ACTION_BUTTON_H);
+        settingsCopierLoadButton.setX(colX);
+        settingsCopierLoadButton.setY(this.topPos + ImprovedPatternCrafterMenu.COPIER_LOAD_BUTTON_Y);
+        settingsCopierLoadButton.setWidth(ImprovedPatternCrafterMenu.COPIER_ACTION_BUTTON_W);
+        settingsCopierLoadButton.setHeight(ImprovedPatternCrafterMenu.COPIER_ACTION_BUTTON_H);
+    }
+
+    private boolean showsSettingsCopierColumn() {
+        return AnotherDynamicsCompat.isLoaded()
+                && menu.includesCopierSlot()
+                && subView == SubView.FORBIDDEN;
+    }
+
+    /**
+     * Recreates filter edit chrome after {@link #init()} when variable/forbidden edit state survived
+     * a JEI-driven rebuild (widgets were cleared but flags/drafts were not).
+     */
+    private void restoreEditChromeAfterReinit() {
+        if (variableInlineEdit && subView == SubView.MAIN && editingVariableIndex >= 0) {
+            createEditModeUI(true);
+            if (filterEditBox != null) {
+                filterEditBox.setValue(draftVariableFilter != null ? draftVariableFilter : "");
+                filterEditBox.setFocused(false);
+            }
+            seedEditorGhostFromFilter(draftVariableFilter);
+            applySubViewVisibility();
+            return;
+        }
+        if (subView == SubView.FORBIDDEN) {
+            ensureForbiddenNavButtons();
+            if (nestedFilterEdit && nestedEditIndex >= 0) {
+                createEditModeUI(false);
+                String value = nestedEditIndex < draftForbidden.size()
+                        ? draftForbidden.get(nestedEditIndex)
+                        : nestedOriginalValue;
+                if (value == null) {
+                    value = "";
+                }
+                if (filterEditBox != null) {
+                    filterEditBox.setValue(value);
+                    filterEditBox.setFocused(false);
+                }
+                seedEditorGhostFromFilter(value);
+            }
+            applySubViewVisibility();
+            updateForbiddenEditButtons();
+        }
     }
 
     /** Number of filter pages based on effective count (18 slots per page). */
     private int getFilterPageCount() {
-        int n = menu.getEffectiveKeyInputCount();
+        int n = liveEffectiveKeyInputCount();
         if (n <= 18) return 1;
         return (n % 18 == 0) ? (n / 18) : (n / 18 + 1);
     }
@@ -685,8 +830,40 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     private void clearPendingGrid() {
         for (int i = 0; i < pendingGridDirty.length; i++) {
             pendingGridDirty[i] = false;
+            pendingGridDisplays[i] = ItemStack.EMPTY;
         }
         pendingCraftingModeDirty = false;
+    }
+
+    private boolean hasPendingPatternEdits() {
+        if (pendingCraftingModeDirty) return true;
+        for (boolean dirty : pendingGridDirty) {
+            if (dirty) return true;
+        }
+        return false;
+    }
+
+    /** Discard unsaved pattern grid/mode edits (variables are already committed). */
+    private void discardPendingPattern() {
+        clearPendingGrid();
+        playButtonSound();
+    }
+
+    /** Live effective variable slots (updates when Logic Module is inserted without reopening). */
+    private int liveEffectiveKeyInputCount() {
+        var be = menu.getBlockEntity();
+        return be != null ? be.getEffectiveKeyInputCount() : menu.getEffectiveKeyInputCount();
+    }
+
+    private int liveFilterLetter(int index) {
+        var be = menu.getBlockEntity();
+        if (be != null) return be.getFilterLetter(index);
+        return menu.getFilterLetter(index);
+    }
+
+    private String liveFilterString(int index) {
+        var be = menu.getBlockEntity();
+        return be != null ? be.getInputFilterString(index) : "";
     }
 
     /** Effective grid letter including local JEI/manual pending edits. */
@@ -695,12 +872,30 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         return pendingGridDirty[cell] ? pendingGridValues[cell] : menu.getGridCell(cell);
     }
 
-    /** Apply JEI transfer result: variables already sent; grid + crafting mode stay pending until Save. */
+    /**
+     * Stage JEI pattern grid + crafting mode until Save/Discard.
+     * Variables are already applied on the BE (client + server).
+     */
     public void applyJeiPending(int[] letters, int craftingMode) {
+        applyJeiPending(letters, craftingMode, null);
+    }
+
+    public void applyJeiPending(int[] letters, int craftingMode, @Nullable List<ItemStack> displays) {
         if (letters == null || letters.length < 9) return;
         for (int i = 0; i < 9; i++) {
             pendingGridValues[i] = letters[i];
             pendingGridDirty[i] = true;
+            if (displays != null && i < displays.size() && displays.get(i) != null && !displays.get(i).isEmpty()) {
+                pendingGridDisplays[i] = displays.get(i).copyWithCount(1);
+            } else {
+                pendingGridDisplays[i] = ItemStack.EMPTY;
+            }
+            if (gridCells[i / 3][i % 3] != null) {
+                gridCells[i / 3][i % 3].setValue(letters[i]);
+                if (!pendingGridDisplays[i].isEmpty()) {
+                    gridCells[i / 3][i % 3].setDisplayItems(List.of(pendingGridDisplays[i]));
+                }
+            }
         }
         pendingCraftingMode = craftingMode;
         pendingCraftingModeDirty = true;
@@ -723,7 +918,12 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             pendingCraftingModeDirty = false;
             any = true;
         }
-        if (any) playButtonSound();
+        if (any) {
+            for (int i = 0; i < pendingGridDisplays.length; i++) {
+                pendingGridDisplays[i] = ItemStack.EMPTY;
+            }
+            playButtonSound();
+        }
     }
 
     private void onForbiddenPressed() {
@@ -808,6 +1008,11 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         if (menu.getBlockEntity() == null || stack.isEmpty()) return;
         PacketDistributor.sendToServer(new PatternCellItemAssignC2SPacket(
                 menu.getBlockEntity().getBlockPos(), cellIndex, stack.copyWithCount(1)));
+        int letter = menu.getBlockEntity().previewExactAssignLetter(stack);
+        if (letter != PatternData.EMPTY) {
+            pendingGridValues[cellIndex] = letter;
+            pendingGridDirty[cellIndex] = true;
+        }
     }
 
     // ===== Filter Label Actions =====
@@ -869,6 +1074,23 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                     autoclear ? "gui.iska_utils.autoclear.on" : "gui.iska_utils.autoclear.off"));
         }
 
+        if (discardPatternButton != null && discardPatternButton.visible) {
+            discardPatternButton.active = hasPendingPatternEdits();
+        }
+
+        if (pendingForbiddenReloadTicks > 0) {
+            pendingForbiddenReloadTicks--;
+            if (pendingForbiddenReloadTicks == 0
+                    && subView == SubView.FORBIDDEN
+                    && !nestedFilterEdit
+                    && menu.getBlockEntity() != null) {
+                draftForbidden.clear();
+                draftForbidden.addAll(menu.getBlockEntity().getForbiddenFilters());
+                ensureForbiddenRows();
+                updateForbiddenEditButtons();
+            }
+        }
+
         // Update grid cells from synced pattern data (keep local pending edits)
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
@@ -879,13 +1101,17 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 var blockEntity = menu.getBlockEntity();
                 if (blockEntity != null && value > PatternData.EMPTY) {
                     var registries = blockEntity.getLevel() != null ? blockEntity.getLevel().registryAccess() : null;
-                    for (int filter = 0; filter < menu.getInputFilterSlotCount(); filter++) {
-                        if (menu.getFilterLetter(filter) != value) continue;
-                        String filterStr = blockEntity.getInputFilterString(filter);
+                    for (int filter = 0; filter < liveEffectiveKeyInputCount(); filter++) {
+                        if (liveFilterLetter(filter) != value) continue;
+                        String filterStr = liveFilterString(filter);
                         if (filterStr.isEmpty()) continue;
                         ItemStack preview = previewFilterItem(filterStr, registries);
                         if (!preview.isEmpty()) candidates.add(preview);
                     }
+                }
+                if (candidates.isEmpty() && pendingGridDirty[cellIndex]
+                        && pendingGridDisplays[cellIndex] != null && !pendingGridDisplays[cellIndex].isEmpty()) {
+                    candidates.add(pendingGridDisplays[cellIndex]);
                 }
                 gridCells[row][col].setDisplayItems(candidates);
             }
@@ -900,7 +1126,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         }
 
         // When paginated, the menu’s 18 slots are a view over BE; set offset so they show the current page
-        int filterCount = menu.getEffectiveKeyInputCount();
+        int filterCount = liveEffectiveKeyInputCount();
         boolean paginated = menu.hasFilterPaginationCapability();
         boolean pagesActive = filterCount > 18;
         if (filterPageChangeCooldownTicks > 0) {
@@ -942,9 +1168,9 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 continue;
             }
             ItemStack preview = ItemStack.EMPTY;
-            int letterValue = menu.getFilterLetter(slotIndex);
+            int letterValue = liveFilterLetter(slotIndex);
             if (menu.getBlockEntity() != null) {
-                String filterStr = menu.getBlockEntity().getInputFilterString(slotIndex);
+                String filterStr = liveFilterString(slotIndex);
                 preview = previewFilterItem(filterStr,
                         menu.getBlockEntity().getLevel() != null
                                 ? menu.getBlockEntity().getLevel().registryAccess() : null);
@@ -1028,7 +1254,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     private void onFilterLabelClick(PatternCellWidget widget) {
         if (menu.getBlockEntity() == null) return;
         int filterIndex = resolveFilterIndex(widget.getCellIndex());
-        if (filterIndex < 0 || filterIndex >= menu.getEffectiveKeyInputCount()) return;
+        if (filterIndex < 0 || filterIndex >= liveEffectiveKeyInputCount()) return;
         PacketDistributor.sendToServer(new FilterLetterUpdateC2SPacket(
                 menu.getBlockEntity().getBlockPos(),
                 filterIndex,
@@ -1086,6 +1312,10 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     /** Input filter slots are already in the background texture; do not draw slot backgrounds. Items drawn in renderInputFilterItemsFromBackend. */
     @Override
     protected void renderSlot(GuiGraphics guiGraphics, Slot slot) {
+        int copierIdx = menu.copySettingsSlotIndex();
+        if (copierIdx >= 0 && slot.index == copierIdx) {
+            return;
+        }
         if (subView != SubView.MAIN && slot.index < menu.getPlayerInvStart()) {
             return;
         }
@@ -1097,6 +1327,15 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             return;
         }
         super.renderSlot(guiGraphics, slot);
+    }
+
+    @Override
+    protected void renderSlotHighlight(GuiGraphics guiGraphics, Slot slot, int mouseX, int mouseY, float partialTick) {
+        int copierIdx = menu.copySettingsSlotIndex();
+        if (copierIdx >= 0 && slot.index == copierIdx) {
+            return;
+        }
+        super.renderSlotHighlight(guiGraphics, slot, mouseX, mouseY, partialTick);
     }
 
     @Override
@@ -1115,6 +1354,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             // Editor ghost frame+item drawn in renderBg only so JEI highlight stays on top.
         } else {
             renderFilterListSubview(guiGraphics, mouseX, mouseY);
+            renderSettingsCopierItem(guiGraphics, mouseX, mouseY);
         }
 
         if (subView == SubView.MAIN && this.menu.getMaxEnergyStored() > 0) {
@@ -1133,6 +1373,57 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         }
 
         this.renderTooltip(guiGraphics, mouseX, mouseY);
+    }
+
+    private boolean isCopierSlotHovered(double mouseX, double mouseY) {
+        int idx = menu.copySettingsSlotIndex();
+        if (idx < 0 || !showsSettingsCopierColumn()) {
+            return false;
+        }
+        Slot slot = menu.getSlot(idx);
+        return slot.isActive() && isHovering(slot.x, slot.y, ImprovedPatternCrafterMenu.COPIER_SLOT_SIZE,
+                ImprovedPatternCrafterMenu.COPIER_SLOT_SIZE, mouseX, mouseY);
+    }
+
+    private void renderSettingsCopierItem(GuiGraphics guiGraphics, double mouseX, double mouseY) {
+        if (!showsSettingsCopierColumn()) {
+            return;
+        }
+        int idx = menu.copySettingsSlotIndex();
+        if (idx < 0) {
+            return;
+        }
+        int frameX = this.leftPos + ImprovedPatternCrafterMenu.COPIER_COLUMN_X;
+        int frameY = this.topPos + ImprovedPatternCrafterMenu.COPIER_SLOT_BACKGROUND_Y;
+        int iconX = this.leftPos + ImprovedPatternCrafterMenu.copierSlotItemX(ImprovedPatternCrafterMenu.COPIER_COLUMN_X);
+        int iconY = this.topPos + ImprovedPatternCrafterMenu.copierSlotItemY(ImprovedPatternCrafterMenu.COPIER_SLOT_BACKGROUND_Y);
+        ItemStack copier = menu.getSlot(idx).getItem();
+
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(0, 0, 200);
+        DeepDrawerSettingsCopierClient.blitSlotFrame(guiGraphics, frameX, frameY);
+        guiGraphics.pose().popPose();
+
+        if (!copier.isEmpty()) {
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().translate(0, 0, 300);
+            guiGraphics.renderItem(copier, iconX, iconY);
+            guiGraphics.renderItemDecorations(this.font, copier, iconX, iconY);
+            guiGraphics.pose().popPose();
+        }
+
+        if (isCopierSlotHovered(mouseX, mouseY)) {
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().translate(0, 0, 310);
+            renderCopierSlotHighlight(guiGraphics);
+            guiGraphics.pose().popPose();
+        }
+    }
+
+    private void renderCopierSlotHighlight(GuiGraphics guiGraphics) {
+        int x = this.leftPos + ImprovedPatternCrafterMenu.copierSlotHighlightX(ImprovedPatternCrafterMenu.COPIER_COLUMN_X);
+        int y = this.topPos + ImprovedPatternCrafterMenu.copierSlotHighlightY(ImprovedPatternCrafterMenu.COPIER_SLOT_BACKGROUND_Y);
+        AbstractContainerScreen.renderSlotHighlight(guiGraphics, x, y, 0);
     }
 
     @Override
@@ -1325,6 +1616,10 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (MachineGuiInput.clearEditBoxOnRightClick(mouseX, mouseY, button, filterEditBox)) {
+            clearFilterEdit();
+            return true;
+        }
         // Shift+LMB clears filter content even when the button looks inactive (no letter).
         if (subView == SubView.MAIN && button == 0 && Screen.hasShiftDown() && menu.getBlockEntity() != null) {
             for (int i = 0; i < variableButtons.length; i++) {
@@ -1337,8 +1632,8 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                     continue;
                 }
                 int slotIndex = resolveFilterIndex(i);
-                if (slotIndex < 0 || slotIndex >= menu.getEffectiveKeyInputCount()) continue;
-                int letter = menu.getFilterLetter(slotIndex);
+                if (slotIndex < 0 || slotIndex >= liveEffectiveKeyInputCount()) continue;
+                int letter = liveFilterLetter(slotIndex);
                 PacketDistributor.sendToServer(new VariableFilterSetC2SPacket(
                         menu.getBlockEntity().getBlockPos(), slotIndex, "", letter));
                 variablePreviews[i] = ItemStack.EMPTY;
@@ -1477,17 +1772,19 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (variableInlineEdit && (keyCode == 256 /* Escape */ || minecraft != null
-                && minecraft.options.keyInventory.matches(keyCode, scanCode))) {
+        if (MachineGuiInput.handleContainerKeyPressed(
+                this, keyCode, scanCode, modifiers, isDraggingHandle, filterEditBox)) {
+            return true;
+        }
+        boolean inventoryKey = minecraft != null && minecraft.options.keyInventory.matches(keyCode, scanCode);
+        boolean escape = keyCode == 256;
+        if (variableInlineEdit && (escape || inventoryKey)) {
+            // Esc / inventory close edit only when EditBox is not focused (handled above).
             exitVariableInlineEdit(true);
             return true;
         }
-        if (subView != SubView.MAIN && (keyCode == 256 /* Escape */ || minecraft != null
-                && minecraft.options.keyInventory.matches(keyCode, scanCode))) {
+        if (subView != SubView.MAIN && (escape || inventoryKey)) {
             closeSubview();
-            return true;
-        }
-        if (filterEditBox != null && filterEditBox.isVisible() && filterEditBox.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
@@ -1668,11 +1965,11 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     }
 
     private void openVariableInlineEdit(int index) {
-        if (index < 0 || index >= menu.getEffectiveKeyInputCount()) return;
-        if (menu.getFilterLetter(index) <= PatternData.EMPTY) return;
+        if (index < 0 || index >= liveEffectiveKeyInputCount()) return;
+        if (liveFilterLetter(index) <= PatternData.EMPTY) return;
         editingVariableIndex = index;
         var be = menu.getBlockEntity();
-        draftVariableFilter = be != null ? be.getInputFilterString(index) : "";
+        draftVariableFilter = liveFilterString(index);
         nestedOriginalValue = draftVariableFilter;
         variableInlineEdit = true;
         nestedFilterEdit = false;
@@ -1777,6 +2074,10 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         if (remainderRoutingButton != null) remainderRoutingButton.visible = showPatternColumn;
         if (toolSafeguardButton != null) toolSafeguardButton.visible = showPatternColumn;
         if (savePatternButton != null) savePatternButton.visible = showPatternColumn;
+        if (discardPatternButton != null) {
+            discardPatternButton.visible = showPatternColumn;
+            discardPatternButton.active = showPatternColumn && hasPendingPatternEdits();
+        }
         if (forbiddenButton != null) {
             forbiddenButton.visible = showMainSide;
             forbiddenButton.active = normalMain; // visible but disabled while editing a variable
@@ -1841,6 +2142,19 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             updateForbiddenEditButtons();
         } else {
             clearForbiddenEditButtons();
+        }
+
+        boolean showCopier = showsSettingsCopierColumn();
+        menu.setSettingsCopierActive(showCopier);
+        if (settingsCopierSaveButton != null) {
+            settingsCopierSaveButton.visible = showCopier;
+        }
+        if (settingsCopierLoadButton != null) {
+            settingsCopierLoadButton.visible = showCopier;
+            if (showCopier) {
+                layoutSettingsCopierButtons();
+                refreshCopierPasteUi();
+            }
         }
     }
 
@@ -1967,11 +2281,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     }
 
     private void clearFilterEdit() {
-        if (filterEditBox != null) {
-            filterEditBox.setValue("");
-            filterEditBox.setCursorPosition(0);
-            filterEditBox.setHighlightPos(0);
-        }
+        MachineGuiInput.clearEditBox(filterEditBox);
         editorGhostItem = ItemStack.EMPTY;
         filterVariants.clear();
         filterVariantIndex = 0;

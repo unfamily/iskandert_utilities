@@ -10,6 +10,8 @@
     "iska_utils:wander_nullifier",
     "iska_utils:soul_nullifier",
     "iska_utils:fan",
+    "iska_utils:pattern_crafter",
+    "iska_utils:improved_pattern_crafter",
     "iska_utils:mob_reaper",
     "iska_utils:collecting_crate",
     "iska_utils:rubber_block",

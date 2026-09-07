@@ -43,7 +43,7 @@ import java.util.Optional;
  */
 public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
 
-    // Input filter ghost slots: count = getMaxKeyInputs() (config: improved 36, normal 18)
+    // Input filter ghost slots: count = getMaxKeyInputs() (config: improved 90, normal 18)
     private ItemStackHandler inputFilterHandler;
     /** Extractor-style filters, one per variable slot. Empty means wildcard. */
     private String[] inputFilterStrings;
@@ -285,12 +285,12 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         return 45;
     }
 
-    /** Max key inputs (filter slots / letters) for this machine. Improved: config 36, Normal: config 18. */
+    /** Max key inputs (filter slots / letters) for this machine. Improved: config 90, Normal: config 18. */
     public int getMaxKeyInputs() {
         try {
             return Math.max(1, Math.min(256, Config.IMPROVED_MAX_KEY_INPUTS.get()));
         } catch (Exception e) {
-            return 36;
+            return 90;
         }
     }
 
@@ -439,7 +439,7 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         try {
             return Config.MAX_LOGIC_MODULES.get();
         } catch (Exception ignored) {
-            return 3;
+            return 4;
         }
     }
 
@@ -503,7 +503,7 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
             ResourceLocation.fromNamespaceAndPath(ISKA_UTILS, "ultra_module")
     };
 
-    /** Number of logic modules in the top upgrade slot (each adds one pattern). */
+    /** Number of logic modules in the top upgrade slot (each adds +1 pattern and +1 variable page). */
     private int getLogicModuleCount() {
         ItemStack stack = upgradeHandler.getStackInSlot(0);
         if (stack.isEmpty()) return 0;
@@ -528,10 +528,10 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
 
     public int getProductionBatch(ItemStack result) {
         int modules = Math.min(getProductionModuleCount(), getMaxProductionModules());
-        // Stack-mode requires at least one production module in the slot.
+        // Stack-mode: 1 module = 1 full output stack; N modules = N stacks.
         if (processAsStack() && modules > 0 && !result.isEmpty()) {
             int stackCrafts = Math.max(1, result.getMaxStackSize() / Math.max(1, result.getCount()));
-            return Math.min(4096, stackCrafts * (1 + modules));
+            return Math.min(4096, stackCrafts * modules);
         }
         return 1 + modules * getCraftsPerProductionModule();
     }
@@ -556,7 +556,7 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         try {
             return Config.BASE_PATTERNS.get();
         } catch (Exception ignored) {
-            return 4;
+            return 6;
         }
     }
 
@@ -827,7 +827,7 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         PatternData pattern = getCurrentPattern();
         if (pattern == null || cell < 0 || cell >= PatternData.GRID_SIZE || stack.isEmpty()) return false;
 
-        int letter = findLetterForItem(stack);
+        int letter = findLetterForExactItem(stack);
         if (letter == PatternData.EMPTY) {
             int freeSlot = findFreeFilterSlot();
             int freeLetter = findFreeLetter();
@@ -841,20 +841,73 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         return true;
     }
 
-    private int findLetterForItem(ItemStack stack) {
+    /**
+     * Predicts the letter {@link #applyPatternItemAssignment} would use (exact {@code -id} only).
+     * Does not mutate state; for newly allocated letters returns the next free letter.
+     */
+    public int previewExactAssignLetter(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return PatternData.EMPTY;
+        int existing = findLetterForExactItem(stack);
+        if (existing != PatternData.EMPTY) return existing;
+        if (findFreeFilterSlot() < 0) return PatternData.EMPTY;
+        return findFreeLetter();
+    }
+
+    /** Reuse letter only for simple exact item filters ({@code -id} or bare id), never tag/mod/macro/nbt. */
+    private int findLetterForExactItem(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return PatternData.EMPTY;
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (id == null) return PatternData.EMPTY;
+        String itemId = id.toString();
         for (int i = 0; i < getEffectiveKeyInputCount(); i++) {
-            String filter = inputFilterStrings[i];
-            if (!filter.isEmpty() && filterLetters[i] > 0
-                    && DeepDrawerItemFilter.matchesFilterEntry(stack, filter, level != null ? level.registryAccess() : null)) {
+            if (filterLetters[i] <= 0) continue;
+            if (isExactSimpleItemFilter(inputFilterStrings[i], itemId)) {
                 return filterLetters[i];
             }
         }
         return PatternData.EMPTY;
     }
 
+    private int findLetterForFilterSpec(String filterSpec) {
+        if (filterSpec == null || filterSpec.isEmpty()) return PatternData.EMPTY;
+        for (int i = 0; i < getEffectiveKeyInputCount(); i++) {
+            if (filterLetters[i] > 0 && filterSpec.equals(inputFilterStrings[i])) {
+                return filterLetters[i];
+            }
+        }
+        return PatternData.EMPTY;
+    }
+
+    public static boolean isExactSimpleItemFilter(String filter, String itemId) {
+        if (filter == null || filter.isEmpty() || itemId == null || itemId.isEmpty()) return false;
+        if (filter.startsWith("-")) return itemId.equals(filter.substring(1));
+        if (filter.startsWith("#") || filter.startsWith("@") || filter.startsWith("&") || filter.startsWith("?")) {
+            return false;
+        }
+        return itemId.equals(filter);
+    }
+
+    private static String itemFilterSpec(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return "";
+        return "-" + BuiltInRegistries.ITEM.getKey(stack.getItem());
+    }
+
+    private static String resolveFilterSpec(int cell, List<ItemStack> ingredients, @Nullable List<String> filterSpecs) {
+        if (filterSpecs != null && cell < filterSpecs.size()) {
+            String spec = filterSpecs.get(cell);
+            if (spec != null && !spec.isEmpty()) return spec;
+        }
+        ItemStack stack = cell < ingredients.size() ? ingredients.get(cell) : ItemStack.EMPTY;
+        return itemFilterSpec(stack);
+    }
+
     private int findFreeFilterSlot() {
         for (int i = 0; i < getEffectiveKeyInputCount(); i++) {
             if (inputFilterStrings[i].isEmpty() && filterLetters[i] == PatternData.EMPTY) return i;
+        }
+        // Allow reclaiming letter-unlocked slots that still have an empty filter.
+        for (int i = 0; i < getEffectiveKeyInputCount(); i++) {
+            if (inputFilterStrings[i].isEmpty()) return i;
         }
         return -1;
     }
@@ -870,102 +923,67 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         return PatternData.EMPTY;
     }
 
+    /** Non-mutating JEI transfer preview (grid letters + variable filters/letters). */
+    public record JeiTransferPreview(int[] cellLetters, String[] variableFilters, int[] variableLetters) {}
+
     /**
-     * Assigns JEI ingredient types to free variable slots (filters + letters only).
-     * Does not modify the pattern grid or crafting mode.
+     * Commits JEI variable filters/letters immediately (not the pattern grid).
+     * Pattern cells stay client-pending until Save.
      *
      * @return letter for each of the 9 grid cells, or {@code null} if the transfer is not possible
      */
     @Nullable
     public int[] applyJeiVariablesOnly(List<ItemStack> ingredients) {
-        PatternData pattern = getCurrentPattern();
-        if (pattern == null || ingredients.size() < PatternData.GRID_SIZE) return null;
-        for (int i = 0; i < PatternData.GRID_SIZE; i++) {
-            if (pattern.getCell(i) != PatternData.EMPTY) return null;
-        }
+        return applyJeiVariablesOnly(ingredients, null);
+    }
 
-        List<ItemStack> newItems = new ArrayList<>();
-        for (int cell = 0; cell < PatternData.GRID_SIZE; cell++) {
-            ItemStack ingredient = ingredients.get(cell);
-            if (ingredient.isEmpty()) continue;
-            if (findLetterForItem(ingredient) == PatternData.EMPTY) {
-                boolean alreadyPlanned = false;
-                for (ItemStack planned : newItems) {
-                    if (sameItemType(planned, ingredient)) {
-                        alreadyPlanned = true;
-                        break;
-                    }
-                }
-                if (!alreadyPlanned) newItems.add(ingredient.copyWithCount(1));
-            }
-        }
+    @Nullable
+    public int[] applyJeiVariablesOnly(List<ItemStack> ingredients, @Nullable List<String> filterSpecs) {
+        JeiTransferPreview preview = previewJeiTransfer(ingredients, filterSpecs);
+        if (preview == null) return null;
 
-        int freeSlots = 0;
-        for (int i = 0; i < getEffectiveKeyInputCount(); i++) {
-            if (inputFilterStrings[i].isEmpty() && filterLetters[i] == PatternData.EMPTY) freeSlots++;
-        }
-        boolean[] usedLetters = new boolean[PatternData.MAX_LETTER + 1];
-        for (int letter : filterLetters) {
-            if (letter > 0 && letter <= PatternData.MAX_LETTER) usedLetters[letter] = true;
-        }
-        int freeLetters = 0;
-        for (int letter = 1; letter <= PatternData.MAX_LETTER; letter++) {
-            if (!usedLetters[letter]) freeLetters++;
-        }
-        if (newItems.size() > freeSlots || newItems.size() > freeLetters) return null;
-
-        int[] cellLetters = new int[PatternData.GRID_SIZE];
-        for (int cell = 0; cell < PatternData.GRID_SIZE; cell++) {
-            ItemStack ingredient = ingredients.get(cell);
-            if (ingredient.isEmpty()) {
-                cellLetters[cell] = PatternData.EMPTY;
-                continue;
-            }
-            int letter = findLetterForItem(ingredient);
-            if (letter == PatternData.EMPTY) {
-                int freeSlot = findFreeFilterSlot();
-                int freeLetter = findFreeLetter();
-                if (freeSlot < 0 || freeLetter == PatternData.EMPTY) return null;
-                inputFilterStrings[freeSlot] = "-" + BuiltInRegistries.ITEM.getKey(ingredient.getItem());
-                filterLetters[freeSlot] = freeLetter;
-                letter = freeLetter;
-            }
-            cellLetters[cell] = letter;
+        int keyCount = Math.min(preview.variableFilters().length, getEffectiveKeyInputCount());
+        for (int i = 0; i < keyCount; i++) {
+            inputFilterStrings[i] = preview.variableFilters()[i] == null ? "" : preview.variableFilters()[i];
+            filterLetters[i] = preview.variableLetters()[i];
         }
         setChanged();
-        return cellLetters;
+        return preview.cellLetters();
     }
 
     /**
-     * Client-side mirror of {@link #applyJeiVariablesOnly}: resolves grid letters without mutating this BE.
+     * Client-side mirror of {@link #applyJeiVariablesOnly}: resolves grid + variables without mutating this BE.
      */
     @Nullable
     public int[] previewJeiGridLetters(List<ItemStack> ingredients) {
+        return previewJeiGridLetters(ingredients, null);
+    }
+
+    @Nullable
+    public int[] previewJeiGridLetters(List<ItemStack> ingredients, @Nullable List<String> filterSpecs) {
+        JeiTransferPreview preview = previewJeiTransfer(ingredients, filterSpecs);
+        return preview == null ? null : preview.cellLetters();
+    }
+
+    @Nullable
+    public JeiTransferPreview previewJeiTransfer(List<ItemStack> ingredients, @Nullable List<String> filterSpecs) {
         if (ingredients.size() < PatternData.GRID_SIZE) return null;
         int keyCount = getEffectiveKeyInputCount();
         String[] filters = java.util.Arrays.copyOf(inputFilterStrings, keyCount);
         int[] letters = java.util.Arrays.copyOf(filterLetters, keyCount);
-        var registries = level != null ? level.registryAccess() : null;
 
-        List<ItemStack> newItems = new ArrayList<>();
+        List<String> newSpecs = new ArrayList<>();
         for (int cell = 0; cell < PatternData.GRID_SIZE; cell++) {
-            ItemStack ingredient = ingredients.get(cell);
-            if (ingredient.isEmpty()) continue;
-            if (previewFindLetter(ingredient, filters, letters, registries) == PatternData.EMPTY) {
-                boolean alreadyPlanned = false;
-                for (ItemStack planned : newItems) {
-                    if (sameItemType(planned, ingredient)) {
-                        alreadyPlanned = true;
-                        break;
-                    }
-                }
-                if (!alreadyPlanned) newItems.add(ingredient.copyWithCount(1));
+            String spec = resolveFilterSpec(cell, ingredients, filterSpecs);
+            if (spec.isEmpty()) continue;
+            if (previewFindLetterBySpec(spec, filters, letters) == PatternData.EMPTY) {
+                if (!newSpecs.contains(spec)) newSpecs.add(spec);
             }
         }
 
         int freeSlots = 0;
         for (int i = 0; i < keyCount; i++) {
-            if (filters[i].isEmpty() && letters[i] == PatternData.EMPTY) freeSlots++;
+            if (filters[i].isEmpty()) freeSlots++;
         }
         boolean[] usedLetters = new boolean[PatternData.MAX_LETTER + 1];
         for (int letter : letters) {
@@ -975,16 +993,16 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         for (int letter = 1; letter <= PatternData.MAX_LETTER; letter++) {
             if (!usedLetters[letter]) freeLetters++;
         }
-        if (newItems.size() > freeSlots || newItems.size() > freeLetters) return null;
+        if (newSpecs.size() > freeSlots || newSpecs.size() > freeLetters) return null;
 
         int[] cellLetters = new int[PatternData.GRID_SIZE];
         for (int cell = 0; cell < PatternData.GRID_SIZE; cell++) {
-            ItemStack ingredient = ingredients.get(cell);
-            if (ingredient.isEmpty()) {
+            String spec = resolveFilterSpec(cell, ingredients, filterSpecs);
+            if (spec.isEmpty()) {
                 cellLetters[cell] = PatternData.EMPTY;
                 continue;
             }
-            int letter = previewFindLetter(ingredient, filters, letters, registries);
+            int letter = previewFindLetterBySpec(spec, filters, letters);
             if (letter == PatternData.EMPTY) {
                 int freeSlot = -1;
                 for (int i = 0; i < keyCount; i++) {
@@ -993,30 +1011,40 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
                         break;
                     }
                 }
+                if (freeSlot < 0) {
+                    for (int i = 0; i < keyCount; i++) {
+                        if (filters[i].isEmpty()) {
+                            freeSlot = i;
+                            break;
+                        }
+                    }
+                }
                 int freeLetter = PatternData.EMPTY;
-                for (int l = 1; l <= PatternData.MAX_LETTER; l++) {
-                    if (!usedLetters[l]) {
-                        freeLetter = l;
-                        break;
+                if (freeSlot >= 0 && letters[freeSlot] > PatternData.EMPTY) {
+                    freeLetter = letters[freeSlot];
+                } else {
+                    for (int l = 1; l <= PatternData.MAX_LETTER; l++) {
+                        if (!usedLetters[l]) {
+                            freeLetter = l;
+                            break;
+                        }
                     }
                 }
                 if (freeSlot < 0 || freeLetter == PatternData.EMPTY) return null;
-                filters[freeSlot] = "-" + BuiltInRegistries.ITEM.getKey(ingredient.getItem());
+                filters[freeSlot] = spec;
                 letters[freeSlot] = freeLetter;
                 usedLetters[freeLetter] = true;
                 letter = freeLetter;
             }
             cellLetters[cell] = letter;
         }
-        return cellLetters;
+        return new JeiTransferPreview(cellLetters, filters, letters);
     }
 
-    private static int previewFindLetter(
-            ItemStack stack, String[] filters, int[] letters, net.minecraft.core.HolderLookup.Provider registries) {
+    private static int previewFindLetterBySpec(String filterSpec, String[] filters, int[] letters) {
+        if (filterSpec == null || filterSpec.isEmpty()) return PatternData.EMPTY;
         for (int i = 0; i < filters.length; i++) {
-            String filter = filters[i];
-            if (!filter.isEmpty() && letters[i] > 0
-                    && DeepDrawerItemFilter.matchesFilterEntry(stack, filter, registries)) {
+            if (letters[i] > 0 && filterSpec.equals(filters[i])) {
                 return letters[i];
             }
         }
@@ -1624,7 +1652,7 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
 
         // Route primary result
         ItemStack rest = result.copy();
-        if (resultMode != 1) {
+        if (resultMode == 2 || (resultMode == 3 && isExplicitActiveVariableInput(result))) {
             for (int i = 0; i < inputSim.getSlots(); i++) {
                 rest = inputSim.insertItem(i, rest, true);
                 if (rest.isEmpty()) break;
@@ -1664,9 +1692,32 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         return true;
     }
 
-    /** Routes primary craft output: mode 1 = output only; modes 2–3 = input first then overflow to output. */
+    /**
+     * True when an active variable (letter assigned + non-empty filter) matches the stack.
+     * Empty / letter-0 variables do not count.
+     */
+    private boolean isExplicitActiveVariableInput(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        var registries = level != null ? level.registryAccess() : null;
+        for (int i = 0; i < getEffectiveKeyInputCount(); i++) {
+            if (filterLetters[i] <= PatternData.EMPTY) continue;
+            String filter = inputFilterStrings[i];
+            if (filter == null || filter.isEmpty()) continue;
+            if (DeepDrawerItemFilter.matchesFilterEntry(stack, filter, registries)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Routes primary craft output:
+     * mode 1 = output only;
+     * mode 2 Keep = input first then overflow to output;
+     * mode 3 Smart = input first only if an active variable matches, otherwise output only.
+     */
     private void routeCraftResult(ItemStack result, int resultMode) {
-        if (resultMode == 1) {
+        if (resultMode == 1 || (resultMode == 3 && !isExplicitActiveVariableInput(result))) {
             insertIntoOutput(result);
             return;
         }

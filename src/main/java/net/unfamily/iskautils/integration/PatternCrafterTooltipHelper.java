@@ -31,7 +31,7 @@ public final class PatternCrafterTooltipHelper {
     }
 
     public static void appendLogicModuleMaxInstall(Consumer<Component> tooltip) {
-        appendPatternCrafterMaxInstall(tooltip, getConfigInt("MAX_LOGIC_MODULES", 3));
+        appendPatternCrafterMaxInstall(tooltip, getConfigInt("MAX_LOGIC_MODULES", 4));
     }
 
     public static void appendProductionModuleMaxInstall(Consumer<Component> tooltip) {
@@ -62,7 +62,7 @@ public final class PatternCrafterTooltipHelper {
      * Appends Pattern Crafter tooltip line for the logic module (max installable count).
      */
     public static void addLogicModuleTooltip(List<Component> tooltip) {
-        int maxLogic = getConfigInt("MAX_LOGIC_MODULES", 3);
+        int maxLogic = getConfigInt("MAX_LOGIC_MODULES", 4);
         tooltip.add(Component.translatable("tooltip.iska_utils.pattern_crafter.logic_module", maxLogic)
                 .withStyle(ChatFormatting.GRAY));
     }
