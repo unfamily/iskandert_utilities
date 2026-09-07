@@ -402,6 +402,18 @@ public class ModMessages {
         );
 
         registrar.playToServer(
+            net.unfamily.iskautils.network.packet.SwissWrenchRadialSubmitC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.SwissWrenchRadialSubmitC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.SwissWrenchRadialSubmitC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.SwissWrenchApplyModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.SwissWrenchApplyModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.SwissWrenchApplyModeC2SPacket::handle
+        );
+
+        registrar.playToServer(
             net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket::handle

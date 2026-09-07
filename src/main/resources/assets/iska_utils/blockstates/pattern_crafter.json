@@ -1,1 +1,1 @@
-{"variants":{"facing=north":{"model":"iska_utils:block/pattern_crafter"},"facing=south":{"model":"iska_utils:block/pattern_crafter","y":180},"facing=west":{"model":"iska_utils:block/pattern_crafter","y":270},"facing=east":{"model":"iska_utils:block/pattern_crafter","y":90}}}
+{"variants":{"":{"model":"iska_utils:block/pattern_crafter"}}}

@@ -1616,6 +1616,17 @@ public class Config
     static {
         BUILDER.pop(); // End of tweaks category
 
+        BUILDER.comment("Swiss Wrench Configuration").push("swiss_wrench");
+    }
+
+    private static final ModConfigSpec.BooleanValue SWISS_WRENCH_LEGACY_MODES = BUILDER
+            .comment("When true, enables legacy Swiss Wrench rotation modes (rotate L/R and absolute N/E/S/W/U/D)",
+                    "cycled with left-click. When false (default), only the Radial menu is used (keybind).")
+            .define("000_legacy_modes", false);
+
+    static {
+        BUILDER.pop(); // End of swiss_wrench category
+
         // Category for scanner
         BUILDER.comment("Scanner Configuration").push("scanner");
     }
@@ -1988,6 +1999,7 @@ public class Config
     public static int rubberSapExtractorEnergyBuffer;
     public static int rubberSapExtractorSpeed;
     public static boolean generateRubberTrees;
+    public static boolean swissWrenchLegacyModes;
     public static java.util.List<String> crudeOils;
     public static int scannerScanRange;
     public static java.util.List<Integer> scannerRangeOptions;
@@ -2309,6 +2321,7 @@ public class Config
         verticalBoostFactor = VERTICAL_BOOST_FACTOR.get();
         entityVerticalBoostFactor = ENTITY_VERTICAL_BOOST_FACTOR.get();
         verticalConveyorEnabled = VERTICAL_CONVEYOR_ENABLED.get();
+        swissWrenchLegacyModes = SWISS_WRENCH_LEGACY_MODES.get();
         verticalCharmEnabled = VERTICAL_CHARM_ENABLED.get();
         horizontalCharmEnabled = HORIZONTAL_CHARM_ENABLED.get();
         vectorCharmEnergyCapacity = VECTOR_CHARM_ENERGY_CAPACITY.get();

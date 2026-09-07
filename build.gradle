@@ -46,6 +46,17 @@ repositories {
             includeGroup "top.theillusivec4.curios"
         }
     }
+    maven {
+        name = "Create"
+        url = "https://maven.createmod.net"
+    }
+    maven {
+        name = "Registrate"
+        url = "https://maven.ithundxr.dev/snapshots"
+        content {
+            includeGroup "com.tterrag.registrate"
+        }
+    }
 }
 
 base {
@@ -279,6 +290,16 @@ dependencies {
     apotheosisStack('localRuntime')
     // Apotheosis requires Curios at dev runtime (optional for published mod)
     localRuntime "top.theillusivec4.curios:curios-neoforge:${curios_version}"
+
+    // Create (optional at runtime; full stack for IDE autocomplete and Swiss Wrench radial testing)
+    compileOnly "com.simibubi.create:create-${minecraft_version}:${create_version}"
+    localRuntime "com.simibubi.create:create-${minecraft_version}:${create_version}"
+    localRuntime "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
+    localRuntime "dev.engine-room.vanillin:vanillin-neoforge-${minecraft_version}:${vanillin_version}"
+
+    // Applied Energistics 2 (optional at runtime; IDE + Swiss Wrench radial testing)
+    compileOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"
+    localRuntime "org.appliedenergistics:appliedenergistics2:${ae2_version}"
 
     // Verify that the value of runtime_itemlist_mod is valid
     if (project.hasProperty('runtime_itemlist_mod') && 

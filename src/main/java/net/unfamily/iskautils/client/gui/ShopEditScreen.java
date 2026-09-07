@@ -142,8 +142,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private static final int BROWSE_ROW_ACCENT_SELECTED = 0xFFE0A020;
     private static final int BROWSE_ROW_ACCENT_W = 3;
     private static final int MOVE_OVERLAY_MAX_LINES = 8;
-    /** Pattern-letter style {@code [C]}/{@code [E]} tag width. */
-    private static final int LIST_KIND_W = 22;
+    /** Pattern-letter style {@code C}/{@code E} tag width. */
+    private static final int LIST_KIND_W = 16;
 
     private SubView subView = SubView.BROWSE;
     /** Where Done from the currencies list returns (e.g. entry edit). */
@@ -695,7 +695,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                         .build());
                 addDyn(Button.builder(Component.literal(selected ? "M*" : "M"), b -> onMoveButton("category", catId))
                         .bounds(leftPos + moveX, topPos + y, LIST_ACTION_W, ENTRY_HEIGHT - 2)
-                        .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.move")))
+                        .tooltip(moveButtonTooltip())
                         .build());
                 addDyn(Button.builder(Component.literal("D"), b -> confirmDelete("category", catId))
                         .bounds(leftPos + deleteX, topPos + y, LIST_ACTION_W, ENTRY_HEIGHT - 2)
@@ -711,19 +711,25 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                     if (tryToggleMoveSelection("entry", entryId)) {
                         return;
                     }
+                    if (isMoveSelected("entry", entryId)) {
+                        return;
+                    }
                     openEntryEdit(entryId);
                 };
                 addDyn(new ShopKindTagButton(leftPos + kindX, topPos + y, LIST_KIND_W, ENTRY_HEIGHT - 2,
                         ShopKindTagButton.LETTER_ENTRY, openOrToggle));
                 addDyn(Button.builder(Component.literal(truncate(entryContentLabel(e), 22)), b -> openOrToggle.run())
                         .bounds(leftPos + nameX, topPos + y, mainW, ENTRY_HEIGHT - 2).build());
-                addDyn(Button.builder(Component.literal("✎"), b -> openEntryEdit(entryId))
+                Button editEntry = addDyn(Button.builder(Component.literal("✎"), b -> openEntryEdit(entryId))
                         .bounds(leftPos + editX, topPos + y, LIST_ACTION_W, ENTRY_HEIGHT - 2)
-                        .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.edit")))
+                        .tooltip(Tooltip.create(Component.translatable(
+                                selected ? "gui.iska_utils.shop_edit.move.edit_blocked"
+                                        : "gui.iska_utils.shop_edit.edit")))
                         .build());
+                editEntry.active = !selected;
                 addDyn(Button.builder(Component.literal(selected ? "M*" : "M"), b -> onMoveButton("entry", entryId))
                         .bounds(leftPos + moveX, topPos + y, LIST_ACTION_W, ENTRY_HEIGHT - 2)
-                        .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.move")))
+                        .tooltip(moveButtonTooltip())
                         .build());
                 addDyn(Button.builder(Component.literal("D"), b -> confirmDelete("entry", entryId))
                         .bounds(leftPos + deleteX, topPos + y, LIST_ACTION_W, ENTRY_HEIGHT - 2)
@@ -1559,6 +1565,12 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         return Tooltip.create(net.minecraft.network.chat.CommonComponents.joinLines(
                 Component.translatable("gui.iska_utils.shop_edit.delete"),
                 Component.translatable("gui.iska_utils.shop_edit.delete.skip_confirm")));
+    }
+
+    private static Tooltip moveButtonTooltip() {
+        return Tooltip.create(net.minecraft.network.chat.CommonComponents.joinLines(
+                Component.translatable("gui.iska_utils.shop_edit.move"),
+                Component.translatable("gui.iska_utils.shop_edit.move.multi_select")));
     }
 
     private void tryLeaveCategoryEdit() {
@@ -2665,11 +2677,11 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         if ("category".equals(ref.kind())) {
             ShopCategory cat = menu.getData().categories.get(ref.id());
             String name = cat != null ? displayName(cat.name) : nullSafe(ref.id());
-            return truncate(name, 18) + " [C]";
+            return truncate(name, 18) + " C";
         }
         ShopEntry entry = menu.getData().entries.get(ref.id());
         String name = entry != null ? entryContentLabel(entry) : nullSafe(ref.id());
-        return truncate(name, 18) + " [E]";
+        return truncate(name, 18) + " E";
     }
 
     @Override

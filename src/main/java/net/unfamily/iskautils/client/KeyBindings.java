@@ -38,6 +38,7 @@ public class KeyBindings {
     private static final String KEY_BURNING_BRAZIER_TOGGLE = "key.iska_utils.burning_brazier_toggle";
     private static final String KEY_GHOST_BRAZIER_TOGGLE = "key.iska_utils.ghost_brazier_toggle";
     private static final String KEY_SCANNER_RANGE = "key.iska_utils.scanner_range";
+    private static final String KEY_SWISS_WRENCH_ROTATE = "key.iska_utils.swiss_wrench_rotate";
     private static final String KEY_GAUNTLET_CLIMBING_TOGGLE = "key.iska_utils.gauntlet_climbing_toggle";
 
     // Vector Charm keys
@@ -117,12 +118,21 @@ public class KeyBindings {
             KEY_CATEGORY_ISKA_UTILS
     );
 
-    // Scanner range cycle key
+    // Scanner range cycle key (Y — R reserved for Swiss Wrench rotate)
     public static final KeyMapping SCANNER_RANGE_KEY = new KeyMapping(
             KEY_SCANNER_RANGE,
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_R,  // R key for range
+            GLFW.GLFW_KEY_Y,
+            KEY_CATEGORY_ISKA_UTILS
+    );
+
+    // Swiss Wrench rotate / radial key
+    public static final KeyMapping SWISS_WRENCH_ROTATE_KEY = new KeyMapping(
+            KEY_SWISS_WRENCH_ROTATE,
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_R,
             KEY_CATEGORY_ISKA_UTILS
     );
 
@@ -150,6 +160,7 @@ public class KeyBindings {
         event.register(BURNING_BRAZIER_TOGGLE_KEY);
         event.register(GHOST_BRAZIER_TOGGLE_KEY);
         event.register(SCANNER_RANGE_KEY);
+        event.register(SWISS_WRENCH_ROTATE_KEY);
         event.register(GAUNTLET_CLIMBING_TOGGLE_KEY);
         LOGGER.info("Registered all key mappings");
     }
@@ -259,9 +270,43 @@ public class KeyBindings {
                 ModMessages.sendScannerRangeCyclePacket();
             }
 
+            if (SWISS_WRENCH_ROTATE_KEY.consumeClick()) {
+                handleSwissWrenchRotate(player);
+            }
+
             // Ghost Brazier keybind is handled in the item's inventoryTick method
             // The item checks if the keybind was pressed when it ticks
         }
+    }
+
+    private static void handleSwissWrenchRotate(Player player) {
+        if (!(player.getMainHandItem().getItem() instanceof net.unfamily.iskautils.item.custom.SwissWrenchItem)) {
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult blockHit)
+                || blockHit.getType() != net.minecraft.world.phys.HitResult.Type.BLOCK) {
+            return;
+        }
+        net.minecraft.core.BlockPos pos = blockHit.getBlockPos();
+        net.minecraft.world.level.block.state.BlockState state = player.level().getBlockState(pos);
+
+        if (net.unfamily.iskautils.Config.swissWrenchLegacyModes) {
+            var mode = net.unfamily.iskautils.events.SetWrenchDirectionBlock.getSelectedRotationMode(player.getMainHandItem());
+            if (mode != net.unfamily.iskautils.events.SetWrenchDirectionBlock.RotationMode.RADIAL) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                        net.unfamily.iskautils.network.packet.SwissWrenchApplyModeC2SPacket.legacyFromItem(pos));
+                return;
+            }
+        }
+
+        if (net.unfamily.iskautils.util.SwissWrenchRotationApplier.isExcluded(state)
+                || !net.unfamily.iskautils.util.SwissWrenchRotationProperties.canRotate(state)) {
+            player.displayClientMessage(
+                    Component.translatable("item.iska_utils.swiss_wrench.message.cannot_rotate"), true);
+            return;
+        }
+        net.unfamily.iskautils.client.SwissWrenchClient.openRadial(pos, state);
     }
     
     /**
