@@ -482,6 +482,7 @@ public class ModMessages {
         registrar.playToServer(PatternCellUpdateC2SPacket.TYPE, PatternCellUpdateC2SPacket.STREAM_CODEC, PatternCellUpdateC2SPacket::handle);
         registrar.playToServer(PatternCellItemAssignC2SPacket.TYPE, PatternCellItemAssignC2SPacket.STREAM_CODEC, PatternCellItemAssignC2SPacket::handle);
         registrar.playToServer(CraftingModeSwitchC2SPacket.TYPE, CraftingModeSwitchC2SPacket.STREAM_CODEC, CraftingModeSwitchC2SPacket::handle);
+        registrar.playToServer(CraftingModeSetC2SPacket.TYPE, CraftingModeSetC2SPacket.STREAM_CODEC, CraftingModeSetC2SPacket::handle);
         registrar.playToServer(FilterLetterUpdateC2SPacket.TYPE, FilterLetterUpdateC2SPacket.STREAM_CODEC, FilterLetterUpdateC2SPacket::handle);
         registrar.playToServer(FilterPageC2SPacket.TYPE, FilterPageC2SPacket.STREAM_CODEC, FilterPageC2SPacket::handle);
         registrar.playToServer(FilterItemSetC2SPacket.TYPE, FilterItemSetC2SPacket.STREAM_CODEC, FilterItemSetC2SPacket::handle);
@@ -494,6 +495,7 @@ public class ModMessages {
                 StructurePlacerMachineGhostFilterSetC2SPacket::handle);
         registrar.playToServer(PatternCrafterJeiTransferC2SPacket.TYPE, PatternCrafterJeiTransferC2SPacket.STREAM_CODEC, PatternCrafterJeiTransferC2SPacket::handle);
         registrar.playToServer(ToolSafeguardC2SPacket.TYPE, ToolSafeguardC2SPacket.STREAM_CODEC, ToolSafeguardC2SPacket::handle);
+        registrar.playToServer(AutoclearVariablesC2SPacket.TYPE, AutoclearVariablesC2SPacket.STREAM_CODEC, AutoclearVariablesC2SPacket::handle);
         registrar.playToServer(ForbiddenFiltersC2SPacket.TYPE, ForbiddenFiltersC2SPacket.STREAM_CODEC, ForbiddenFiltersC2SPacket::handle);
         registrar.playToServer(VariableFilterSetC2SPacket.TYPE, VariableFilterSetC2SPacket.STREAM_CODEC, VariableFilterSetC2SPacket::handle);
         registrar.playToServer(RecursiveOutputModeC2SPacket.TYPE, RecursiveOutputModeC2SPacket.STREAM_CODEC, RecursiveOutputModeC2SPacket::handle);

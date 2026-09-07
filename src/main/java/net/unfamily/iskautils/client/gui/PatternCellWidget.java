@@ -21,6 +21,8 @@ import java.util.function.Consumer;
  * Left-click cycles forward, right-click cycles backward.
  */
 public class PatternCellWidget extends AbstractWidget {
+    private static final long ITEM_CYCLE_MS = 3500L;
+
     private int value = PatternData.EMPTY;
     private int maxLetter = PatternData.MAX_LETTER; // from BE getMaxKeyInputs(); cycle uses this
     private final int cellIndex;
@@ -137,7 +139,7 @@ public class PatternCellWidget extends AbstractWidget {
         guiGraphics.fill(getX() + width - 1, getY(), getX() + width, getY() + height, borderColor); // right
 
         if (showItem) {
-            int index = (int) ((System.currentTimeMillis() / 1000L) % displayCandidates.size());
+            int index = (int) ((System.currentTimeMillis() / ITEM_CYCLE_MS) % displayCandidates.size());
             guiGraphics.item(displayCandidates.get(index),
                     getX() + (width - 16) / 2, getY() + (height - 16) / 2);
 

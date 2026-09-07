@@ -51,7 +51,7 @@ public record PatternCrafterJeiTransferC2SPacket(BlockPos pos, List<ItemStack> i
             if (!(player.containerMenu instanceof ImprovedPatternCrafterMenu menu)
                     || menu.getBlockEntity() == null
                     || !menu.getBlockEntity().getBlockPos().equals(packet.pos())) return;
-            menu.getBlockEntity().applyJeiPattern(packet.ingredients(), packet.craftingMode());
+            menu.getBlockEntity().applyJeiVariablesOnly(packet.ingredients());
             menu.broadcastFullState();
         });
     }

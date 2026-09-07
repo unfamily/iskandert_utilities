@@ -29,7 +29,7 @@ Right-click the block to open its control GUI:
   - *Disabled*: never active.
 - **Shift + Right-click**: toggles manual enable/disable without opening the GUI (action-bar feedback).
 - **Show / Hide** (below redstone button): toggles a visible preview border around the affected area.
-- **Range Module slot** (top-left): insert Range Module items to increase the maximum achievable radius. See **Modules**.
+- **Range Module slot** (top-left): insert Range Module items to increase the maximum achievable radius. See **Modules** → **Range Module**.
 
 ## Tips
 

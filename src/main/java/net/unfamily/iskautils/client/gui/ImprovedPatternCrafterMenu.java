@@ -18,13 +18,13 @@ import net.unfamily.iskautils.pattern.PatternData;
 /**
  * Menu/Container for the Improved Pattern Crafter.
  *
- * Slot layout (item render positions):
- *   - Input filter ghost slots:  9 x N rows (paginated to 18) at (80, 47)
- *   - Upgrade slots:             stacked at (12, 193/211/229) [manual only]
- *   - Output slots:              3x3 = 9 slots  at (259, 157) [extract only, paginated]
- *   - Machine input inventory:   9x3 = 27 slots at (80, 105)  [hopper can insert]
- *   - Player inventory:          9x3 = 27 slots at (80, 171)
- *   - Player hotbar:             9x1 = 9 slots  at (80, 229)
+ * Slot layout (item render positions) for 340×270 GUI — coords match baked slot interiors:
+ *   - Input filter / variables:  9 x 2 at (90, 47) [paginated]
+ *   - Upgrade slots:             stacked at (12, 207/225/243) [manual only; SINGLE_SLOT blit]
+ *   - Output slots:              3x3 at (266, 119) [extract only, paginated; SINGLE_SLOT blit]
+ *   - Machine input inventory:   9x3 at (90, 114)
+ *   - Player inventory:          9x3 at (90, 185)
+ *   - Player hotbar:             9x1 at (90, 243)
  */
 public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
 
@@ -37,16 +37,19 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
     public static final int PLAYER_HOTBAR_SLOTS = 9;    // 9x1
 
     public static final int UPGRADE_SLOT_X = 12;
-    public static final int UPGRADE_SLOT_Y0 = 193;
-    public static final int UPGRADE_SLOT_Y1 = 211;
-    public static final int UPGRADE_SLOT_Y2 = 229;
-    public static final int OUTPUT_SLOT_X = 259;
-    public static final int OUTPUT_SLOT_Y = 157;
-    public static final int MACHINE_INPUT_X = 80;
-    public static final int MACHINE_INPUT_Y = 105;
+    public static final int UPGRADE_SLOT_Y0 = 207;
+    public static final int UPGRADE_SLOT_Y1 = 225;
+    public static final int UPGRADE_SLOT_Y2 = 243;
+    /** First baked inventory slot interior (inside the dark border) on the 340×270 texture. */
+    public static final int MACHINE_INPUT_X = 90;
+    public static final int MACHINE_INPUT_Y = 114;
     public static final int PLAYER_INV_X = MACHINE_INPUT_X;
-    public static final int PLAYER_INV_Y = 171;
-    public static final int PLAYER_HOTBAR_Y = 229;
+    public static final int PLAYER_INV_Y = 185;
+    public static final int PLAYER_HOTBAR_Y = 243;
+    /** Centered in the right gutter after the 9-wide inventory band. */
+    public static final int OUTPUT_SLOT_X = 266;
+    /** Aligned with the 3 player-inventory rows (not the hotbar). */
+    public static final int OUTPUT_SLOT_Y = PLAYER_INV_Y;
 
     /** Filter edit chrome — exact DeepDrawer Extractor proportions. */
     public static final int EDIT_SLOT_SIZE = 18;
@@ -176,7 +179,7 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
     }
 
     private int getContainerDataSize() {
-        return getDataToolSafeguardIndex() + 1;
+        return getDataAutoclearVariablesIndex() + 1;
     }
 
     private int getDataMaxEnergyIndex() { return getDataEnergyStoredIndex() + 1; }
@@ -189,6 +192,7 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
     private int getDataRemainderRoutingModeIndex() { return getDataFilterPageIndex() + 2; }
     private int getDataOutputPageIndex() { return getDataFilterPageIndex() + 3; }
     private int getDataToolSafeguardIndex() { return getDataFilterPageIndex() + 4; }
+    private int getDataAutoclearVariablesIndex() { return getDataToolSafeguardIndex() + 1; }
 
     private final ImprovedPatternCrafterBlockEntity blockEntity;
     private final ContainerData patternContainerData;
@@ -253,6 +257,7 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
                 final int dataRemainderRouting = getDataRemainderRoutingModeIndex();
                 final int dataOutputPage = getDataOutputPageIndex();
                 final int dataToolSafeguard = getDataToolSafeguardIndex();
+                final int dataAutoclearVariables = getDataAutoclearVariablesIndex();
                 this.patternContainerData = new ContainerData() {
                     @Override
                     public int get(int index) {
@@ -269,6 +274,7 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
                         if (index == dataRemainderRouting) return pcbe.getRemainderRoutingMode();
                         if (index == dataOutputPage) return pcbe.getGuiOutputPage();
                         if (index == dataToolSafeguard) return pcbe.isToolSafeguardEnabled() ? 1 : 0;
+                        if (index == dataAutoclearVariables) return pcbe.isAutoclearVariables() ? 1 : 0;
                         if (index >= DATA_FILTER_LETTERS_START && index < dataEnergy) {
                             return pcbe.getFilterLetter(index - DATA_FILTER_LETTERS_START);
                         }
@@ -375,6 +381,18 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
 
     public boolean isToolSafeguardEnabled() {
         return patternContainerData.get(getDataToolSafeguardIndex()) != 0;
+    }
+
+    public boolean isAutoclearVariablesEnabled() {
+        return patternContainerData.get(getDataAutoclearVariablesIndex()) != 0;
+    }
+
+    @Override
+    public void removed(Player player) {
+        super.removed(player);
+        if (!player.level().isClientSide() && blockEntity != null && blockEntity.isAutoclearVariables()) {
+            blockEntity.clearUnusedVariables();
+        }
     }
 
     // ===== Ghost Slot Click Handling =====

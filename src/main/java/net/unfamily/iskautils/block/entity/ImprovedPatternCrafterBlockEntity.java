@@ -133,6 +133,12 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
     /** In PULSE mode: one craft is scheduled and will run after the normal crafting interval (not instant). */
     private boolean pulseCraftPending = false;
 
+    /**
+     * When true (default), unused variable slots are cleared when a player closes the GUI:
+     * letters not referenced by any effective pattern lose their letter and filter string.
+     */
+    private boolean autoclearVariables = true;
+
     /** Current input filter page when GUI is paginated (0-based). Synced to client via ContainerData; not persisted. */
     private int guiFilterPage = 0;
     private int guiOutputPage = 0;
@@ -634,6 +640,51 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         setChanged();
     }
 
+    public boolean isAutoclearVariables() {
+        return autoclearVariables;
+    }
+
+    public void setAutoclearVariables(boolean enabled) {
+        if (this.autoclearVariables == enabled) return;
+        this.autoclearVariables = enabled;
+        setChanged();
+    }
+
+    public void toggleAutoclearVariables() {
+        setAutoclearVariables(!autoclearVariables);
+    }
+
+    /**
+     * Clears variable slots whose letter is not used in any effective pattern grid.
+     * Locked slots ({@link PatternData#EMPTY}) are left untouched.
+     */
+    public void clearUnusedVariables() {
+        boolean[] used = new boolean[PatternData.MAX_LETTER + 1];
+        int patternCount = getEffectivePatternCount();
+        for (int p = 0; p < patternCount; p++) {
+            PatternData pattern = patterns.get(p);
+            for (int c = 0; c < PatternData.GRID_SIZE; c++) {
+                int letter = pattern.getCell(c);
+                if (letter > PatternData.EMPTY && letter <= PatternData.MAX_LETTER) {
+                    used[letter] = true;
+                }
+            }
+        }
+        boolean changed = false;
+        int keyCount = getEffectiveKeyInputCount();
+        for (int i = 0; i < keyCount; i++) {
+            int letter = filterLetters[i];
+            if (letter > PatternData.EMPTY && !used[letter]) {
+                filterLetters[i] = PatternData.EMPTY;
+                inputFilterStrings[i] = "";
+                changed = true;
+            }
+        }
+        if (changed) {
+            setChanged();
+        }
+    }
+
     /** True if at least one input filter slot has an active letter (enabled). No crafting when all are disabled. */
     public boolean hasAnyInputFilterActive() {
         for (int i = 0; i < getEffectiveKeyInputCount(); i++) {
@@ -819,11 +870,18 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         return PatternData.EMPTY;
     }
 
-    public boolean applyJeiPattern(List<ItemStack> ingredients) {
+    /**
+     * Assigns JEI ingredient types to free variable slots (filters + letters only).
+     * Does not modify the pattern grid or crafting mode.
+     *
+     * @return letter for each of the 9 grid cells, or {@code null} if the transfer is not possible
+     */
+    @org.jetbrains.annotations.Nullable
+    public int[] applyJeiVariablesOnly(List<ItemStack> ingredients) {
         PatternData pattern = getCurrentPattern();
-        if (pattern == null || ingredients.size() < PatternData.GRID_SIZE) return false;
+        if (pattern == null || ingredients.size() < PatternData.GRID_SIZE) return null;
         for (int i = 0; i < PatternData.GRID_SIZE; i++) {
-            if (pattern.getCell(i) != PatternData.EMPTY) return false;
+            if (pattern.getCell(i) != PatternData.EMPTY) return null;
         }
 
         List<ItemStack> newItems = new ArrayList<>();
@@ -854,11 +912,126 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         for (int letter = 1; letter <= PatternData.MAX_LETTER; letter++) {
             if (!usedLetters[letter]) freeLetters++;
         }
-        if (newItems.size() > freeSlots || newItems.size() > freeLetters) return false;
+        if (newItems.size() > freeSlots || newItems.size() > freeLetters) return null;
 
+        int[] cellLetters = new int[PatternData.GRID_SIZE];
         for (int cell = 0; cell < PatternData.GRID_SIZE; cell++) {
             ItemStack ingredient = ingredients.get(cell);
-            if (!ingredient.isEmpty() && !applyPatternItemAssignment(cell, ingredient)) return false;
+            if (ingredient.isEmpty()) {
+                cellLetters[cell] = PatternData.EMPTY;
+                continue;
+            }
+            int letter = findLetterForItem(ingredient);
+            if (letter == PatternData.EMPTY) {
+                int freeSlot = findFreeFilterSlot();
+                int freeLetter = findFreeLetter();
+                if (freeSlot < 0 || freeLetter == PatternData.EMPTY) return null;
+                inputFilterStrings[freeSlot] = "-" + BuiltInRegistries.ITEM.getKey(ingredient.getItem());
+                filterLetters[freeSlot] = freeLetter;
+                letter = freeLetter;
+            }
+            cellLetters[cell] = letter;
+        }
+        setChanged();
+        return cellLetters;
+    }
+
+    /**
+     * Client-side mirror of {@link #applyJeiVariablesOnly}: resolves grid letters without mutating this BE.
+     */
+    @org.jetbrains.annotations.Nullable
+    public int[] previewJeiGridLetters(List<ItemStack> ingredients) {
+        if (ingredients.size() < PatternData.GRID_SIZE) return null;
+        int keyCount = getEffectiveKeyInputCount();
+        String[] filters = java.util.Arrays.copyOf(inputFilterStrings, keyCount);
+        int[] letters = java.util.Arrays.copyOf(filterLetters, keyCount);
+        var registries = level != null ? level.registryAccess() : null;
+
+        List<ItemStack> newItems = new ArrayList<>();
+        for (int cell = 0; cell < PatternData.GRID_SIZE; cell++) {
+            ItemStack ingredient = ingredients.get(cell);
+            if (ingredient.isEmpty()) continue;
+            if (previewFindLetter(ingredient, filters, letters, registries) == PatternData.EMPTY) {
+                boolean alreadyPlanned = false;
+                for (ItemStack planned : newItems) {
+                    if (sameItemType(planned, ingredient)) {
+                        alreadyPlanned = true;
+                        break;
+                    }
+                }
+                if (!alreadyPlanned) newItems.add(ingredient.copyWithCount(1));
+            }
+        }
+
+        int freeSlots = 0;
+        for (int i = 0; i < keyCount; i++) {
+            if (filters[i].isEmpty() && letters[i] == PatternData.EMPTY) freeSlots++;
+        }
+        boolean[] usedLetters = new boolean[PatternData.MAX_LETTER + 1];
+        for (int letter : letters) {
+            if (letter > 0 && letter <= PatternData.MAX_LETTER) usedLetters[letter] = true;
+        }
+        int freeLetters = 0;
+        for (int letter = 1; letter <= PatternData.MAX_LETTER; letter++) {
+            if (!usedLetters[letter]) freeLetters++;
+        }
+        if (newItems.size() > freeSlots || newItems.size() > freeLetters) return null;
+
+        int[] cellLetters = new int[PatternData.GRID_SIZE];
+        for (int cell = 0; cell < PatternData.GRID_SIZE; cell++) {
+            ItemStack ingredient = ingredients.get(cell);
+            if (ingredient.isEmpty()) {
+                cellLetters[cell] = PatternData.EMPTY;
+                continue;
+            }
+            int letter = previewFindLetter(ingredient, filters, letters, registries);
+            if (letter == PatternData.EMPTY) {
+                int freeSlot = -1;
+                for (int i = 0; i < keyCount; i++) {
+                    if (filters[i].isEmpty() && letters[i] == PatternData.EMPTY) {
+                        freeSlot = i;
+                        break;
+                    }
+                }
+                int freeLetter = PatternData.EMPTY;
+                for (int l = 1; l <= PatternData.MAX_LETTER; l++) {
+                    if (!usedLetters[l]) {
+                        freeLetter = l;
+                        break;
+                    }
+                }
+                if (freeSlot < 0 || freeLetter == PatternData.EMPTY) return null;
+                filters[freeSlot] = "-" + BuiltInRegistries.ITEM.getKey(ingredient.getItem());
+                letters[freeSlot] = freeLetter;
+                usedLetters[freeLetter] = true;
+                letter = freeLetter;
+            }
+            cellLetters[cell] = letter;
+        }
+        return cellLetters;
+    }
+
+    private static int previewFindLetter(
+            ItemStack stack, String[] filters, int[] letters, net.minecraft.core.HolderLookup.Provider registries) {
+        for (int i = 0; i < filters.length; i++) {
+            String filter = filters[i];
+            if (!filter.isEmpty() && letters[i] > 0
+                    && DeepDrawerItemFilter.matchesFilterEntry(stack, filter, registries)) {
+                return letters[i];
+            }
+        }
+        return PatternData.EMPTY;
+    }
+
+    public boolean applyJeiPattern(List<ItemStack> ingredients) {
+        int[] cellLetters = applyJeiVariablesOnly(ingredients);
+        if (cellLetters == null) return false;
+        PatternData pattern = getCurrentPattern();
+        if (pattern == null) return false;
+        for (int cell = 0; cell < PatternData.GRID_SIZE; cell++) {
+            if (cellLetters[cell] != PatternData.EMPTY) {
+                pattern.setCell(cell, cellLetters[cell]);
+            }
         }
         setChanged();
         return true;
@@ -871,6 +1044,14 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
             if (pattern != null) pattern.setCraftingMode(craftingMode);
         }
         return applied;
+    }
+
+    public void setCraftingMode(int mode) {
+        PatternData pattern = getCurrentPattern();
+        if (pattern != null) {
+            pattern.setCraftingMode(mode);
+            setChanged();
+        }
     }
 
     // ===== Crafting Logic =====
@@ -1575,6 +1756,7 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         output.putBoolean("previousRedstoneState", previousRedstoneState);
         output.putInt("pulseIgnoreTimer", pulseIgnoreTimer);
         output.putBoolean("pulseCraftPending", pulseCraftPending);
+        output.putBoolean("autoclearVariables", autoclearVariables);
         output.putInt("currentPattern", currentPatternIndex);
 
         net.minecraft.world.level.storage.ValueOutput.TypedOutputList<CompoundTag> savedPatterns =
@@ -1661,6 +1843,7 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         previousRedstoneState = input.getBooleanOr("previousRedstoneState", false);
         pulseIgnoreTimer = input.getIntOr("pulseIgnoreTimer", 0);
         pulseCraftPending = input.getBooleanOr("pulseCraftPending", false);
+        autoclearVariables = input.getBooleanOr("autoclearVariables", true);
         currentPatternIndex = input.getIntOr("currentPattern", 0);
 
         patterns.clear();

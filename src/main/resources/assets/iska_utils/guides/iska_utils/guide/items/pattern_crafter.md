@@ -7,8 +7,7 @@ navigation:
 item_ids:
   - iska_utils:pattern_crafter
   - iska_utils:improved_pattern_crafter
-  - iska_utils:logic_module
-  - iska_utils:production_module
+  - iska_utils:pattern_crafter_improver
 categories:
   - World and machines
 ---
@@ -21,6 +20,10 @@ categories:
 The **Pattern Crafter** (and **Improved Pattern Crafter**) is an automated crafting machine driven by **letter patterns**. You assign letters to a 3×3 grid, map each letter to an **item filter** (a “variable”), feed ingredients into the machine inventory, and the crafter repeatedly crafts matching recipes using RF/FE.
 
 The **Improved** variant supports a larger upgrade budget and more concurrent work; both share the same GUI and controls.
+
+## In-place upgrade
+
+Craft a **Pattern Crafter Improver** (same gem frame as Improved, centre is any `#minecraft:planks`). **Shift+right-click** a placed normal Pattern Crafter with the Improver to convert it to Improved **without losing** inventory, patterns, filters, energy, or settings. The Improver is consumed.
 
 ## Patterns
 
@@ -70,7 +73,7 @@ When a craft leaves leftover inputs (or partial stacks):
 
 ## Forbidden outputs
 
-**Forbidden** opens a list of craft results the machine must never produce. Edit entries with the same filter editor (Valid Keys, variants, apply/clear). Useful to block byproducts or unwanted recipe paths.
+**Forbidden outputs** opens a list of craft results the machine must never produce. Edit entries with the same filter editor (Valid Keys, variants, apply/clear). Useful to block byproducts or unwanted recipe paths.
 
 ## Mark Input / Mark Output
 
@@ -101,14 +104,25 @@ Three upgrade slots (ghost icons when empty):
 | Slot | Module | Effect |
 | ---- | ------ | ------ |
 | Logic | <ItemImage id="iska_utils:logic_module" /> **Logic Module** | Unlocks more variable keys / pattern capacity. |
-| Speed | Vector speed modules (**Slow** → **Ultra**) | Shortens crafting time (higher tiers are faster). |
+| Speed | **Vector modules** (**Slow** → **Ultra**) | Shortens crafting time (higher tiers are faster). |
 | Production | <ItemImage id="iska_utils:production_module" /> **Production Module** | Increases how many crafts run concurrently. |
 
-See the **Modules** hub for a map of every machine module in the mod.
+See **Modules** → **Logic Module**, **Vector modules**, and **Production Module**.
+
+## JEI
+
+With the Pattern Crafter GUI open, use JEI’s recipe transfer (**+**) on a crafting recipe:
+
+- Related **variables** (filters / letters) are applied **immediately**.
+- The **pattern** grid (and crafting mode from the transfer) stay **pending** until you confirm.
+- **Save** confirms **only the pattern** into the selected pattern slot.
+
+Requires free variable slots and unused letters for any new ingredient types; the pattern grid cells must be empty before transfer.
 
 <ItemGrid>
   <ItemIcon id="iska_utils:pattern_crafter" />
   <ItemIcon id="iska_utils:improved_pattern_crafter" />
+  <ItemIcon id="iska_utils:pattern_crafter_improver" />
   <ItemIcon id="iska_utils:logic_module" />
   <ItemIcon id="iska_utils:slow_module" />
   <ItemIcon id="iska_utils:production_module" />
@@ -118,5 +132,5 @@ See the **Modules** hub for a map of every machine module in the mod.
 
 - Unlock letters on variables **before** editing their filters.
 - Keep Mark Input aligned with your letter filters so automation stays consistent.
-- Use Forbidden to stop annoying byproducts; use crafting mode to force shaped or shapeless-only lines.
+- Use **Forbidden outputs** to stop annoying byproducts; use crafting mode to force shaped or shapeless-only lines.
 - Pair Logic Modules with more complex multi-ingredient patterns; use Production when you need throughput.

@@ -599,7 +599,6 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
                     if (pos != null && !pos.equals(BlockPos.ZERO)) {
                         ClientPacketDistributor.sendToServer(new StructurePlacerMachineGhostFilterSetC2SPacket(
                                 pos, slotIndex, ItemStack.EMPTY));
-                        playButtonSound();
                         return true;
                     }
                 }

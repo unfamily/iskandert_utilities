@@ -6,7 +6,6 @@ navigation:
   position: 37
 item_ids:
   - iska_utils:entropic_spawner
-  - iska_utils:production_module
 categories:
   - World and machines
 ---
@@ -45,7 +44,7 @@ Place **Drop of Entropy** (or other entropy fuel accepted by the Ancient Table) 
 
 | Slot | Item | Effect |
 | ---- | ---- | ------ |
-| Clock | <ItemImage id="iska_utils:entropic_clock" /> **Entropic Clock** | Shortens the delay between spawn cycles (stacks in the slot). Also upgrades the **Temporal Overclocker** — see that page. |
+| Clock | <ItemImage id="iska_utils:entropic_clock" /> **Entropic Clock** | Shortens the delay between spawn cycles (stacks in the slot). Also upgrades the **Temporal Overclocker** — see **Modules** → **Entropic Clock**. |
 | Module | <ItemImage id="iska_utils:production_module" /> **Production Module** | Adds **one extra mob** per spawn cycle for each module in the stack. |
 
 Ghost icons in empty slots show valid items.
@@ -87,5 +86,5 @@ Module and fuel slots accept **hoppers and item pipes**. Breaking the block drop
 - Leave **headroom** on the block directly above the spawner and keep it free of solid blocks.
 - Pair with a **Mob Reaper** and **Collecting Crate** for unattended farms.
 - Stack **Production Modules** for throughput; stack **Entropic Clocks** for faster cycles; optional **entropy fuel** shortens the delay further.
-- See **Modules** for Production Module use on other machines (Pattern Crafter, scrubbers).
+- See **Modules** → **Production Module** and **Entropic Clock** for shared module pages.
 - Use **High** or **Pulse** redstone to gate farms behind buttons or clocks.

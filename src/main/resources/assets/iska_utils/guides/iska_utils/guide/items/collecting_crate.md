@@ -6,7 +6,6 @@ navigation:
   position: 46
 item_ids:
   - iska_utils:collecting_crate
-  - iska_utils:range_module
 categories:
   - World and machines
 ---
@@ -21,7 +20,7 @@ Vacuums **item entities** and **experience orbs** inside a box around the block.
 ## Collection area
 
 - Box extends **left**, **right**, **up**, and **behind** relative to the block’s facing (not in front of the crate face).
-- **Range Module** in the module slot raises max extents (stack modules to reach the limit). See **Modules**.
+- **Range Module** in the module slot raises max extents (stack modules to reach the limit). See **Modules** → **Range Module**.
 - **Preview** toggles a client-side outline of the active box.
 
 Adjust extents with **+ / −** buttons (Up, Left, Right, Behind). Modifiers:

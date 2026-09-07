@@ -1,6 +1,6 @@
 ---
 navigation:
-  title: Acceleration modules
+  title: Vector modules (acceleration)
   icon: iska_utils:slow_module
   parent: hubs/modules.md
   position: 20
@@ -14,7 +14,7 @@ item_ids:
 categories:
   - Modules
 ---
-# Acceleration modules
+# Vector modules (acceleration)
 
 <ItemImage id="iska_utils:slow_module" />
 
@@ -26,7 +26,7 @@ categories:
   - **Pattern Crafter** — shorter crafting time.
 - They are **not** installed into vector plates.
 
-See **Machine modules** for the full module map.
+Higher tiers mean a stronger speed effect.
 
 ## Items
 

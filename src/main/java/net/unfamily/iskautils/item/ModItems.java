@@ -64,6 +64,7 @@ import net.unfamily.iskautils.item.custom.LuckModuleItem;
 import net.unfamily.iskautils.item.custom.ExperienceModuleItem;
 import net.unfamily.iskautils.item.custom.LogicModuleItem;
 import net.unfamily.iskautils.item.custom.ProductionModuleItem;
+import net.unfamily.iskautils.item.custom.PatternCrafterImproverItem;
 import net.unfamily.iskautils.item.custom.SacredRubberSaplingBlockItem;
 import net.unfamily.iskautils.item.custom.JellyOfKnowledgeItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
@@ -544,6 +545,9 @@ public class ModItems {
 
     public static final DeferredItem<BlockItem> IMPROVED_PATTERN_CRAFTER =
             ITEMS.registerSimpleBlockItem(ModBlocks.IMPROVED_PATTERN_CRAFTER);
+
+    public static final DeferredItem<Item> PATTERN_CRAFTER_IMPROVER =
+            ITEMS.registerItem("pattern_crafter_improver", PatternCrafterImproverItem::new, UnaryOperator.identity());
 
     public static final DeferredItem<Item> STRUCTURE_PLACER = ITEMS.registerItem("structure_placer", StructurePlacerItem::new, p -> p.stacksTo(1));
             

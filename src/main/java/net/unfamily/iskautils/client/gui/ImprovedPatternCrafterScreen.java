@@ -24,6 +24,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.network.packet.AutoclearVariablesC2SPacket;
+import net.unfamily.iskautils.network.packet.CraftingModeSetC2SPacket;
 import net.unfamily.iskautils.network.packet.CraftingModeSwitchC2SPacket;
 import net.unfamily.iskautils.network.packet.FilterLetterUpdateC2SPacket;
 import net.unfamily.iskautils.network.packet.FilterPageC2SPacket;
@@ -48,7 +50,7 @@ import java.util.List;
 
 /**
  * Screen for the Improved Pattern Crafter.
- * Renders the custom 320x256 GUI background, pattern navigation buttons,
+ * Renders the custom 340x270 GUI background, pattern navigation buttons,
  * a 3x3 pattern grid and Pattern-Crafter-style variable letter labels + 18x18 filter buttons.
  */
 public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<ImprovedPatternCrafterMenu>
@@ -72,14 +74,20 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
     // Upgrade slot ghost previews (Fan / Structure Placer style via GhostItemRenderer)
     private static final ItemStack GHOST_LOGIC_MODULE = new ItemStack(ModItems.LOGIC_MODULE.get());
-    private static final ItemStack GHOST_SPEED_MODULE = new ItemStack(ModItems.SLOW_MODULE.get());
     private static final ItemStack GHOST_PRODUCTION_MODULE = new ItemStack(ModItems.PRODUCTION_MODULE.get());
-    private static final ItemStack[] UPGRADE_GHOSTS = {
-            GHOST_LOGIC_MODULE, GHOST_SPEED_MODULE, GHOST_PRODUCTION_MODULE
+    private static final ItemStack[] SPEED_MODULES = {
+            new ItemStack(ModItems.SLOW_MODULE.get()),
+            new ItemStack(ModItems.MODERATE_MODULE.get()),
+            new ItemStack(ModItems.FAST_MODULE.get()),
+            new ItemStack(ModItems.EXTREME_MODULE.get()),
+            new ItemStack(ModItems.ULTRA_MODULE.get())
     };
+    private int speedModuleCycleIndex = 0;
+    private long lastSpeedModuleCycleTime = 0L;
+    private static final long SPEED_MODULE_CYCLE_MS = 1000L;
 
-    private static final int GUI_WIDTH = 320;
-    private static final int GUI_HEIGHT = 256;
+    private static final int GUI_WIDTH = 340;
+    private static final int GUI_HEIGHT = 270;
 
     // Energy bar dimensions (from energy_bar.png: 16x32, first 8px = charged, next 8px = empty)
     private static final int ENERGY_BAR_WIDTH = 8;
@@ -89,13 +97,15 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     private static final int FILTER_LABEL_WIDTH = 16;
     private static final int FILTER_LABEL_HEIGHT = 12;
     private static final int FILTER_LABEL_GAP = 1;
-    private static final int VARIABLE_SLOT_X = 80;
+    private static final int VARIABLE_SLOT_X = ImprovedPatternCrafterMenu.MACHINE_INPUT_X;
     private static final int VARIABLE_SLOT_Y = 47;
     private static final int NAV_BACK_WIDTH = 40;
     private static final int NAV_HELP_DEFAULT_WIDTH = 70;
     private static final int PLAYER_INV_WIDTH = 9 * 18;
-    /** Forbidden / Mark Output / output page buttons: 1px left of output column slots. */
-    private static final int OUTPUT_BUTTONS_X = ImprovedPatternCrafterMenu.OUTPUT_SLOT_X - 1;
+    /** Wider than the 3×3 output grid; centered on the output column. */
+    private static final int OUTPUT_SIDE_BTN_W = 72;
+    private static final int OUTPUT_SIDE_BTN_X =
+            ImprovedPatternCrafterMenu.OUTPUT_SLOT_X + (54 - OUTPUT_SIDE_BTN_W) / 2;
 
     // Close button (X) and redstone mode button
     private static final int CLOSE_BUTTON_SIZE = 12;
@@ -106,6 +116,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
     // Mark Input under Save in the pattern control column
     private Button markInputButton;
+    private Button autoclearVariablesButton;
     private Button markOutputButton;
     private Button prevOutputPageButton;
     private Button nextOutputPageButton;
@@ -124,6 +135,8 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     /** Pending pattern grid letter edits; flushed on Save. */
     private final boolean[] pendingGridDirty = new boolean[9];
     private final int[] pendingGridValues = new int[9];
+    private boolean pendingCraftingModeDirty = false;
+    private int pendingCraftingMode = 0;
 
     /** Recursive output routing (1–3) and unconsumed-input / remainder routing (1–2). */
     private Button recursiveOutputButton;
@@ -366,16 +379,19 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         super.init();
 
         // Close button (X) - top right, like Fan
-        closeButton = Button.builder(Component.literal("✕"),
-                        btn -> { if (minecraft != null) minecraft.player.closeContainer(); })
+        closeButton = Button.builder(Component.literal("✕"), btn -> onCloseButtonPressed())
                 .bounds(this.leftPos + CLOSE_BUTTON_X, this.topPos + CLOSE_BUTTON_Y, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
                 .build();
         addRenderableWidget(closeButton);
 
-        // Mark Output at hotbar Y
+        // Output column: Forbidden → 3×3 (player-inv aligned) → page → Mark Output
+        int outputCtrlH = 14;
+        int markOutH = 12;
+        int outputPageY = ImprovedPatternCrafterMenu.OUTPUT_SLOT_Y + 54 + 1;
+        int markOutputY = outputPageY + outputCtrlH + 1;
         markOutputButton = Button.builder(Component.translatable("gui.iska_utils.mark_output"),
                         btn -> onMarkOutputPressed())
-                .bounds(this.leftPos + OUTPUT_BUTTONS_X, this.topPos + ImprovedPatternCrafterMenu.PLAYER_HOTBAR_Y, 54, 12)
+                .bounds(this.leftPos + OUTPUT_SIDE_BTN_X, this.topPos + markOutputY, OUTPUT_SIDE_BTN_W, markOutH)
                 .tooltip(Tooltip.create(
                         Component.translatable("gui.iska_utils.mark_output.tooltip.line1")
                                 .append(Component.literal("\n"))
@@ -398,14 +414,19 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 this.leftPos + rsX, this.topPos + rsY,
                 btn -> cycleRedstoneMode(), menu::getRedstoneMode, true));
 
-        // ===== Pattern column: mode → recursive → remainder → tool → browser → grid → Save → Mark =====
-        int gridStartX = this.leftPos + 12;
+        // ===== Pattern column: mode → recursive → remainder → tool → browser → grid → Save =====
+        // Nav buttons are wider; Save + 3×3 grid stay centered under them.
+        int patternColX = 12;
+        int patternNavWidth = 70;
+        int gridWidth = 3 * 18; // 54
+        int gridPad = (patternNavWidth - gridWidth) / 2;
+        int navStartX = this.leftPos + patternColX;
+        int gridStartX = navStartX + gridPad;
         int gridStartY = this.topPos + ImprovedPatternCrafterMenu.MACHINE_INPUT_Y;
-        int gridWidth = 3 * 18; // 54px
         int btnH = 12;
         int btnGap = 1;
         int arrowWidth = 12;
-        int labelWidth = gridWidth - arrowWidth * 2; // 30px for label
+        int labelWidth = patternNavWidth - arrowWidth * 2;
 
         // 4 control rows above browser, then browser immediately above grid
         int browserY = gridStartY - btnH - btnGap;
@@ -416,7 +437,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
         craftingModeButton = Button.builder(Component.translatable("gui.iska_utils.crafting_mode.both"),
                         btn -> cycleCraftingMode())
-                .bounds(gridStartX, modeButtonY, gridWidth, btnH)
+                .bounds(navStartX, modeButtonY, patternNavWidth, btnH)
                 .tooltip(Tooltip.create(
                         Component.translatable("gui.iska_utils.cycle_hint.line1")
                                 .append(Component.literal("\n"))
@@ -427,42 +448,42 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
         recursiveOutputButton = Button.builder(Component.translatable("gui.iska_utils.recursive_outputs.button.1"),
                         btn -> onRecursiveOutputPressed())
-                .bounds(gridStartX, recursiveRowY, gridWidth, btnH)
+                .bounds(navStartX, recursiveRowY, patternNavWidth, btnH)
                 .build();
         addRenderableWidget(recursiveOutputButton);
 
         remainderRoutingButton = Button.builder(Component.translatable("gui.iska_utils.unused_inputs.button.1"),
                         btn -> onRemainderRoutingPressed())
-                .bounds(gridStartX, remainderRowY, gridWidth, btnH)
+                .bounds(navStartX, remainderRowY, patternNavWidth, btnH)
                 .build();
         addRenderableWidget(remainderRoutingButton);
 
         toolSafeguardButton = Button.builder(Component.translatable("gui.iska_utils.tool_safeguard.on"),
                         btn -> toggleToolSafeguard())
-                .bounds(gridStartX, toolSafeguardY, gridWidth, btnH)
+                .bounds(navStartX, toolSafeguardY, patternNavWidth, btnH)
                 .build();
         addRenderableWidget(toolSafeguardButton);
 
         prevPatternButton = Button.builder(Component.literal("←"),
                         btn -> switchPattern(-1))
-                .bounds(gridStartX, browserY, arrowWidth, btnH)
+                .bounds(navStartX, browserY, arrowWidth, btnH)
                 .build();
         addRenderableWidget(prevPatternButton);
 
         patternLabelButton = Button.builder(Component.literal("1/4"),
                         btn -> resetCurrentPattern())
-                .bounds(gridStartX + arrowWidth, browserY, labelWidth, btnH)
+                .bounds(navStartX + arrowWidth, browserY, labelWidth, btnH)
                 .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.reset_pattern_tooltip")))
                 .build();
         addRenderableWidget(patternLabelButton);
 
         nextPatternButton = Button.builder(Component.literal("→"),
                         btn -> switchPattern(1))
-                .bounds(gridStartX + arrowWidth + labelWidth, browserY, arrowWidth, btnH)
+                .bounds(navStartX + arrowWidth + labelWidth, browserY, arrowWidth, btnH)
                 .build();
         addRenderableWidget(nextPatternButton);
 
-        // Save + Mark Input under the 3x3 grid
+        // Save under the 3x3 grid (same width/X as grid — centered under nav)
         int saveY = gridStartY + 54 + btnGap;
         savePatternButton = Button.builder(Component.translatable("gui.iska_utils.save_pattern"),
                         btn -> savePendingPattern())
@@ -470,11 +491,13 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 .build();
         addRenderableWidget(savePatternButton);
 
-        int markInputY = saveY + btnH + btnGap;
-        markInputBtnX = gridStartX;
-        markInputBtnY = markInputY;
-        markInputBtnW = gridWidth;
+        // Mark Input + Autoclear (equal width) just under the machine inventory
+        int markGap = 2;
+        int halfW = (PLAYER_INV_WIDTH - markGap) / 2;
         markInputBtnH = btnH;
+        markInputBtnX = this.leftPos + ImprovedPatternCrafterMenu.PLAYER_INV_X - 1;
+        markInputBtnY = this.topPos + ImprovedPatternCrafterMenu.MACHINE_INPUT_Y + 54;
+        markInputBtnW = halfW;
         markInputButton = Button.builder(
                         Component.translatable("gui.iska_utils.mark_input"),
                         btn -> onMarkInputPressed())
@@ -482,11 +505,19 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 .build();
         addRenderableWidget(markInputButton);
 
-        // Forbidden button above output block
-        int forbiddenY = ImprovedPatternCrafterMenu.OUTPUT_SLOT_Y - 14 - 2;
-        forbiddenButton = Button.builder(Component.translatable("gui.iska_utils.forbidden"),
+        autoclearVariablesButton = Button.builder(
+                        Component.translatable("gui.iska_utils.autoclear.on"),
+                        btn -> onAutoclearVariablesPressed())
+                .bounds(markInputBtnX + markInputBtnW + markGap, markInputBtnY, halfW, markInputBtnH)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.autoclear.tooltip")))
+                .build();
+        addRenderableWidget(autoclearVariablesButton);
+
+        // Forbidden above the output grid
+        forbiddenButton = Button.builder(Component.translatable("gui.iska_utils.forbidden_outputs"),
                         btn -> onForbiddenPressed())
-                .bounds(this.leftPos + OUTPUT_BUTTONS_X, this.topPos + forbiddenY, 54, 14)
+                .bounds(this.leftPos + OUTPUT_SIDE_BTN_X, this.topPos + ImprovedPatternCrafterMenu.OUTPUT_SLOT_Y - 14 - 1,
+                        OUTPUT_SIDE_BTN_W, 14)
                 .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.forbidden.tooltip")))
                 .build();
         addRenderableWidget(forbiddenButton);
@@ -544,6 +575,11 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                     editX, editY, 18,
                     btn -> openVariableInlineEdit(resolveFilterIndex(localIndex)),
                     () -> variablePreviews[localIndex],
+                    () -> {
+                        int idx = resolveFilterIndex(localIndex);
+                        return idx < menu.getEffectiveKeyInputCount()
+                                && menu.getFilterLetter(idx) <= PatternData.EMPTY ? SLOT_LOCK : null;
+                    },
                     Component.empty());
             addRenderableWidget(variableButtons[i]);
         }
@@ -569,13 +605,12 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             nextFilterPageButton = null;
         }
 
-        int outputPageY = ImprovedPatternCrafterMenu.PLAYER_HOTBAR_Y - 14 - 2;
         prevOutputPageButton = Button.builder(Component.literal("←"), btn -> setOutputPage(currentOutputPage - 1))
-                .bounds(this.leftPos + OUTPUT_BUTTONS_X, this.topPos + outputPageY, 12, 14)
+                .bounds(this.leftPos + OUTPUT_SIDE_BTN_X, this.topPos + outputPageY, 12, 14)
                 .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.output_page.previous")))
                 .build();
         nextOutputPageButton = Button.builder(Component.literal("→"), btn -> setOutputPage(currentOutputPage + 1))
-                .bounds(this.leftPos + OUTPUT_BUTTONS_X + 42, this.topPos + outputPageY, 12, 14)
+                .bounds(this.leftPos + OUTPUT_SIDE_BTN_X + OUTPUT_SIDE_BTN_W - 12, this.topPos + outputPageY, 12, 14)
                 .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.output_page.next")))
                 .build();
         addRenderableWidget(prevOutputPageButton);
@@ -662,6 +697,24 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         for (int i = 0; i < pendingGridDirty.length; i++) {
             pendingGridDirty[i] = false;
         }
+        pendingCraftingModeDirty = false;
+    }
+
+    /** Effective grid letter including local JEI/manual pending edits. */
+    public int getEffectiveGridCell(int cell) {
+        if (cell < 0 || cell >= 9) return PatternData.EMPTY;
+        return pendingGridDirty[cell] ? pendingGridValues[cell] : menu.getGridCell(cell);
+    }
+
+    /** Apply JEI transfer result: variables already sent; grid + crafting mode stay pending until Save. */
+    public void applyJeiPending(int[] letters, int craftingMode) {
+        if (letters == null || letters.length < 9) return;
+        for (int i = 0; i < 9; i++) {
+            pendingGridValues[i] = letters[i];
+            pendingGridDirty[i] = true;
+        }
+        pendingCraftingMode = craftingMode;
+        pendingCraftingModeDirty = true;
     }
 
     private void savePendingPattern() {
@@ -674,6 +727,11 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             ClientPacketDistributor.sendToServer(new PatternCellUpdateC2SPacket(
                     pos, patternIndex, i, pendingGridValues[i]));
             pendingGridDirty[i] = false;
+            any = true;
+        }
+        if (pendingCraftingModeDirty) {
+            ClientPacketDistributor.sendToServer(new CraftingModeSetC2SPacket(pos, pendingCraftingMode));
+            pendingCraftingModeDirty = false;
             any = true;
         }
         if (any) playButtonSound();
@@ -726,6 +784,11 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         ClientPacketDistributor.sendToServer(new MarkInputC2SPacket(menu.getBlockEntity().getBlockPos(), mode));
     }
 
+    private void onAutoclearVariablesPressed() {
+        if (menu.getBlockEntity() == null) return;
+        ClientPacketDistributor.sendToServer(new AutoclearVariablesC2SPacket(menu.getBlockEntity().getBlockPos()));
+    }
+
     private void onMarkOutputPressed() {
         if (menu.getBlockEntity() == null) return;
         int mode = isShiftDown() ? MarkInputC2SPacket.MODE_SHIFT
@@ -776,7 +839,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         super.containerTick();
 
         // Update crafting mode button text
-        int mode = menu.getCraftingMode();
+        int mode = pendingCraftingModeDirty ? pendingCraftingMode : menu.getCraftingMode();
         String modeKey = switch (mode) {
             case 1 -> "gui.iska_utils.crafting_mode.shaped_only";
             case 2 -> "gui.iska_utils.crafting_mode.shapeless_only";
@@ -819,6 +882,12 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 safeguard ? "gui.iska_utils.tool_safeguard.on" : "gui.iska_utils.tool_safeguard.off"));
         toolSafeguardButton.setTooltip(Tooltip.create(Component.translatable(
                 safeguard ? "gui.iska_utils.tool_safeguard.tooltip.on" : "gui.iska_utils.tool_safeguard.tooltip.off")));
+
+        if (autoclearVariablesButton != null) {
+            boolean autoclear = menu.isAutoclearVariablesEnabled();
+            autoclearVariablesButton.setMessage(Component.translatable(
+                    autoclear ? "gui.iska_utils.autoclear.on" : "gui.iska_utils.autoclear.off"));
+        }
 
         // Update grid cells from synced pattern data (keep local pending edits)
         for (int row = 0; row < 3; row++) {
@@ -903,13 +972,70 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             if (variableButtons[i] != null) {
                 variableButtons[i].visible = showMain;
                 variableButtons[i].active = showMain && letterValue > PatternData.EMPTY;
+                var varTip = Component.translatable("gui.iska_utils.variable_open_tooltip")
+                        .append(Component.literal("\n"))
+                        .append(Component.translatable("gui.iska_utils.variable_shift_clear_filter"));
+                if (letterValue <= PatternData.EMPTY) {
+                    varTip = varTip.append(Component.literal("\n"))
+                            .append(Component.translatable("gui.iska_utils.variable_locked_hint"));
+                }
+                variableButtons[i].setTooltip(Tooltip.create(varTip));
             }
             if (filterLabels[i] != null) {
                 filterLabels[i].visible = showMain;
                 filterLabels[i].setValue(letterValue);
                 filterLabels[i].setMaxLetter(PatternData.MAX_LETTER);
                 filterLabels[i].active = showMain;
+                if (letterValue <= PatternData.EMPTY) {
+                    filterLabels[i].setTooltip(Tooltip.create(
+                            Component.translatable("gui.iska_utils.cycle_hint.line1")
+                                    .append(Component.literal("\n"))
+                                    .append(Component.translatable("gui.iska_utils.cycle_hint.line2"))
+                    ));
+                } else if (preview.isEmpty()) {
+                    filterLabels[i].setTooltip(Tooltip.create(
+                            Component.translatable("gui.iska_utils.shift_click_clear")
+                                    .append(Component.literal("\n"))
+                                    .append(Component.translatable("gui.iska_utils.filter_any_item"))
+                                    .append(Component.literal("\n"))
+                                    .append(Component.translatable("gui.iska_utils.filter_excluding_others"))
+                                    .append(Component.literal("\n"))
+                                    .append(Component.translatable("gui.iska_utils.cycle_hint.line1"))
+                                    .append(Component.literal("\n"))
+                                    .append(Component.translatable("gui.iska_utils.cycle_hint.line2"))
+                    ));
+                } else {
+                    filterLabels[i].setTooltip(Tooltip.create(
+                            Component.translatable("gui.iska_utils.shift_click_clear")
+                                    .append(Component.literal("\n"))
+                                    .append(Component.translatable("gui.iska_utils.filter_allowed_item",
+                                            preview.getHoverName()))
+                                    .append(Component.literal("\n"))
+                                    .append(Component.translatable("gui.iska_utils.cycle_hint.line1"))
+                                    .append(Component.literal("\n"))
+                                    .append(Component.translatable("gui.iska_utils.cycle_hint.line2"))
+                    ));
+                }
             }
+        }
+    }
+
+    private void onCloseButtonPressed() {
+        if (subView == SubView.FORBIDDEN) {
+            subView = SubView.MAIN;
+            nestedFilterEdit = false;
+            nestedEditIndex = -1;
+            resetEditorGhost();
+            removeEditModeUI();
+            applySubViewVisibility();
+            return;
+        }
+        if (subView == SubView.FILTER_HELP) {
+            closeSubview();
+            return;
+        }
+        if (minecraft != null && minecraft.player != null) {
+            minecraft.player.closeContainer();
         }
     }
 
@@ -1026,12 +1152,12 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
     /** Fan-style: show supported module name when hovering an empty upgrade slot. */
     private void renderEmptyUpgradeSlotTooltips(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        for (int i = 0; i < UPGRADE_GHOSTS.length; i++) {
+        for (int i = 0; i < 3; i++) {
             Slot slot = menu.getSlot(menu.getUpgradeStart() + i);
             if (slot.getItem().isEmpty() && isMouseOverSlot(slot, mouseX, mouseY)) {
                 guiGraphics.setTooltipForNextFrame(
                         this.font,
-                        List.of(UPGRADE_GHOSTS[i].getHoverName().getVisualOrderText()),
+                        List.of(currentUpgradeGhost(i).getHoverName().getVisualOrderText()),
                         DefaultTooltipPositioner.INSTANCE,
                         mouseX,
                         mouseY,
@@ -1073,6 +1199,17 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     /**
      * Empty upgrade slots: Fan-style semi-transparent ItemStack ghosts.
      */
+    private ItemStack currentUpgradeGhost(int slotIndex) {
+        if (slotIndex == 0) return GHOST_LOGIC_MODULE;
+        if (slotIndex == 2) return GHOST_PRODUCTION_MODULE;
+        long now = System.currentTimeMillis();
+        if (now - lastSpeedModuleCycleTime >= SPEED_MODULE_CYCLE_MS) {
+            speedModuleCycleIndex = (speedModuleCycleIndex + 1) % SPEED_MODULES.length;
+            lastSpeedModuleCycleTime = now;
+        }
+        return SPEED_MODULES[speedModuleCycleIndex];
+    }
+
     private void renderUpgradeSlotOverlays(GuiGraphicsExtractor guiGraphics) {
         int slotX = ImprovedPatternCrafterMenu.UPGRADE_SLOT_X;
         int[] ys = {
@@ -1082,7 +1219,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         };
         for (int i = 0; i < 3; i++) {
             if (menu.getSlot(menu.getUpgradeStart() + i).getItem().isEmpty()) {
-                GhostItemRenderer.render(guiGraphics, UPGRADE_GHOSTS[i],
+                GhostItemRenderer.render(guiGraphics, currentUpgradeGhost(i),
                         this.leftPos + slotX, this.topPos + ys[i], GuiGhostItem.DEFAULT_ARGB);
             }
         }
@@ -1202,6 +1339,21 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         double mouseX = event.x();
         double mouseY = event.y();
         int button = event.button();
+        // Shift+LMB on variable edit buttons clears filter content (even when locked/inactive).
+        if (subView == SubView.MAIN && button == 0 && isShiftDown() && menu.getBlockEntity() != null) {
+            for (int i = 0; i < variableButtons.length; i++) {
+                ItemIconButton btn = variableButtons[i];
+                if (btn == null || !btn.visible || !btn.isMouseOver(mouseX, mouseY)) continue;
+                int slotIndex = resolveFilterIndex(i);
+                if (slotIndex < 0 || slotIndex >= menu.getEffectiveKeyInputCount()) continue;
+                int letter = menu.getFilterLetter(slotIndex);
+                ClientPacketDistributor.sendToServer(new VariableFilterSetC2SPacket(
+                        menu.getBlockEntity().getBlockPos(), slotIndex, "", letter));
+                variablePreviews[i] = ItemStack.EMPTY;
+                playButtonSound();
+                return true;
+            }
+        }
         if (subView == SubView.FORBIDDEN && button == 0) {
             if (handleScrollbarClick(mouseX, mouseY)) {
                 return true;
@@ -1402,8 +1554,8 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
         int maxPages = Math.max(1, (menu.getOutputSlotCount() + 8) / 9);
         String outputPage = (currentOutputPage + 1) + "/" + maxPages;
-        int outputPageY = ImprovedPatternCrafterMenu.PLAYER_HOTBAR_Y - 14 - 2 + 3;
-        int outputPageX = OUTPUT_BUTTONS_X + (54 - this.font.width(outputPage)) / 2;
+        int outputPageY = ImprovedPatternCrafterMenu.OUTPUT_SLOT_Y + 54 + 1 + 3;
+        int outputPageX = OUTPUT_SIDE_BTN_X + (OUTPUT_SIDE_BTN_W - this.font.width(outputPage)) / 2;
         guiGraphics.text(this.font, outputPage, outputPageX, outputPageY, 4210752, false);
     }
 
@@ -1509,7 +1661,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 items.add(holder.value());
             }
             if (!items.isEmpty()) {
-                int index = (int) ((System.currentTimeMillis() / 2000L) % items.size());
+                int index = (int) ((System.currentTimeMillis() / 3500L) % items.size());
                 return new ItemStack(items.get(index));
             }
         } catch (Exception ignored) {}
@@ -1525,7 +1677,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             }
         }
         if (!modItems.isEmpty()) {
-            int index = (int) ((System.currentTimeMillis() / 2000L) % modItems.size());
+            int index = (int) ((System.currentTimeMillis() / 3500L) % modItems.size());
             return new ItemStack(modItems.get(index));
         }
         return ItemStack.EMPTY;
@@ -1639,6 +1791,10 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             markInputButton.visible = main;
             markInputButton.active = normalMain;
         }
+        if (autoclearVariablesButton != null) {
+            autoclearVariablesButton.visible = main;
+            autoclearVariablesButton.active = normalMain;
+        }
         if (markOutputButton != null) {
             markOutputButton.visible = showMainSide;
             markOutputButton.active = showMainSide;
@@ -1739,13 +1895,13 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                         removeEditModeUI();
                         applySubViewVisibility();
                     })
-                    .bounds(slotX, y, NAV_BACK_WIDTH, btnH)
+                    .bounds(slotX, y, layout.helpW(), btnH)
                     .build();
             addRenderableWidget(filterBackButton);
         } else {
             filterBackButton.setX(slotX);
             filterBackButton.setY(y);
-            filterBackButton.setWidth(NAV_BACK_WIDTH);
+            filterBackButton.setWidth(layout.helpW());
             filterBackButton.setHeight(btnH);
         }
         // Keep Valid Keys widget ready for edit mode at the same slot (hidden while idle).
@@ -1774,7 +1930,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             filterBackButton = null;
         }
         filterBackButton = Button.builder(Component.translatable("gui.iska_utils.back"), btn -> closeSubview())
-                .bounds(slotX, y, NAV_BACK_WIDTH, btnH)
+                .bounds(slotX, y, layout.helpW(), btnH)
                 .build();
         addRenderableWidget(filterBackButton);
     }
@@ -1944,11 +2100,13 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
         filterClearButton = Button.builder(Component.literal("C"), btn -> clearFilterEdit())
                 .bounds(clearButtonX, buttonAfterSlotY, buttonSize, buttonSize)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.deep_drawer_extractor.clear")))
                 .build();
         addRenderableWidget(filterClearButton);
 
         filterApplyButton = Button.builder(Component.literal("A"), btn -> applyFilterEdit())
                 .bounds(applyButtonX, buttonAfterSlotY, buttonSize, buttonSize)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.deep_drawer_extractor.apply")))
                 .build();
         addRenderableWidget(filterApplyButton);
 
@@ -1958,6 +2116,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                             else cancelNestedEdit();
                         })
                 .bounds(closeButtonX, buttonAfterSlotY, buttonSize, buttonSize)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.deep_drawer_extractor.close_without_saving")))
                 .build();
         addRenderableWidget(filterCancelButton);
 

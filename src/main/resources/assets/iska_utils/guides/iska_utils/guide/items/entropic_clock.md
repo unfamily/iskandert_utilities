@@ -4,8 +4,6 @@ navigation:
   icon: iska_utils:entropic_clock
   parent: hubs/artifacts.md
   position: 13
-item_ids:
-  - iska_utils:entropic_clock
 categories:
   - Suspicious Delivery
 ---
@@ -13,9 +11,13 @@ categories:
 
 <ItemImage id="iska_utils:entropic_clock" />
 
+Delivery artifact that doubles as a machine **module**. Full machine usage (Temporal Overclocker, Entropised Spawner) is documented under **Modules** — see [Entropic Clock (module)](entropic_clock_module.md).
+
 ## What it does
 
 Upgrade module for the **Temporal Overclocker**. Open the overclocker GUI and place it in the **upgrade slot** to the left of the Overclock button. When installed, the overclocker can reach a **higher max acceleration factor** but consumes **stored entropy** each tick while accelerating. Refuel with **Drop of Entropy** in the **fuel slot** to the right of the Overclock button (charge percentage shown below the slot).
+
+Also stacks in the **Entropised Spawner** clock slot to shorten spawn-cycle delay.
 
 ## How to obtain
 
