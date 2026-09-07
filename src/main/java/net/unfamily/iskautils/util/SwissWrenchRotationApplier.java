@@ -50,6 +50,11 @@ public final class SwissWrenchRotationApplier {
         };
     }
 
+    private static boolean isRotateMode(SetWrenchDirectionBlock.RotationMode mode) {
+        return mode == SetWrenchDirectionBlock.RotationMode.ROTATE_LEFT
+                || mode == SetWrenchDirectionBlock.RotationMode.ROTATE_RIGHT;
+    }
+
     /**
      * Applies the given mode to the block at pos. Server-side only.
      *
@@ -61,30 +66,28 @@ public final class SwissWrenchRotationApplier {
             return false;
         }
 
-        boolean changed = false;
+        BlockState newState = blockState;
 
-        if (mode == SetWrenchDirectionBlock.RotationMode.ROTATE_RIGHT
-                || mode == SetWrenchDirectionBlock.RotationMode.ROTATE_LEFT) {
+        if (isRotateMode(mode)) {
             boolean clockwise = mode == SetWrenchDirectionBlock.RotationMode.ROTATE_RIGHT;
             if (blockState.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
                 Direction current = blockState.getValue(BlockStateProperties.HORIZONTAL_FACING);
                 Direction rotated = clockwise ? rotateClockwise(current) : rotateCounterClockwise(current);
-                level.setBlock(pos, blockState.setValue(BlockStateProperties.HORIZONTAL_FACING, rotated), 3);
-                changed = true;
+                if (rotated != current) {
+                    newState = blockState.setValue(BlockStateProperties.HORIZONTAL_FACING, rotated);
+                }
             } else if (blockState.hasProperty(BlockStateProperties.FACING)) {
                 Direction current = blockState.getValue(BlockStateProperties.FACING);
                 Direction rotated = clockwise ? rotateClockwise(current) : rotateCounterClockwise(current);
-                if (current.getAxis() != rotated.getAxis()
-                        || BlockStateProperties.FACING.getPossibleValues().contains(rotated)) {
-                    level.setBlock(pos, blockState.setValue(BlockStateProperties.FACING, rotated), 3);
-                    changed = true;
+                if (rotated != current
+                        && BlockStateProperties.FACING.getPossibleValues().contains(rotated)) {
+                    newState = blockState.setValue(BlockStateProperties.FACING, rotated);
                 }
             } else if (blockState.hasProperty(BlockStateProperties.AXIS)) {
                 Direction.Axis current = blockState.getValue(BlockStateProperties.AXIS);
                 if (current == Direction.Axis.X || current == Direction.Axis.Z) {
                     Direction.Axis rotated = current == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X;
-                    level.setBlock(pos, blockState.setValue(BlockStateProperties.AXIS, rotated), 3);
-                    changed = true;
+                    newState = blockState.setValue(BlockStateProperties.AXIS, rotated);
                 }
             }
         } else {
@@ -93,38 +96,36 @@ public final class SwissWrenchRotationApplier {
                 return false;
             }
             if (blockState.hasProperty(BlockStateProperties.FACING)) {
-                level.setBlock(pos, blockState.setValue(BlockStateProperties.FACING, targetDirection), 3);
-                changed = true;
+                newState = blockState.setValue(BlockStateProperties.FACING, targetDirection);
             } else if (blockState.hasProperty(BlockStateProperties.HORIZONTAL_FACING)
                     && targetDirection.getAxis().isHorizontal()) {
-                level.setBlock(pos, blockState.setValue(BlockStateProperties.HORIZONTAL_FACING, targetDirection), 3);
-                changed = true;
+                newState = blockState.setValue(BlockStateProperties.HORIZONTAL_FACING, targetDirection);
             } else if (blockState.hasProperty(HorizontalDirectionalBlock.FACING)
                     && targetDirection.getAxis().isHorizontal()) {
-                level.setBlock(pos, blockState.setValue(HorizontalDirectionalBlock.FACING, targetDirection), 3);
-                changed = true;
+                newState = blockState.setValue(HorizontalDirectionalBlock.FACING, targetDirection);
             } else if (blockState.hasProperty(BlockStateProperties.AXIS)) {
                 if (targetDirection == Direction.UP || targetDirection == Direction.DOWN) {
                     Direction.Axis currentAxis = blockState.getValue(BlockStateProperties.AXIS);
                     if (currentAxis == Direction.Axis.X || currentAxis == Direction.Axis.Z) {
-                        level.setBlock(pos, blockState.setValue(BlockStateProperties.AXIS, Direction.Axis.Y), 3);
-                        changed = true;
+                        newState = blockState.setValue(BlockStateProperties.AXIS, Direction.Axis.Y);
                     }
                 } else if (targetDirection.getAxis() != Direction.Axis.Y) {
-                    level.setBlock(pos, blockState.setValue(BlockStateProperties.AXIS, targetDirection.getAxis()), 3);
-                    changed = true;
+                    newState = blockState.setValue(BlockStateProperties.AXIS, targetDirection.getAxis());
                 }
             }
         }
 
-        if (changed && player != null) {
-            level.playSound(null, pos, SoundEvents.LANTERN_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
-            player.displayClientMessage(
-                    Component.translatable("item.iska_utils.swiss_wrench.message.block_rotated"), true);
-        } else if (player != null) {
-            player.displayClientMessage(
-                    Component.translatable("item.iska_utils.swiss_wrench.message.cannot_rotate"), true);
+        if (newState.equals(blockState)) {
+            // Rotate L/R on UP/DOWN (etc.) is a silent no-op — no sound, no chat spam.
+            if (player != null && !isRotateMode(mode)) {
+                player.displayClientMessage(
+                        Component.translatable("item.iska_utils.swiss_wrench.message.cannot_rotate"), true);
+            }
+            return false;
         }
-        return changed;
+
+        level.setBlock(pos, newState, 3);
+        level.playSound(null, pos, SoundEvents.LANTERN_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
+        return true;
     }
 }
