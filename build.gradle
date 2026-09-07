@@ -284,6 +284,10 @@ dependencies {
     if (includeKubeJsRuntime) {
         localRuntime "dev.latvian.mods:kubejs-neoforge:${kubejs_version}"
     }
+
+    // Applied Energistics 2 (optional at runtime; IDE + Swiss Wrench radial testing)
+    compileOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"
+    localRuntime "org.appliedenergistics:appliedenergistics2:${ae2_version}"
     
     // Verify that the value of include_compass_mods is valid
     if (project.hasProperty('include_compass_mods') && 

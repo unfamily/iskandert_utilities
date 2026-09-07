@@ -3,16 +3,20 @@ package net.unfamily.iskautils.client.gui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.unfamily.iskautils.pattern.PatternColors;
 
 /**
- * Pattern-letter style tag for shop browse rows: colored cell with {@code [C]} / {@code [E]}.
+ * Pattern-letter style tag for shop browse rows: colored cell with {@code C} / {@code E}.
  * Uses PatternColors A (red) for categories and B (green) for entries.
  */
 public class ShopKindTagButton extends AbstractWidget {
+    private static final int TEXT_COLOR = 0xFF000000;
+
     /** PatternColors index for letter A (red) — category tag. */
     public static final int LETTER_CATEGORY = 1;
     /** PatternColors index for letter B (green) — entry tag. */
@@ -25,14 +29,26 @@ public class ShopKindTagButton extends AbstractWidget {
         super(x, y, width, height, Component.literal(labelFor(letter)));
         this.letter = letter;
         this.onPress = onPress;
+        setTooltip(kindTooltip(letter));
     }
 
     public static String labelFor(int letter) {
         return switch (letter) {
-            case LETTER_CATEGORY -> "[C]";
-            case LETTER_ENTRY -> "[E]";
-            default -> "[?]";
+            case LETTER_CATEGORY -> "C";
+            case LETTER_ENTRY -> "E";
+            default -> "?";
         };
+    }
+
+    private static Tooltip kindTooltip(int letter) {
+        if (letter == LETTER_CATEGORY) {
+            return Tooltip.create(CommonComponents.joinLines(
+                    Component.translatable("gui.iska_utils.shop_edit.kind.category"),
+                    Component.translatable("gui.iska_utils.shop_edit.kind.category.desc")));
+        }
+        return Tooltip.create(CommonComponents.joinLines(
+                Component.translatable("gui.iska_utils.shop_edit.kind.entry"),
+                Component.translatable("gui.iska_utils.shop_edit.kind.entry.desc")));
     }
 
     @Override
@@ -57,7 +73,7 @@ public class ShopKindTagButton extends AbstractWidget {
         graphics.text(font, label,
                 getX() + (width - lw) / 2,
                 getY() + (height - 8) / 2,
-                PatternColors.getTextColor(letter),
+                TEXT_COLOR,
                 false);
     }
 

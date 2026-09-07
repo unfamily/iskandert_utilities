@@ -142,6 +142,19 @@ config="iska_utils.mixins.json"
     ordering="AFTER"
     side="BOTH"
 
+# Optional Create / AE2 (Swiss Wrench radial orientation support)
+[[dependencies.${mod_id}]]
+    modId="create"
+    type="optional"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="ae2"
+    type="optional"
+    ordering="AFTER"
+    side="BOTH"
+
 # FTB stack is fully optional (dedicated servers may omit all of these).
 [[dependencies.${mod_id}]]
     modId="ftblibrary"

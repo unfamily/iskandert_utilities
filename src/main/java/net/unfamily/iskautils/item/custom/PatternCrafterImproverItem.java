@@ -16,7 +16,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import org.jetbrains.annotations.NotNull;
@@ -25,7 +24,7 @@ import java.util.function.Consumer;
 
 /**
  * Consumable upgrade: Shift+use on a normal Pattern Crafter converts it to Improved
- * while preserving facing and all BlockEntity data.
+ * while preserving all BlockEntity data.
  */
 public class PatternCrafterImproverItem extends Item {
 
@@ -98,7 +97,7 @@ public class PatternCrafterImproverItem extends Item {
         BlockEntity oldEntity = level.getBlockEntity(pos);
         CompoundTag tag = oldEntity == null ? null : oldEntity.saveWithFullMetadata(level.registryAccess());
 
-        BlockState replacementState = copyFacing(oldState, ModBlocks.IMPROVED_PATTERN_CRAFTER.get().defaultBlockState());
+        BlockState replacementState = ModBlocks.IMPROVED_PATTERN_CRAFTER.get().defaultBlockState();
 
         // Remove BE first so onRemove does not spill inventory.
         level.removeBlockEntity(pos);
@@ -130,15 +129,5 @@ public class PatternCrafterImproverItem extends Item {
             upgrades.putInt("Size", 3);
             tag.put("upgrades", upgrades);
         }
-    }
-
-    private static BlockState copyFacing(BlockState oldState, BlockState replacement) {
-        if (oldState.hasProperty(BlockStateProperties.HORIZONTAL_FACING)
-                && replacement.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
-            return replacement.setValue(
-                    BlockStateProperties.HORIZONTAL_FACING,
-                    oldState.getValue(BlockStateProperties.HORIZONTAL_FACING));
-        }
-        return replacement;
     }
 }

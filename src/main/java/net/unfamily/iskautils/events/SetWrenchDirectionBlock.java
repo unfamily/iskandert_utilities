@@ -13,6 +13,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.item.custom.SwissWrenchItem;
 import net.unfamily.iskautils.network.packet.SwissWrenchCycleModeC2SPacket;
 
@@ -20,6 +21,19 @@ import net.unfamily.iskautils.network.packet.SwissWrenchCycleModeC2SPacket;
 public class SetWrenchDirectionBlock {
 	// constant for saving the direction in the NBT
 	private static final String DIRECTION_KEY = "SelectedDirection";
+
+	/** Cycle order: RADIAL first, then legacy modes. Ordinals stay stable for existing NBT. */
+	private static final RotationMode[] CYCLE_ORDER = {
+			RotationMode.RADIAL,
+			RotationMode.ROTATE_RIGHT,
+			RotationMode.ROTATE_LEFT,
+			RotationMode.NORTH,
+			RotationMode.EAST,
+			RotationMode.SOUTH,
+			RotationMode.WEST,
+			RotationMode.UP,
+			RotationMode.DOWN
+	};
 	
 	// possible rotation modes
 	public enum RotationMode {
@@ -30,7 +44,9 @@ public class SetWrenchDirectionBlock {
 		SOUTH, 
 		WEST, 
 		UP, 
-		DOWN;
+		DOWN,
+		/** Universal radial property picker (default when NBT absent). Appended for NBT stability. */
+		RADIAL;
 		
 		// Get the display name for the rotation mode
 		public Component getDisplayName() {
@@ -46,13 +62,16 @@ public class SetWrenchDirectionBlock {
 				case WEST -> Direction.WEST;
 				case UP -> Direction.UP;
 				case DOWN -> Direction.DOWN;
-				default -> null; // ROTATE_RIGHT and ROTATE_LEFT don't have an associated direction
+				default -> null; // ROTATE_RIGHT, ROTATE_LEFT, RADIAL
 			};
 		}
 	}
 	
 	@SubscribeEvent
 	public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+		if (!Config.swissWrenchLegacyModes) {
+			return;
+		}
 		if (!event.getEntity().level().isClientSide()) {
 			tryCycleRotationMode(event.getEntity());
 		}
@@ -60,6 +79,9 @@ public class SetWrenchDirectionBlock {
 
 	@SubscribeEvent
 	public static void onLeftClickEmpty(PlayerInteractEvent.LeftClickEmpty event) {
+		if (!Config.swissWrenchLegacyModes) {
+			return;
+		}
 		if (!event.getLevel().isClientSide()) {
 			return;
 		}
@@ -70,6 +92,9 @@ public class SetWrenchDirectionBlock {
 
 	/** Cycles rotation mode when main hand holds a Swiss Wrench (server only). */
 	public static void tryCycleRotationMode(Player player) {
+		if (!Config.swissWrenchLegacyModes) {
+			return;
+		}
 		ItemStack stack = player.getMainHandItem();
 		if (!(stack.getItem() instanceof SwissWrenchItem)) {
 			return;
@@ -93,6 +118,9 @@ public class SetWrenchDirectionBlock {
 	 * get the currently selected rotation mode from the wrench
 	 */
 	public static RotationMode getSelectedRotationMode(ItemStack stack) {
+		if (!Config.swissWrenchLegacyModes) {
+			return RotationMode.RADIAL;
+		}
 		CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
 		if (tag.contains(DIRECTION_KEY)) {
 			int index = tag.getInt(DIRECTION_KEY).orElse(0);
@@ -100,8 +128,8 @@ public class SetWrenchDirectionBlock {
 				return RotationMode.values()[index];
 			}
 		}
-		// default to ROTATE_RIGHT if not set
-		return RotationMode.ROTATE_RIGHT;
+		// default to RADIAL if not set
+		return RotationMode.RADIAL;
 	}
 	
 	/**
@@ -115,16 +143,19 @@ public class SetWrenchDirectionBlock {
 	}
 	
 	/**
-	 * cycle to the next rotation mode in order
+	 * cycle to the next rotation mode (RADIAL first in order)
 	 */
 	private static RotationMode cycleRotationMode(ItemStack stack) {
 		RotationMode current = getSelectedRotationMode(stack);
-		int nextIndex = (current.ordinal() + 1) % RotationMode.values().length;
-		RotationMode next = RotationMode.values()[nextIndex];
-		
-		// Save the new rotation mode
+		int idx = 0;
+		for (int i = 0; i < CYCLE_ORDER.length; i++) {
+			if (CYCLE_ORDER[i] == current) {
+				idx = i;
+				break;
+			}
+		}
+		RotationMode next = CYCLE_ORDER[(idx + 1) % CYCLE_ORDER.length];
 		setSelectedRotationMode(stack, next);
 		return next;
 	}
 }
-
