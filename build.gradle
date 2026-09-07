@@ -232,8 +232,8 @@ dependencies {
     // Curios optional dependency (keep as compileOnly unless explicitly needed at runtime)
     compileOnly "curse.maven:curios-309927:6529130"
 
-    // GuideME (only external mod we actively keep updated)
-    implementation "curse.maven:guideme-1173950:7929350"
+    // GuideME optional (client guidebook; registered via reflection — not required on dedicated servers)
+    compileOnly "curse.maven:guideme-1173950:7929350"
     
     // JEI (compile-only) for ghost ingredient integration in GUIs
     // Must match the JEI API used at runtime for 26.1.2 (Identifier-based)
