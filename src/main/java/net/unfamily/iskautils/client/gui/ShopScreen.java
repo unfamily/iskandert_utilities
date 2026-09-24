@@ -554,15 +554,13 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int entries = visibleEntries();
         if (totalShopEntries <= entries) return false;
         
-        int x = (this.width - this.imageWidth) / 2;
-        int y = (this.height - this.imageHeight) / 2;
-        int scrollbarX = x + SCROLLBAR_X;
-        int scrollbarYPos = y + scrollbarY();
+        int scrollbarX = this.leftPos + SCROLLBAR_X;
+        int scrollbarYPos = this.topPos + scrollbarY();
         
         float scrollRatio = maxScrollOffset() > 0 ? (float) scrollOffset / maxScrollOffset() : 0.0f;
         int handleY = scrollbarYPos + (int)(scrollRatio * GuiScroller.handleRange(scrollbarHeight()));
         
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLL_ARROW_SIZE &&
+        if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH &&
             mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT) {
             
             isDraggingHandle = true;
@@ -578,22 +576,23 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int entries = visibleEntries();
         if (totalShopEntries <= entries) return false;
         
-        int x = (this.width - this.imageWidth) / 2;
-        int y = (this.height - this.imageHeight) / 2;
-        int scrollbarX = x + SCROLLBAR_X;
-        int scrollbarYPos = y + scrollbarY();
+        int scrollbarX = this.leftPos + SCROLLBAR_X;
+        int scrollbarYPos = this.topPos + scrollbarY();
+        int trackH = scrollbarHeight();
         
         if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH &&
-            mouseY >= scrollbarYPos && mouseY < scrollbarYPos + scrollbarHeight()) {
+            mouseY >= scrollbarYPos && mouseY < scrollbarYPos + trackH) {
             
+            int max = maxScrollOffset();
             int newScrollOffset = GuiScroller.scrollOffsetFromTrackClick(
-                    mouseY, scrollbarYPos, scrollbarHeight(), maxScrollOffset());
-            
-            if (newScrollOffset != scrollOffset) {
-                scrollOffset = newScrollOffset;
-                updateBuySellButtons();
-                playButtonSound();
-            }
+                    mouseY, scrollbarYPos, trackH, max);
+            scrollOffset = newScrollOffset;
+            // Continue as drag from the jumped position (click-and-hold).
+            isDraggingHandle = true;
+            dragStartY = (int) mouseY;
+            dragStartScrollOffset = scrollOffset;
+            updateBuySellButtons();
+            playButtonSound();
             return true;
         }
         return false;

@@ -430,11 +430,11 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
             int max = availableStructures.size() - visibleEntries;
             int newScrollOffset = GuiScroller.scrollOffsetFromTrackClick(
                     mouseY, scrollbarY, SCROLLBAR_HEIGHT, max);
-            
-            if (newScrollOffset != scrollOffset) {
-                scrollOffset = newScrollOffset;
-                playButtonSound();
-            }
+            scrollOffset = newScrollOffset;
+            isDraggingHandle = true;
+            dragStartY = (int) mouseY;
+            dragStartScrollOffset = scrollOffset;
+            playButtonSound();
             return true;
         }
         return false;

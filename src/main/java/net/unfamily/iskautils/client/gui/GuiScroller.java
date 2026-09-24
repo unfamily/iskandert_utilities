@@ -68,13 +68,16 @@ public final class GuiScroller {
     }
 
     /**
-     * Scroll ratio [0,1] for a track click (not handle drag): places the thumb so its
-     * center aligns with the click across the full track height.
+     * Scroll ratio [0,1] for a track click (not handle drag).
+     * Places the thumb so its top follows the click along the movable range; clicks in the
+     * bottom {@link #SCROLLER_HEIGHT} zone clamp to max so the full track height is usable.
      */
     public static double scrollRatioFromTrackClick(double mouseY, int trackY, int trackH) {
-        double clickTrack = (mouseY - trackY) - (SCROLLER_HEIGHT / 2.0);
-        double denom = Math.max(1.0, (double) handleRange(trackH));
-        return Math.max(0.0, Math.min(1.0, clickTrack / denom));
+        int range = handleRange(trackH);
+        if (range <= 0) {
+            return 0.0;
+        }
+        return Math.max(0.0, Math.min(1.0, (mouseY - trackY) / (double) range));
     }
 
     /** Integer scroll offset from a track click; clamps to {@code [0, maxScroll]}. */

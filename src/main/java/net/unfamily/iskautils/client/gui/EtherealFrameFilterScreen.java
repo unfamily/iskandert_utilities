@@ -377,17 +377,36 @@ public class EtherealFrameFilterScreen extends AbstractContainerScreen<EtherealF
         if (MachineGuiInput.clearEditBoxOnRightClick(mx, my, button, searchBox)) {
             return true;
         }
-        if (button == 0) {
-            int sbx = leftPos + SCROLLBAR_X;
-            if (mx >= sbx && mx < sbx + SCROLL_ARROW_SIZE && my >= topPos + SCROLLBAR_Y && my < topPos + BUTTON_DOWN_Y) {
-                isDraggingHandle = true;
-                dragStartY = (int) my;
-                dragStartScrollOffset = scrollOffset;
-                MachineGuiInput.markScrollbarPressed();
-                return true;
-            }
+        if (button == 0 && handleScrollbarInteraction(mx, my)) {
+            return true;
         }
         return super.mouseClicked(mx, my, button);
+    }
+
+    /** Handle drag on thumb; track click jumps then continues as drag. */
+    private boolean handleScrollbarInteraction(double mx, double my) {
+        if (filteredIds.size() <= VISIBLE_ENTRIES) {
+            return false;
+        }
+        int sbx = leftPos + SCROLLBAR_X;
+        int trackY = topPos + SCROLLBAR_Y;
+        if (mx < sbx || mx >= sbx + SCROLLBAR_WIDTH
+                || my < trackY || my >= trackY + SCROLLBAR_HEIGHT) {
+            return false;
+        }
+        int maxOff = filteredIds.size() - VISIBLE_ENTRIES;
+        float ratio = maxOff > 0 ? (float) scrollOffset / maxOff : 0f;
+        int handleY = trackY + (int) (ratio * GuiScroller.handleRange(SCROLLBAR_HEIGHT));
+        boolean onHandle = my >= handleY && my < handleY + SCROLLER_HEIGHT;
+        if (!onHandle) {
+            scrollOffset = GuiScroller.scrollOffsetFromTrackClick(my, trackY, SCROLLBAR_HEIGHT, maxOff);
+            playClick();
+        }
+        isDraggingHandle = true;
+        dragStartY = (int) my;
+        dragStartScrollOffset = scrollOffset;
+        MachineGuiInput.markScrollbarPressed();
+        return true;
     }
 
     @Override

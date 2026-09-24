@@ -249,11 +249,11 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
             int maxScrollOffset = menu.getMaxScrollOffset();
             int newScrollOffset = GuiScroller.scrollOffsetFromTrackClick(
                     mouseY, guiY + SCROLLBAR_Y, SCROLLBAR_HEIGHT, maxScrollOffset);
-
-            if (newScrollOffset != scrollOffset) {
-                setScrollOffset(newScrollOffset);
-                playButtonSound();
-            }
+            setScrollOffset(newScrollOffset);
+            isDraggingHandle = true;
+            dragStartY = (int) mouseY;
+            dragStartScrollOffset = scrollOffset;
+            playButtonSound();
             return true;
         }
         return false;

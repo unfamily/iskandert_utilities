@@ -386,11 +386,11 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
                     mouseY, guiY + SCROLLBAR_Y, SCROLLBAR_HEIGHT);
             int newOffset = (int) Math.round(ratio * maxScroll);
             newOffset = (newOffset / GRID_COLS) * GRID_COLS;
-            int old = this.scrollOffset;
             setScrollOffset(newOffset);
-            if (this.scrollOffset != old) {
-                playClick();
-            }
+            isDraggingHandle = true;
+            dragStartY = (int) mouseY;
+            dragStartScrollOffset = this.scrollOffset;
+            playClick();
             return true;
         }
         return false;
