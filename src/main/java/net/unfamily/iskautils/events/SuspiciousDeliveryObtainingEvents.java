@@ -3,6 +3,7 @@ package net.unfamily.iskautils.events;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.npc.wanderingtrader.WanderingTrader;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -39,7 +40,7 @@ public final class SuspiciousDeliveryObtainingEvents {
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onTraderJoin(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide()) {
             return;

@@ -37,8 +37,6 @@ public class EtherealFrameFilterScreen extends AbstractContainerScreen<EtherealF
             IskaUtils.MOD_ID, "textures/gui/backgrounds/sound_muffler.png");
     private static final Identifier ENTRY_TEXTURE = Identifier.fromNamespaceAndPath(
             IskaUtils.MOD_ID, "textures/gui/entry_low_wide_wide.png");
-    private static final Identifier SCROLLBAR_TEXTURE = Identifier.fromNamespaceAndPath(
-            IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
 
     private static final int GUI_WIDTH = 230;
     private static final int GUI_HEIGHT = 180;
@@ -50,16 +48,17 @@ public class EtherealFrameFilterScreen extends AbstractContainerScreen<EtherealF
     private static final int ENTRIES_START_X = BORDER_MARGIN;
     private static final int ENTRIES_START_Y = 30;
     private static final int GAP_ENTRY_SCROLLBAR = 4;
-    private static final int SCROLLBAR_WIDTH = 8;
-    private static final int HANDLE_SIZE = 8;
+    private static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
+    private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
+    private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
     private static final int SCROLLBAR_X = ENTRIES_START_X + ENTRY_WIDTH + GAP_ENTRY_SCROLLBAR;
     private static final int SEARCH_BAR_HEIGHT = 20;
     private static final int LIST_ENTRIES_START_Y = ENTRIES_START_Y + SEARCH_BAR_HEIGHT + 2;
-    private static final int BUTTON_UP_Y = LIST_ENTRIES_START_Y;
-    private static final int SCROLLBAR_Y = BUTTON_UP_Y + HANDLE_SIZE;
-    private static final int SCROLLBAR_HEIGHT = 34;
-    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
     private static final int VISIBLE_ENTRIES = 8;
+    private static final int BUTTON_UP_Y = LIST_ENTRIES_START_Y;
+    private static final int BUTTON_DOWN_Y = GuiScroller.buttonDownY(BUTTON_UP_Y, VISIBLE_ENTRIES, ENTRY_HEIGHT);
+    private static final int SCROLLBAR_Y = GuiScroller.trackY(BUTTON_UP_Y);
+    private static final int SCROLLBAR_HEIGHT = GuiScroller.trackHeight(BUTTON_UP_Y, BUTTON_DOWN_Y);
     private static final int BOTTOM_ROW_Y = 154;
     private static final int BOTTOM_BUTTON_H = 18;
     private static final int BOTTOM_BUTTON_GAP = 4;
@@ -88,6 +87,8 @@ public class EtherealFrameFilterScreen extends AbstractContainerScreen<EtherealF
     private Button cancelButton;
     private ItemIconButton lightButton;
     private Button closeButton;
+    private Button scrollUpButton;
+    private Button scrollDownButton;
     private final Button[] dotButtons = new Button[VISIBLE_ENTRIES];
 
     public EtherealFrameFilterScreen(EtherealFrameFilterMenu menu, Inventory playerInventory, Component title) {
@@ -138,6 +139,7 @@ public class EtherealFrameFilterScreen extends AbstractContainerScreen<EtherealF
             if (!selectedIds.contains(id)) filteredIds.add(id);
         }
         scrollOffset = Math.max(0, Math.min(scrollOffset, Math.max(0, filteredIds.size() - VISIBLE_ENTRIES)));
+        updateScrollArrowState();
     }
 
     @Override
@@ -191,6 +193,12 @@ public class EtherealFrameFilterScreen extends AbstractContainerScreen<EtherealF
                 .build();
         addRenderableWidget(closeButton);
 
+        scrollUpButton = addRenderableWidget(GuiScroller.createUpButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_UP_Y, this::scrollUp));
+        scrollDownButton = addRenderableWidget(GuiScroller.createDownButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_DOWN_Y, this::scrollDown));
+        updateScrollArrowState();
+
         for (int i = 0; i < VISIBLE_ENTRIES; i++) {
             final int row = i;
             dotButtons[i] = addRenderableWidget(
@@ -198,6 +206,11 @@ public class EtherealFrameFilterScreen extends AbstractContainerScreen<EtherealF
             dotButtons[i].visible = false;
         }
     }
+
+    private void updateScrollArrowState() {
+        GuiScroller.setArrowActive(scrollUpButton, scrollDownButton, filteredIds.size() > VISIBLE_ENTRIES);
+    }
+
 
     @Override
     public boolean keyPressed(KeyEvent event) {
@@ -346,20 +359,14 @@ public class EtherealFrameFilterScreen extends AbstractContainerScreen<EtherealF
     }
 
     private void renderScrollbar(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        int sbx = leftPos + SCROLLBAR_X;
-        int sby = topPos + SCROLLBAR_Y;
-        int upY = topPos + BUTTON_UP_Y;
-        int downY = topPos + BUTTON_DOWN_Y;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sbx, sby, 0.0F, 0.0F, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
-        boolean upH = mouseX >= sbx && mouseX < sbx + HANDLE_SIZE && mouseY >= upY && mouseY < upY + HANDLE_SIZE;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sbx, upY, (float)(SCROLLBAR_WIDTH * 2), (float)(upH ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        boolean downH = mouseX >= sbx && mouseX < sbx + HANDLE_SIZE && mouseY >= downY && mouseY < downY + HANDLE_SIZE;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sbx, downY, (float)(SCROLLBAR_WIDTH * 3), (float)(downH ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        int total = filteredIds.size();
-        float ratio = total <= VISIBLE_ENTRIES ? 0 : (float) scrollOffset / (total - VISIBLE_ENTRIES);
-        int hy = sby + (int) (ratio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        boolean hH = mouseX >= sbx && mouseX < sbx + HANDLE_SIZE && mouseY >= hy && mouseY < hy + HANDLE_SIZE;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, sbx, hy, (float)SCROLLBAR_WIDTH, (float)(hH ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        updateScrollArrowState();
+        GuiScroller.draw(
+                guiGraphics,
+                leftPos + SCROLLBAR_X,
+                topPos + BUTTON_UP_Y,
+                topPos + BUTTON_DOWN_Y,
+                scrollOffset,
+                Math.max(0, filteredIds.size() - VISIBLE_ENTRIES));
     }
 
     private void scrollUp() { if (scrollOffset > 0) scrollOffset--; }
@@ -377,17 +384,7 @@ public class EtherealFrameFilterScreen extends AbstractContainerScreen<EtherealF
         }
         if (event.button() == 0) {
             int sbx = leftPos + SCROLLBAR_X;
-            if (filteredIds.size() > VISIBLE_ENTRIES) {
-                int upY = topPos + BUTTON_UP_Y;
-                if (mx >= sbx && mx < sbx + HANDLE_SIZE && my >= upY && my < upY + HANDLE_SIZE) {
-                    scrollUp(); playClick(); MachineGuiInput.markScrollbarPressed(); return true;
-                }
-                int downY = topPos + BUTTON_DOWN_Y;
-                if (mx >= sbx && mx < sbx + HANDLE_SIZE && my >= downY && my < downY + HANDLE_SIZE) {
-                    scrollDown(); playClick(); MachineGuiInput.markScrollbarPressed(); return true;
-                }
-            }
-            if (mx >= sbx && mx < sbx + HANDLE_SIZE && my >= topPos + SCROLLBAR_Y && my < topPos + BUTTON_DOWN_Y) {
+            if (mx >= sbx && mx < sbx + SCROLL_ARROW_SIZE && my >= topPos + SCROLLBAR_Y && my < topPos + BUTTON_DOWN_Y) {
                 isDraggingHandle = true;
                 dragStartY = (int) my;
                 dragStartScrollOffset = scrollOffset;
@@ -422,7 +419,7 @@ public class EtherealFrameFilterScreen extends AbstractContainerScreen<EtherealF
         if (isDraggingHandle && filteredIds.size() > VISIBLE_ENTRIES) {
             int delta = (int) my - dragStartY;
             int maxOff = filteredIds.size() - VISIBLE_ENTRIES;
-            int range = SCROLLBAR_HEIGHT - HANDLE_SIZE;
+            int range = GuiScroller.handleRange(SCROLLBAR_HEIGHT);
             if (range > 0)
                 scrollOffset = Math.max(0, Math.min(maxOff,
                         dragStartScrollOffset + Math.round((float) delta / range * maxOff)));

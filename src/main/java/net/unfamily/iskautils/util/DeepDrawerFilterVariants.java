@@ -59,7 +59,8 @@ public final class DeepDrawerFilterVariants {
     }
 
     /**
-     * Order: item id, mod id (non-minecraft), &enchanted, &damaged, tags, optional ?SNBT.
+     * Cycle order matches filter weights: {@code -} → {@code #} → {@code @} → {@code &} → {@code ?}.
+     * {@code @} is omitted for {@code minecraft} namespace.
      */
     public static List<String> generateAllFilterVariants(
             @NotNull ItemStack stack, @Nullable HolderLookup.Provider registryAccess) {
@@ -75,6 +76,13 @@ public final class DeepDrawerFilterVariants {
 
         variants.add("-" + itemId);
 
+        var itemHolder = BuiltInRegistries.ITEM.wrapAsHolder(stack.getItem());
+        BuiltInRegistries.ITEM.getTags()
+                .filter(named -> named.contains(itemHolder))
+                .map(named -> named.key().location().toString())
+                .sorted()
+                .forEach(tagId -> variants.add("#" + tagId));
+
         String namespace = itemId.getNamespace();
         if (!"minecraft".equals(namespace)) {
             variants.add("@" + namespace);
@@ -85,13 +93,6 @@ public final class DeepDrawerFilterVariants {
         if (stack.isDamaged()) {
             variants.add("&damaged");
         }
-
-        var itemHolder = BuiltInRegistries.ITEM.wrapAsHolder(stack.getItem());
-        BuiltInRegistries.ITEM.getTags()
-                .filter(named -> named.contains(itemHolder))
-                .map(named -> named.key().location().toString())
-                .sorted()
-                .forEach(tagId -> variants.add("#" + tagId));
 
         if (registryAccess != null) {
             try {

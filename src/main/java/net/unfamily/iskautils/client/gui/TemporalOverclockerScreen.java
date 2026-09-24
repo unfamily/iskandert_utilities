@@ -32,7 +32,6 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/backgrounds/temporal_overclocker.png");
     private static final Identifier ENERGY_BAR = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/energy_bar.png");
     private static final Identifier ENTRY_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/entry_wide.png");
-    private static final Identifier SCROLLBAR_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
     private static final Identifier SINGLE_SLOT_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/single_slot.png");
     private static final Identifier SLOT_HIGHLIGHT_BACK =
             Identifier.withDefaultNamespace("container/slot_highlight_back");
@@ -57,16 +56,19 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     private static final int VISIBLE_ENTRIES = 5;
     
     // Scrollbar constants
-    private static final int SCROLLBAR_WIDTH = 8;
-    private static final int SCROLLBAR_HEIGHT = 34;
-    private static final int HANDLE_SIZE = 8;
+    private static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
+    private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
+    private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
     private static final int SCROLLBAR_X = ENTRIES_START_X + ENTRY_WIDTH + 4; // 4 pixel margin
     private static final int BUTTON_UP_Y = ENTRIES_START_Y;
-    private static final int SCROLLBAR_Y = ENTRIES_START_Y + HANDLE_SIZE;
-    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
+    private static final int BUTTON_DOWN_Y = GuiScroller.buttonDownY(BUTTON_UP_Y, VISIBLE_ENTRIES, ENTRY_HEIGHT);
+    private static final int SCROLLBAR_Y = GuiScroller.trackY(BUTTON_UP_Y);
+    private static final int SCROLLBAR_HEIGHT = GuiScroller.trackHeight(BUTTON_UP_Y, BUTTON_DOWN_Y);
     
     // Close button
     private Button closeButton;
+    private Button scrollUpButton;
+    private Button scrollDownButton;
     private static final int CLOSE_BUTTON_Y = 5;
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
@@ -118,6 +120,12 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                                   CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
                            .build();
         addRenderableWidget(closeButton);
+
+        scrollUpButton = addRenderableWidget(GuiScroller.createUpButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_UP_Y, this::scrollUp));
+        scrollDownButton = addRenderableWidget(GuiScroller.createDownButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_DOWN_Y, this::scrollDown));
+        updateScrollArrowState();
         
         // Acceleration button position (below entries, centered; Y shared with machine slots)
         int accelerationButtonY = TemporalOverclockerMenu.ACCELERATION_BUTTON_Y;
@@ -175,6 +183,11 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
                 () -> MachineGuiButtons.persistentModeIcon(menu.isPersistentMode()),
                 Component.empty()));
     }
+
+    private void updateScrollArrowState() {
+        GuiScroller.setArrowActive(scrollUpButton, scrollDownButton, linkedBlocks.size() > VISIBLE_ENTRIES);
+    }
+
     
     @Override
     public void containerTick() {
@@ -532,44 +545,14 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
      * Renderizza la scrollbar
      */
     private void renderScrollbar(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        // Only show scrollbar if there are more entries than visible
-        if (linkedBlocks.size() <= VISIBLE_ENTRIES) return;
-        
-        int scrollbarX = this.leftPos + SCROLLBAR_X;
-        int scrollbarY = this.topPos + SCROLLBAR_Y;
-        int buttonUpY = this.topPos + BUTTON_UP_Y;
-        int buttonDownY = this.topPos + BUTTON_DOWN_Y;
-        
-        // Disegna la scrollbar completa
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0.0F, 0.0F,
-                        SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
-        
-        // Pulsante SU
-        boolean upHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                           mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE;
-        int upTextureY = upHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, buttonUpY,
-                        (float)(SCROLLBAR_WIDTH * 2), (float)upTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        
-        // DOWN button
-        boolean downHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                             mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE;
-        int downTextureY = downHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, buttonDownY,
-                        (float)(SCROLLBAR_WIDTH * 3), (float)downTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        
-        // Handle
-        float scrollRatio = 0;
-        if (linkedBlocks.size() > VISIBLE_ENTRIES) {
-            scrollRatio = (float) scrollOffset / (linkedBlocks.size() - VISIBLE_ENTRIES);
-        }
-        int handleY = scrollbarY + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        
-        boolean handleHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                               mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, handleY,
-                        (float)SCROLLBAR_WIDTH, (float)handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        updateScrollArrowState();
+        GuiScroller.draw(
+                guiGraphics,
+                leftPos + SCROLLBAR_X,
+                topPos + BUTTON_UP_Y,
+                topPos + BUTTON_DOWN_Y,
+                scrollOffset,
+                Math.max(0, linkedBlocks.size() - VISIBLE_ENTRIES));
     }
 
     private boolean isShiftDownNow() {
@@ -632,10 +615,6 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         
         if (button == 0) { // Left click
             // Handle scrollbar clicks
-            if (handleScrollButtonClick(mouseX, mouseY)) {
-                MachineGuiInput.markScrollbarPressed();
-                return true;
-            }
             
             // Handle handle drag start
             if (handleHandleClick(mouseX, mouseY)) {
@@ -734,28 +713,6 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         }
     }
     
-    private boolean handleScrollButtonClick(double mouseX, double mouseY) {
-        if (linkedBlocks.size() <= VISIBLE_ENTRIES) return false;
-        
-        int guiX = this.leftPos;
-        int guiY = this.topPos;
-        
-        // UP button
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-            mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE) {
-            scrollUp();
-            return true;
-        }
-        
-        // DOWN button
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-            mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE) {
-            scrollDown();
-            return true;
-        }
-        
-        return false;
-    }
     
     private boolean handleHandleClick(double mouseX, double mouseY) {
         if (linkedBlocks.size() <= VISIBLE_ENTRIES) return false;
@@ -764,10 +721,10 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         int scrollbarY = this.topPos + SCROLLBAR_Y;
         
         float scrollRatio = (float) scrollOffset / (linkedBlocks.size() - VISIBLE_ENTRIES);
-        int handleY = scrollbarY + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+        int handleY = scrollbarY + (int)(scrollRatio * GuiScroller.handleRange(SCROLLBAR_HEIGHT));
         
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-            mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
+        if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH &&
+            mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT) {
             
             isDraggingHandle = true;
             dragStartY = (int) mouseY;
@@ -828,7 +785,7 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
         if (event.button() == 0 && isDraggingHandle && linkedBlocks.size() > VISIBLE_ENTRIES) {
             int deltaY = (int) event.y() - dragStartY;
-            float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+            float scrollRatio = (float) deltaY / GuiScroller.handleRange(SCROLLBAR_HEIGHT);
             
             int newScrollOffset = dragStartScrollOffset + (int)(scrollRatio * (linkedBlocks.size() - VISIBLE_ENTRIES));
             newScrollOffset = Math.max(0, Math.min(linkedBlocks.size() - VISIBLE_ENTRIES, newScrollOffset));

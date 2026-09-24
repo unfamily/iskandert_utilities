@@ -85,6 +85,10 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
 
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
+        if (!net.unfamily.iskautils.Config.enableJeiIntegration
+                || !net.unfamily.iskautils.Config.enableRecipeViewerTransfer) {
+            return;
+        }
         registration.addGhostIngredientHandler(
                 DeepDrawerExtractorScreen.class,
                 new IskaUtilsGhostIngredientHandler<>());
@@ -104,6 +108,10 @@ public final class IskaUtilsJeiPlugin implements IModPlugin {
 
     @Override
     public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
+        if (!net.unfamily.iskautils.Config.enableJeiIntegration
+                || !net.unfamily.iskautils.Config.enableRecipeViewerTransfer) {
+            return;
+        }
         registration.addRecipeTransferHandler(
                 new PatternCrafterRecipeTransferHandler(registration.getTransferHelper()),
                 RecipeTypes.CRAFTING);

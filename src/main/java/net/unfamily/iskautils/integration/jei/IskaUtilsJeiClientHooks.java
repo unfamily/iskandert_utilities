@@ -7,6 +7,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.client.RecipeViewerClientBridge;
 import net.unfamily.iskautils.client.gui.AncientTableScreen;
 import net.unfamily.iskautils.client.gui.FactoryScreen;
 
@@ -17,21 +18,24 @@ public final class IskaUtilsJeiClientHooks {
 
     @SubscribeEvent
     public static void onScreenOpen(ScreenEvent.Opening event) {
+        if (!RecipeViewerClientBridge.isJeiIntegrationActive()) {
+            return;
+        }
         Minecraft mc = Minecraft.getInstance();
         if (event.getScreen() instanceof FactoryScreen
                 || event.getScreen() instanceof AncientTableScreen
-                || event.getScreen() instanceof mezz.jei.gui.recipes.RecipesGui) {
-            IskaUtilsJeiDynamicRefresh.scheduleRefresh(mc);
+                || RecipeViewerClientBridge.isJeiRecipesGui(event.getScreen())) {
+            RecipeViewerClientBridge.scheduleJeiRefresh(mc);
         }
     }
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(ClientPlayerNetworkEvent.LoggingIn event) {
-        IskaUtilsJeiDynamicRefresh.scheduleRefresh(Minecraft.getInstance());
+        RecipeViewerClientBridge.scheduleJeiRefresh(Minecraft.getInstance());
     }
 
     @SubscribeEvent
     public static void onPlayerRespawn(ClientPlayerNetworkEvent.Clone event) {
-        IskaUtilsJeiDynamicRefresh.scheduleRefresh(Minecraft.getInstance());
+        RecipeViewerClientBridge.scheduleJeiRefresh(Minecraft.getInstance());
     }
 }

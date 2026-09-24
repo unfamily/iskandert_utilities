@@ -22,7 +22,6 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     // Background texture
     private static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/backgrounds/structure_selector.png");
     private static final Identifier ENTRY_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/entry_wide.png");
-    private static final Identifier SCROLLBAR_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
     private static final Identifier SINGLE_SLOT_TEXTURE = Identifier.fromNamespaceAndPath("iska_utils", "textures/gui/single_slot.png");
     
     // Dimensioni della texture (basate sul file PNG reale: 200x164)
@@ -32,8 +31,9 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     // Dimensioni degli elementi UI
     private static final int ENTRY_WIDTH = 140; // entry_wide.png è 140x24
     private static final int ENTRY_HEIGHT = 24;
-    private static final int SCROLLBAR_WIDTH = 8;
-    private static final int HANDLE_SIZE = 8;
+    private static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
+    private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
+    private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
     
     // Posizioni degli elementi centrali
     private static final int ENTRIES_START_X = (GUI_WIDTH - ENTRY_WIDTH) / 2; // Centra le entry (ora 30)
@@ -53,10 +53,10 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     
     // Posizioni scrollbar (accanto alla prima entry) 
     private static final int SCROLLBAR_X = ENTRIES_START_X + ENTRY_WIDTH + 4; // 4 pixel di margine (ora 174)
-    private static final int BUTTON_UP_Y = ENTRIES_START_Y; // Pulsante SU all'inizio
-    private static final int SCROLLBAR_Y = ENTRIES_START_Y + HANDLE_SIZE; // Scrollbar sotto il pulsante SU
-    private static final int SCROLLBAR_HEIGHT = 34; // Altezza completa della texture scrollbar.png
-    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT; // Pulsante GIÙ subito dopo
+    private static final int BUTTON_UP_Y = ENTRIES_START_Y;
+    private static final int BUTTON_DOWN_Y = GuiScroller.buttonDownY(BUTTON_UP_Y, 3, ENTRY_HEIGHT);
+    private static final int SCROLLBAR_Y = GuiScroller.trackY(BUTTON_UP_Y);
+    private static final int SCROLLBAR_HEIGHT = GuiScroller.trackHeight(BUTTON_UP_Y, BUTTON_DOWN_Y);
     
     // Variabili per lo scrolling e strutture
     private int scrollOffset = 0;
@@ -76,6 +76,8 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     private Button saveButton;
     private Button cancelButton;
     private Button closeButton;
+    private Button scrollUpButton;
+    private Button scrollDownButton;
     private final Button[] selectionDotButtons = new Button[visibleEntries];
 
     // Close button position - top right
@@ -154,6 +156,12 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
                                   CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
                            .build();
         addRenderableWidget(closeButton);
+
+        scrollUpButton = addRenderableWidget(GuiScroller.createUpButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_UP_Y, this::scrollUp));
+        scrollDownButton = addRenderableWidget(GuiScroller.createDownButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_DOWN_Y, this::scrollDown));
+        updateScrollArrowState();
         
         for (int i = 0; i < visibleEntries; i++) {
             final int row = i;
@@ -163,6 +171,11 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
 
         loadAvailableStructures();
     }
+
+    private void updateScrollArrowState() {
+        GuiScroller.setArrowActive(scrollUpButton, scrollDownButton, totalEntries > visibleEntries);
+    }
+
 
     @Override
     public void containerTick() {
@@ -287,37 +300,14 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
      * Renderizza la scrollbar con handle e pulsanti (IDENTICA alla StructurePlacerScreen)
      */
     private void renderScrollbar(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        int scrollbarX = this.leftPos + SCROLLBAR_X;
-        int scrollbarY = this.topPos + SCROLLBAR_Y;
-        int buttonUpY = this.topPos + BUTTON_UP_Y;
-        int buttonDownY = this.topPos + BUTTON_DOWN_Y;
-        
-        // Disegna la scrollbar completa (8 pixel larghe, altezza 34)
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0.0F, 0.0F, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
-        
-        // Pulsante SU (8x8 pixel) - sopra la scrollbar
-        boolean upHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                           mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE;
-        int upTextureY = upHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, buttonUpY, (float)(SCROLLBAR_WIDTH * 2), (float)upTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        
-        // Pulsante GIÙ (8x8 pixel) - sotto la scrollbar  
-        boolean downHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                             mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE;
-        int downTextureY = downHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, buttonDownY, (float)(SCROLLBAR_WIDTH * 3), (float)downTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        
-        // Handle (8x8 pixel) - sempre visibile, ma mobile solo se necessario
-        float scrollRatio = 0;
-        if (availableStructures.size() > visibleEntries) {
-            scrollRatio = (float) scrollOffset / (availableStructures.size() - visibleEntries);
-        }
-        int handleY = scrollbarY + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        
-        boolean handleHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                               mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, handleY, (float)SCROLLBAR_WIDTH, (float)handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        updateScrollArrowState();
+        GuiScroller.draw(
+                guiGraphics,
+                leftPos + SCROLLBAR_X,
+                topPos + BUTTON_UP_Y,
+                topPos + BUTTON_DOWN_Y,
+                scrollOffset,
+                Math.max(0, availableStructures.size() - visibleEntries));
     }
     
     /**
@@ -416,8 +406,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
     private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) { // Left click
             // Gestisci i vari click nell'ordine di priorità (IDENTICO alla StructurePlacerScreen)
-            if (handleScrollButtonClick(mouseX, mouseY) ||
-                handleHandleClick(mouseX, mouseY) ||
+            if (handleHandleClick(mouseX, mouseY) ||
                 handleScrollbarClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();
                 return true;
@@ -439,33 +428,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         return super.mouseClicked(event, doubleClick);
     }
     
-    /**
-     * Gestisce i click sui pulsanti di scroll (frecce su/giù)
-     */
-    private boolean handleScrollButtonClick(double mouseX, double mouseY) {
-        if (totalEntries <= visibleEntries) return false;
         
-        int scrollbarX = this.leftPos + SCROLLBAR_X;
-        
-        // Pulsante SU
-        int upButtonY = this.topPos + BUTTON_UP_Y;
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && 
-            mouseY >= upButtonY && mouseY < upButtonY + HANDLE_SIZE) {
-            scrollUp();
-            return true;
-        }
-        
-        // Pulsante GIÙ
-        int downButtonY = this.topPos + BUTTON_DOWN_Y;
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && 
-            mouseY >= downButtonY && mouseY < downButtonY + HANDLE_SIZE) {
-            scrollDown();
-            return true;
-        }
-        
-        return false;
-    }
-    
     /**
      * Gestisce i click sull'handle per iniziare il drag (IDENTICO alla StructurePlacerScreen)
      */
@@ -476,10 +439,10 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         int scrollbarY = this.topPos + SCROLLBAR_Y;
         
         float scrollRatio = (float) scrollOffset / (availableStructures.size() - visibleEntries);
-        int handleY = scrollbarY + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+        int handleY = scrollbarY + (int)(scrollRatio * GuiScroller.handleRange(SCROLLBAR_HEIGHT));
         
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-            mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
+        if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH &&
+            mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT) {
             
             isDraggingHandle = true;
             dragStartY = (int) mouseY;
@@ -632,7 +595,7 @@ public class StructureSelectionScreen extends AbstractContainerScreen<StructureS
         if (event.button() == 0 && isDraggingHandle && availableStructures.size() > visibleEntries) {
             // Calcola il nuovo scroll offset basato sul movimento del mouse
             int deltaY = (int) event.y() - dragStartY;
-            float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+            float scrollRatio = (float) deltaY / GuiScroller.handleRange(SCROLLBAR_HEIGHT);
             
             int newScrollOffset = dragStartScrollOffset + (int)(scrollRatio * (availableStructures.size() - visibleEntries));
             newScrollOffset = Math.max(0, Math.min(availableStructures.size() - visibleEntries, newScrollOffset));

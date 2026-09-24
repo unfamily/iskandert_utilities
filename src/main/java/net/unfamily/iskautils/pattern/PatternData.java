@@ -27,8 +27,8 @@ public class PatternData {
     private int resultMode = 1;
     /** Ingredient mode (per pattern): 1 = Keep, 2 = Eject */
     private int ingredientMode = 1;
-    /** Prevents tools at their breaking point from being consumed. */
-    private boolean toolSafeguard = true;
+    /** Prevents tools at their breaking point from being consumed. Off by default (tools may break). */
+    private boolean toolSafeguard = false;
 
     public PatternData() {
         // All cells empty by default

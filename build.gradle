@@ -69,6 +69,17 @@ repositories {
             includeGroup "com.github.rtyley"
         }
     }
+    maven {
+        name = "Shedaniel"
+        url = "https://maven.shedaniel.me"
+    }
+    maven {
+        name = "Architectury"
+        url = "https://maven.architectury.dev"
+        content {
+            includeGroup "dev.architectury"
+        }
+    }
 }
 
 base {
@@ -237,7 +248,26 @@ dependencies {
     
     // JEI (compile-only) for ghost ingredient integration in GUIs
     // Must match the JEI API used at runtime for 26.1.2 (Identifier-based)
-    compileOnly "curse.maven:jei-238222:7920926"
+    if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "jei") {
+        localRuntime "curse.maven:jei-238222:7920926"
+        compileOnly "curse.maven:jei-238222:7920926"
+    } else {
+        compileOnly "curse.maven:jei-238222:7920926"
+    }
+
+    // REI + deps (Pattern Crafter transfer / ghost). EMI not published for 26.1.2.
+    if (project.hasProperty('runtime_itemlist_mod') && project.runtime_itemlist_mod == "rei") {
+        localRuntime "curse.maven:roughly-enough-items-310111:${rei_curse_file}"
+        localRuntime "curse.maven:architectury-api-419699:${architectury_curse_file}"
+        localRuntime "curse.maven:cloth-config-348521:${cloth_config_curse_file}"
+        compileOnly "me.shedaniel:RoughlyEnoughItems-neoforge:${rei_version}"
+        compileOnly "dev.architectury:architectury-neoforge:${architectury_version}"
+        compileOnly "me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}"
+    } else {
+        compileOnly "me.shedaniel:RoughlyEnoughItems-neoforge:${rei_version}"
+        compileOnly "dev.architectury:architectury-neoforge:${architectury_version}"
+        compileOnly "me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}"
+    }
 
     // Apotheosis integration (optional at runtime; full stack for IDE autocomplete and dev client)
     def apotheosisStack = { String scope ->

@@ -38,12 +38,8 @@ public class AncientTableMenu extends AbstractContainerMenu {
     public static final int GRID_COLS = 3;
     public static final int GRID_WIDTH = GRID_COLS * SLOT_SIZE;
 
-    public static final int SCROLLBAR_WIDTH = 8;
+    public static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
     public static final int SCROLLBAR_GAP_X = 2;
-    public static final int SCROLLBAR_HANDLE_SIZE = 8;
-    public static final int SCROLLBAR_TRACK_HEIGHT = 34;
-    public static final int SCROLLBAR_COLUMN_HEIGHT =
-            SCROLLBAR_HANDLE_SIZE + SCROLLBAR_TRACK_HEIGHT + SCROLLBAR_HANDLE_SIZE;
 
     public static final int INPUT_SCROLL_X = INPUT_GRID_X - SCROLLBAR_GAP_X - SCROLLBAR_WIDTH - 2;
     public static final int OUTPUT_SCROLL_X = OUTPUT_GRID_X + GRID_WIDTH + SCROLLBAR_GAP_X;
@@ -60,15 +56,12 @@ public class AncientTableMenu extends AbstractContainerMenu {
         return OUTPUT_GRID_X + GRID_WIDTH;
     }
 
-    private static final int SCROLL_VISUAL_Y_OFFSET = -1;
-
-    public static int scrollButtonUpY(int gridTopY) {
-        int middleRowCenterY = gridTopY + SLOT_SIZE + SLOT_SIZE / 2;
-        return middleRowCenterY - SCROLLBAR_COLUMN_HEIGHT / 2 + SCROLL_VISUAL_Y_OFFSET;
-    }
-
-    public static final int INPUT_SCROLL_UP_Y = scrollButtonUpY(INPUT_GRID_Y);
-    public static final int OUTPUT_SCROLL_UP_Y = scrollButtonUpY(OUTPUT_GRID_Y);
+    public static final int INPUT_SCROLL_UP_Y = INPUT_GRID_Y;
+    public static final int OUTPUT_SCROLL_UP_Y = OUTPUT_GRID_Y;
+    public static final int INPUT_SCROLL_DOWN_Y =
+            GuiScroller.buttonDownY(INPUT_GRID_Y, VISIBLE_GRID_ROWS, SLOT_SIZE);
+    public static final int OUTPUT_SCROLL_DOWN_Y =
+            GuiScroller.buttonDownY(OUTPUT_GRID_Y, VISIBLE_GRID_ROWS, SLOT_SIZE);
 
     private static final int VISIBLE_SLOTS = 9;
     public static final int FUEL_SLOT_INDEX = 9;

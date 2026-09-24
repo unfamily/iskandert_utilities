@@ -69,7 +69,7 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
     /** Settings copier column (Forbidden Outputs only) — right of the Forbidden scrollbar. */
     public static final int GUI_WIDTH = 340;
     public static final int FORBIDDEN_ENTRY_WIDTH = 220;
-    public static final int FORBIDDEN_SCROLLBAR_WIDTH = 8;
+    public static final int FORBIDDEN_SCROLLBAR_WIDTH = 12;
     public static final int FORBIDDEN_ENTRY_X =
             (GUI_WIDTH - (FORBIDDEN_ENTRY_WIDTH + 4 + FORBIDDEN_SCROLLBAR_WIDTH)) / 2;
     public static final int FORBIDDEN_SCROLLBAR_X = FORBIDDEN_ENTRY_X + FORBIDDEN_ENTRY_WIDTH + 4;

@@ -32,14 +32,13 @@ import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.item.crafting.display.SlotDisplay;
 import net.minecraft.world.item.crafting.display.SlotDisplayContext;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.common.crafting.CompoundIngredient;
 import net.neoforged.neoforge.common.crafting.ICustomIngredient;
 import net.unfamily.iskautils.block.entity.ImprovedPatternCrafterBlockEntity;
 import net.unfamily.iskautils.client.gui.ImprovedPatternCrafterMenu;
 import net.unfamily.iskautils.client.gui.ImprovedPatternCrafterScreen;
 import net.unfamily.iskautils.client.gui.ModMenuTypes;
-import net.unfamily.iskautils.network.packet.PatternCrafterJeiTransferC2SPacket;
+import net.unfamily.iskautils.integration.recipeviewer.PatternCrafterRecipeViewerTransfer;
 import net.unfamily.iskautils.pattern.PatternData;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,17 +75,16 @@ public final class PatternCrafterRecipeTransferHandler
             Player player,
             boolean maxTransfer,
             boolean doTransfer) {
+        if (!PatternCrafterRecipeViewerTransfer.isTransferEnabled()) {
+            return error("jei.iska_utils.pattern_crafter.transfer.wrong_menu");
+        }
         ImprovedPatternCrafterBlockEntity be = menu.getBlockEntity();
         if (be == null) {
             return error("jei.iska_utils.pattern_crafter.transfer.wrong_menu");
         }
 
-        List<ItemStack> grid = new ArrayList<>(9);
-        List<String> filterSpecs = new ArrayList<>(9);
-        for (int i = 0; i < 9; i++) {
-            grid.add(ItemStack.EMPTY);
-            filterSpecs.add("");
-        }
+        List<ItemStack> grid = PatternCrafterRecipeViewerTransfer.emptyGrid();
+        List<String> filterSpecs = PatternCrafterRecipeViewerTransfer.emptyFilterSpecs();
 
         ContextMap displayContext = SlotDisplayContext.fromLevel(player.level());
         Map<Integer, SlotDisplay> displays = helper.getGuiSlotIndexToIngredientMap(recipe);
@@ -115,54 +113,18 @@ public final class PatternCrafterRecipeTransferHandler
             filterSpecs.set(cell, spec);
         }
 
-        boolean hasAny = false;
-        for (ItemStack stack : grid) {
-            if (!stack.isEmpty()) {
-                hasAny = true;
-                break;
-            }
-        }
-        if (!hasAny) {
-            return error("jei.iska_utils.pattern_crafter.transfer.no_variables");
-        }
-
-        Set<String> newSpecs = new HashSet<>();
-        int keyCount = be.getEffectiveKeyInputCount();
-        int freeSlots = 0;
-        boolean[] usedLetters = new boolean[PatternData.MAX_LETTER + 1];
-        for (int i = 0; i < keyCount; i++) {
-            if (be.getInputFilterString(i).isEmpty()) freeSlots++;
-            int letter = be.getFilterLetter(i);
-            if (letter > 0 && letter <= PatternData.MAX_LETTER) usedLetters[letter] = true;
-        }
-        for (String spec : filterSpecs) {
-            if (spec == null || spec.isEmpty()) continue;
-            if (!hasExactFilterSpec(be, keyCount, spec)) newSpecs.add(spec);
-        }
-        int freeLetters = 0;
-        for (int i = 1; i <= PatternData.MAX_LETTER; i++) {
-            if (!usedLetters[i]) freeLetters++;
-        }
-        if (newSpecs.size() > freeSlots || newSpecs.size() > freeLetters) {
-            return error("jei.iska_utils.pattern_crafter.transfer.no_variables");
-        }
-
-        ImprovedPatternCrafterBlockEntity.JeiTransferPreview preview =
-                be.previewJeiTransfer(grid, filterSpecs);
-        if (preview == null) {
+        int craftingMode = PatternCrafterRecipeViewerTransfer.resolveCraftingMode(recipe.value());
+        var prepared = PatternCrafterRecipeViewerTransfer.prepare(be, grid, filterSpecs, craftingMode);
+        if (prepared == null) {
             return error("jei.iska_utils.pattern_crafter.transfer.no_variables");
         }
 
         if (doTransfer) {
             ImprovedPatternCrafterScreen screen = findPatternCrafterScreen();
-            if (screen == null) {
+            if (PatternCrafterRecipeViewerTransfer.applyPrepared(be, prepared, screen)
+                    != PatternCrafterRecipeViewerTransfer.TransferStatus.OK) {
                 return error("jei.iska_utils.pattern_crafter.transfer.wrong_menu");
             }
-            int craftingMode = resolveCraftingMode(recipe.value());
-            be.applyJeiVariablesOnly(grid, filterSpecs);
-            ClientPacketDistributor.sendToServer(
-                    new PatternCrafterJeiTransferC2SPacket(be.getBlockPos(), grid, filterSpecs, craftingMode));
-            screen.applyJeiPending(preview.cellLetters(), craftingMode, grid);
         }
         return null;
     }

@@ -47,7 +47,8 @@ public record PatternCellItemAssignC2SPacket(BlockPos pos, int cellIndex, ItemSt
             BlockEntity blockEntity = ((net.minecraft.server.level.ServerLevel) player.level())
                     .getBlockEntity(packet.pos());
             if (blockEntity instanceof ImprovedPatternCrafterBlockEntity crafter) {
-                crafter.applyPatternItemAssignment(packet.cellIndex(), packet.stack());
+                // Variables only — pattern cell stays client-pending until Save.
+                crafter.ensureExactItemVariable(packet.stack());
             }
         });
     }

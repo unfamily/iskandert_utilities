@@ -36,8 +36,6 @@ public class LabelingMachineScreen extends AbstractContainerScreen<LabelingMachi
             IskaUtils.MOD_ID, "textures/gui/backgrounds/shop.png");
     private static final Identifier SINGLE_SLOT_TEXTURE = Identifier.fromNamespaceAndPath(
             IskaUtils.MOD_ID, "textures/gui/single_slot.png");
-    private static final Identifier SCROLLBAR_TEXTURE = Identifier.fromNamespaceAndPath(
-            IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
 
     private static final int GUI_WIDTH = 300;
     private static final int GUI_HEIGHT = 240;
@@ -74,16 +72,17 @@ public class LabelingMachineScreen extends AbstractContainerScreen<LabelingMachi
     private static final int ROW_CONTROLS_X = 20;
     private static final int SEGMENT_EDIT_X = ROW_CONTROLS_X + 5 * (STYLE_SIZE + STYLE_GAP) + COLOR_SWATCH + 4;
     private static final int SEGMENT_EDIT_H = 16;
-    private static final int SCROLLBAR_WIDTH = 8;
-    private static final int SCROLLBAR_HEIGHT = 34;
-    private static final int HANDLE_SIZE = 8;
+    private static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
+    private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
+    private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
     private static final int SCROLLBAR_X = GUI_WIDTH - 12 - SCROLLBAR_WIDTH;
     private static final int SEGMENT_EDIT_W = SCROLLBAR_X - SEGMENT_EDIT_X - 4;
     private static final int LORE_LINE_BTN_X = ROW_CONTROLS_X;
     private static final int LORE_LINE_BTN_W = SCROLLBAR_X - LORE_LINE_BTN_X - 4;
     private static final int BUTTON_UP_Y = LIST_START_Y;
-    private static final int SCROLLBAR_Y = LIST_START_Y + HANDLE_SIZE;
-    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
+    private static final int BUTTON_DOWN_Y = GuiScroller.buttonDownY(BUTTON_UP_Y, VISIBLE_SEGMENTS, SEGMENT_ROW_H);
+    private static final int SCROLLBAR_Y = GuiScroller.trackY(BUTTON_UP_Y);
+    private static final int SCROLLBAR_HEIGHT = GuiScroller.trackHeight(BUTTON_UP_Y, BUTTON_DOWN_Y);
 
     /** Selected segment row highlight (behind widgets). */
     private static final int SELECTION_HIGHLIGHT = 0x60B8E8C0;
@@ -125,6 +124,8 @@ public class LabelingMachineScreen extends AbstractContainerScreen<LabelingMachi
     private Button copyButton;
     private Button resetButton;
     private Button loreNavButton;
+    private Button scrollUpButton;
+    private Button scrollDownButton;
     private final Button[] loreLineButtons = new Button[VISIBLE_LORE_BTNS];
     private final Button[][] styleButtons = new Button[VISIBLE_SEGMENTS][5];
     private final EditBox[] segmentEdits = new EditBox[VISIBLE_SEGMENTS];
@@ -256,11 +257,45 @@ public class LabelingMachineScreen extends AbstractContainerScreen<LabelingMachi
                 .bounds(leftPos + HEX_EDIT_X + 60, actionY, 56, 16)
                 .build());
 
+        scrollUpButton = addRenderableWidget(GuiScroller.createUpButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_UP_Y, this::onScrollUpPressed));
+        scrollDownButton = addRenderableWidget(GuiScroller.createDownButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_DOWN_Y, this::onScrollDownPressed));
+
         applySubViewVisibility();
         ensureTrailingEmpty();
         refreshVisibleRows();
         refreshLoreLineButtons();
     }
+
+    private void onScrollUpPressed() {
+        if (isSegmentEditorView()) {
+            scrollUp();
+        } else if (subView == SubView.LORE) {
+            scrollLoreUp();
+        }
+    }
+
+    private void onScrollDownPressed() {
+        if (isSegmentEditorView()) {
+            scrollDown();
+        } else if (subView == SubView.LORE) {
+            scrollLoreDown();
+        }
+    }
+
+    private void updateScrollArrowState() {
+        boolean show = (isSegmentEditorView() && canScroll())
+                || (subView == SubView.LORE && canScrollLore());
+        GuiScroller.setArrowActive(scrollUpButton, scrollDownButton, show);
+        if (scrollUpButton != null) {
+            scrollUpButton.visible = show;
+        }
+        if (scrollDownButton != null) {
+            scrollDownButton.visible = show;
+        }
+    }
+
 
     private void ensureLoreLinesCapacity() {
         int max = LabelingNameStyle.maxLoreLines();
@@ -791,7 +826,9 @@ public class LabelingMachineScreen extends AbstractContainerScreen<LabelingMachi
             }
         }
         refreshLoreLineButtons();
-    }
+    
+        updateScrollArrowState();
+}
 
     private void onApplyPressed() {
         if (menu.getTargetStack().isEmpty()) {
@@ -1028,36 +1065,20 @@ public class LabelingMachineScreen extends AbstractContainerScreen<LabelingMachi
 
     private void renderScrollbar(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY,
                                  int offset, int max, boolean dragging) {
-        renderScrollChrome(guiGraphics, mouseX, mouseY,
-                leftPos + SCROLLBAR_X, topPos + SCROLLBAR_Y, topPos + BUTTON_UP_Y, topPos + BUTTON_DOWN_Y,
-                offset, max, dragging);
+        updateScrollArrowState();
+        GuiScroller.draw(
+                guiGraphics,
+                leftPos + SCROLLBAR_X,
+                topPos + BUTTON_UP_Y,
+                topPos + BUTTON_DOWN_Y,
+                offset,
+                max);
     }
 
     private void renderScrollChrome(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY,
                                     int scrollbarX, int scrollbarY, int buttonUpY, int buttonDownY,
                                     int offset, int max, boolean dragging) {
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0.0F, 0.0F,
-                SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
-
-        boolean upHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE
-                && mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE;
-        int upTextureY = upHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, buttonUpY,
-                (float) (SCROLLBAR_WIDTH * 2), (float) upTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-
-        boolean downHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE
-                && mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE;
-        int downTextureY = downHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, buttonDownY,
-                (float) (SCROLLBAR_WIDTH * 3), (float) downTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-
-        float scrollRatio = max > 0 ? (float) offset / max : 0f;
-        int handleY = scrollbarY + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        boolean handleHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE
-                && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        int handleTextureY = (handleHovered || dragging) ? HANDLE_SIZE : 0;
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SCROLLBAR_TEXTURE, scrollbarX, handleY,
-                (float) SCROLLBAR_WIDTH, (float) handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        GuiScroller.draw(guiGraphics, scrollbarX, buttonUpY, buttonDownY, offset, max);
     }
 
     private void renderColorPicker(GuiGraphicsExtractor guiGraphics) {
@@ -1278,31 +1299,16 @@ public class LabelingMachineScreen extends AbstractContainerScreen<LabelingMachi
 
     private boolean handleSegmentScrollClick(double mouseX, double mouseY) {
         int scrollbarX = leftPos + SCROLLBAR_X;
-        int buttonUpY = topPos + BUTTON_UP_Y;
-        int buttonDownY = topPos + BUTTON_DOWN_Y;
         int scrollbarY = topPos + SCROLLBAR_Y;
-
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE
-                && mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE) {
-            MachineGuiInput.markScrollbarPressed();
-            scrollUp();
-            return true;
-        }
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE
-                && mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE) {
-            MachineGuiInput.markScrollbarPressed();
-            scrollDown();
-            return true;
-        }
 
         float scrollRatio = 0f;
         int max = Math.max(0, segments.size() - VISIBLE_SEGMENTS);
         if (max > 0) {
             scrollRatio = (float) scrollOffset / max;
         }
-        int handleY = scrollbarY + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        if (canScroll() && mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE
-                && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
+        int handleY = scrollbarY + (int) (scrollRatio * GuiScroller.handleRange(SCROLLBAR_HEIGHT));
+        if (canScroll() && mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH
+                && mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT) {
             isDraggingHandle = true;
             MachineGuiInput.markScrollbarPressed();
             dragStartY = (int) mouseY;
@@ -1314,28 +1320,13 @@ public class LabelingMachineScreen extends AbstractContainerScreen<LabelingMachi
 
     private boolean handleLoreScrollClick(double mouseX, double mouseY) {
         int scrollbarX = leftPos + SCROLLBAR_X;
-        int buttonUpY = topPos + BUTTON_UP_Y;
-        int buttonDownY = topPos + BUTTON_DOWN_Y;
         int scrollbarY = topPos + SCROLLBAR_Y;
-
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE
-                && mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE) {
-            MachineGuiInput.markScrollbarPressed();
-            scrollLoreUp();
-            return true;
-        }
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE
-                && mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE) {
-            MachineGuiInput.markScrollbarPressed();
-            scrollLoreDown();
-            return true;
-        }
 
         int max = Math.max(0, loreLines.size() - VISIBLE_LORE_BTNS);
         float scrollRatio = max > 0 ? (float) loreScrollOffset / max : 0f;
-        int handleY = scrollbarY + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        if (canScrollLore() && mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE
-                && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
+        int handleY = scrollbarY + (int) (scrollRatio * GuiScroller.handleRange(SCROLLBAR_HEIGHT));
+        if (canScrollLore() && mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH
+                && mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT) {
             isDraggingLoreHandle = true;
             MachineGuiInput.markScrollbarPressed();
             dragStartY = (int) mouseY;
@@ -1372,7 +1363,7 @@ public class LabelingMachineScreen extends AbstractContainerScreen<LabelingMachi
         }
         if (isSegmentEditorView() && isDraggingHandle && canScroll()) {
             int max = segments.size() - VISIBLE_SEGMENTS;
-            int track = SCROLLBAR_HEIGHT - HANDLE_SIZE;
+            int track = GuiScroller.handleRange(SCROLLBAR_HEIGHT);
             int delta = (int) event.y() - dragStartY;
             int newOffset = dragStartScrollOffset + Math.round((delta / (float) track) * max);
             scrollOffset = Mth.clamp(newOffset, 0, max);
@@ -1381,7 +1372,7 @@ public class LabelingMachineScreen extends AbstractContainerScreen<LabelingMachi
         }
         if (subView == SubView.LORE && isDraggingLoreHandle && canScrollLore()) {
             int max = loreLines.size() - VISIBLE_LORE_BTNS;
-            int track = SCROLLBAR_HEIGHT - HANDLE_SIZE;
+            int track = GuiScroller.handleRange(SCROLLBAR_HEIGHT);
             int delta = (int) event.y() - dragStartY;
             int newOffset = dragStartScrollOffset + Math.round((delta / (float) track) * max);
             loreScrollOffset = Mth.clamp(newOffset, 0, max);

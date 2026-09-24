@@ -20,7 +20,7 @@ import net.unfamily.iskautils.integration.anotherdynamics.DeepDrawerSettingsCopi
 public class DeepDrawerExtractorMenu extends AbstractContainerMenu {
     /** Scrollbar column layout (menu-relative; shared with screen). */
     public static final int SCROLLBAR_X = 8 + 140 + 4;
-    public static final int SCROLLBAR_WIDTH = 8;
+    public static final int SCROLLBAR_WIDTH = 12;
     public static final int FIRST_ROW_Y = 30 + 12;
     public static final int SCROLLBAR_Y = FIRST_ROW_Y + 8;
     public static final int SCROLLBAR_HEIGHT = 34;
