@@ -691,11 +691,9 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH &&
             mouseY >= scrollbarY && mouseY < scrollbarY + SCROLLBAR_HEIGHT) {
             
-            float clickRatio = (float)(mouseY - scrollbarY) / SCROLLBAR_HEIGHT;
-            clickRatio = Math.max(0, Math.min(1, clickRatio));
-            
-            int newScrollOffset = (int)(clickRatio * (linkedBlocks.size() - VISIBLE_ENTRIES));
-            newScrollOffset = Math.max(0, Math.min(linkedBlocks.size() - VISIBLE_ENTRIES, newScrollOffset));
+            int max = linkedBlocks.size() - VISIBLE_ENTRIES;
+            int newScrollOffset = GuiScroller.scrollOffsetFromTrackClick(
+                    mouseY, scrollbarY, SCROLLBAR_HEIGHT, max);
             
             if (newScrollOffset != scrollOffset) {
                 scrollOffset = newScrollOffset;

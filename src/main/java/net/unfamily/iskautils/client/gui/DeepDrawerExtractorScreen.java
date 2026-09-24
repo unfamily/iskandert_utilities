@@ -2172,13 +2172,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
             mouseY >= guiY + SCROLLBAR_Y && mouseY < guiY + SCROLLBAR_Y + SCROLLBAR_HEIGHT) {
             
-            // Calculate new scroll position based on click
-            float clickRatio = (float) (mouseY - (guiY + SCROLLBAR_Y)) / SCROLLBAR_HEIGHT;
-            clickRatio = Math.max(0, Math.min(1, clickRatio));
-            
             int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_ENTRIES);
-            int newScrollOffset = (int)(clickRatio * maxScrollOffset);
-            newScrollOffset = Math.max(0, Math.min(maxScrollOffset, newScrollOffset));
+            int newScrollOffset = GuiScroller.scrollOffsetFromTrackClick(
+                    mouseY, guiY + SCROLLBAR_Y, SCROLLBAR_HEIGHT, maxScrollOffset);
             
             if (newScrollOffset != filterScrollOffset) {
                 setFilterScrollOffset(newScrollOffset);

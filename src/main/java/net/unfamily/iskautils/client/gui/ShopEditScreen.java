@@ -2849,8 +2849,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         // Arrows are real Buttons; only track / handle here.
         if (mouseY >= barY && mouseY < barY + SCROLLBAR_HEIGHT) {
             isDraggingHandle = true;
-            float ratio = (float) (mouseY - barY) / SCROLLBAR_HEIGHT;
-            scrollOffset = Math.max(0, Math.min(maxListScroll(), Math.round(ratio * maxListScroll())));
+            scrollOffset = GuiScroller.scrollOffsetFromTrackClick(
+                    mouseY, barY, SCROLLBAR_HEIGHT, maxListScroll());
             rebuild();
             return true;
         }
@@ -2868,8 +2868,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         }
         if (mouseY >= barY && mouseY < barY + STAGE_SCROLLBAR_HEIGHT) {
             isDraggingStageHandle = true;
-            float ratio = (float) (mouseY - barY) / STAGE_SCROLLBAR_HEIGHT;
-            stageScrollOffset = Math.max(0, Math.min(maxStageScroll(), Math.round(ratio * maxStageScroll())));
+            stageScrollOffset = GuiScroller.scrollOffsetFromTrackClick(
+                    mouseY, barY, STAGE_SCROLLBAR_HEIGHT, maxStageScroll());
             rebuild();
             return true;
         }

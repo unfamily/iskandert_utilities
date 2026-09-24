@@ -67,6 +67,24 @@ public final class GuiScroller {
         return Math.max(0, trackH - SCROLLER_HEIGHT);
     }
 
+    /**
+     * Scroll ratio [0,1] for a track click (not handle drag): places the thumb so its
+     * center aligns with the click across the full track height.
+     */
+    public static double scrollRatioFromTrackClick(double mouseY, int trackY, int trackH) {
+        double clickTrack = (mouseY - trackY) - (SCROLLER_HEIGHT / 2.0);
+        double denom = Math.max(1.0, (double) handleRange(trackH));
+        return Math.max(0.0, Math.min(1.0, clickTrack / denom));
+    }
+
+    /** Integer scroll offset from a track click; clamps to {@code [0, maxScroll]}. */
+    public static int scrollOffsetFromTrackClick(double mouseY, int trackY, int trackH, int maxScroll) {
+        if (maxScroll <= 0) {
+            return 0;
+        }
+        return (int) Math.round(scrollRatioFromTrackClick(mouseY, trackY, trackH) * maxScroll);
+    }
+
     /** Track fill + thumb only. Arrows are separate {@link Button} widgets. */
     public static void drawTrackAndHandle(GuiGraphics graphics, int x, int trackY, int trackH, int scroll, int maxScroll) {
         graphics.fill(x, trackY, x + SCROLLER_WIDTH, trackY + trackH, SCROLL_TRACK_COLOR);

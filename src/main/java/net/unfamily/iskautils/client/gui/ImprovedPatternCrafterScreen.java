@@ -2576,8 +2576,8 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             }
             if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH
                     && mouseY >= guiY + SCROLLBAR_Y && mouseY < guiY + SCROLLBAR_Y + SCROLLBAR_HEIGHT) {
-                float clickRatio = (float) (mouseY - (guiY + SCROLLBAR_Y)) / SCROLLBAR_HEIGHT;
-                filterListScroll = Math.max(0, Math.min(maxScrollOffset, Math.round(clickRatio * maxScrollOffset)));
+                filterListScroll = GuiScroller.scrollOffsetFromTrackClick(
+                        mouseY, guiY + SCROLLBAR_Y, SCROLLBAR_HEIGHT, maxScrollOffset);
                 updateForbiddenEditButtons();
                 return true;
             }
