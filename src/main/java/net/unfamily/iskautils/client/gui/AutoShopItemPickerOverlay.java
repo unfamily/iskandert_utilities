@@ -877,6 +877,9 @@ public final class AutoShopItemPickerOverlay {
         }
         scrollOffset = GuiScroller.scrollOffsetFromTrackClick(
                 mouseY, barY, scrollbarHeight(), maxScrollOffset());
+        isDraggingHandle = true;
+        dragStartY = (int) mouseY;
+        dragStartScrollOffset = scrollOffset;
         rebuildSelectButtons.run();
         playButtonSound.run();
         return true;

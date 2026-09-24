@@ -819,11 +819,11 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
              int max = clientStructures.size() - VISIBLE_ENTRIES;
              int newScrollOffset = GuiScroller.scrollOffsetFromTrackClick(
                      mouseY, scrollbarY, SCROLLBAR_HEIGHT, max);
-             
-             if (newScrollOffset != scrollOffset) {
-                 scrollOffset = newScrollOffset;
-                 playButtonSound();
-             }
+             scrollOffset = newScrollOffset;
+             isDraggingHandle = true;
+             dragStartY = (int) mouseY;
+             dragStartScrollOffset = scrollOffset;
+             playButtonSound();
              return true;
          }
          return false;

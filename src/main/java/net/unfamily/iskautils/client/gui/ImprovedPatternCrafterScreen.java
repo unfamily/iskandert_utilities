@@ -2608,6 +2608,9 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                     && mouseY >= guiY + SCROLLBAR_Y && mouseY < guiY + SCROLLBAR_Y + SCROLLBAR_HEIGHT) {
                 filterListScroll = GuiScroller.scrollOffsetFromTrackClick(
                         mouseY, guiY + SCROLLBAR_Y, SCROLLBAR_HEIGHT, maxScrollOffset);
+                isDraggingHandle = true;
+                dragStartY = (int) mouseY;
+                dragStartScrollOffset = filterListScroll;
                 updateForbiddenEditButtons();
                 return true;
             }

@@ -351,18 +351,37 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
         if (MachineGuiInput.clearEditBoxOnRightClick(mouseX, mouseY, event.button(), searchBox)) {
             return true;
         }
-        if (event.button() == 0) {
-            int scrollbarX = leftPos + SCROLLBAR_X;
-            if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLL_ARROW_SIZE
-                    && mouseY >= topPos + SCROLLBAR_Y && mouseY < topPos + BUTTON_DOWN_Y) {
-                isDraggingHandle = true;
-                dragStartY = (int) mouseY;
-                dragStartScrollOffset = scrollOffset;
-                MachineGuiInput.markScrollbarPressed();
-                return true;
-            }
+        if (event.button() == 0 && handleScrollbarInteraction(mouseX, mouseY)) {
+            return true;
         }
         return super.mouseClicked(event, doubleClick);
+    }
+
+    /** Handle drag on thumb; track click jumps then continues as drag. */
+    private boolean handleScrollbarInteraction(double mouseX, double mouseY) {
+        if (filteredSoundIds.size() <= VISIBLE_ENTRIES) {
+            return false;
+        }
+        int scrollbarX = leftPos + SCROLLBAR_X;
+        int trackY = topPos + SCROLLBAR_Y;
+        if (mouseX < scrollbarX || mouseX >= scrollbarX + SCROLLBAR_WIDTH
+                || mouseY < trackY || mouseY >= trackY + SCROLLBAR_HEIGHT) {
+            return false;
+        }
+        int maxOffset = filteredSoundIds.size() - VISIBLE_ENTRIES;
+        float ratio = maxOffset > 0 ? (float) scrollOffset / maxOffset : 0f;
+        int handleY = trackY + (int) (ratio * GuiScroller.handleRange(SCROLLBAR_HEIGHT));
+        boolean onHandle = mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT;
+        if (!onHandle) {
+            scrollOffset = GuiScroller.scrollOffsetFromTrackClick(
+                    mouseY, trackY, SCROLLBAR_HEIGHT, maxOffset);
+            playButtonSound();
+        }
+        isDraggingHandle = true;
+        dragStartY = (int) mouseY;
+        dragStartScrollOffset = scrollOffset;
+        MachineGuiInput.markScrollbarPressed();
+        return true;
     }
 
     @Override

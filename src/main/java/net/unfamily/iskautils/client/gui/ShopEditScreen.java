@@ -2831,15 +2831,15 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
         if (event.button() == 0 && isDraggingHandle && maxListScroll() > 0) {
             int barY = topPos + GuiScroller.trackY(BUTTON_UP_Y);
-            float ratio = (float) (event.y() - barY) / GuiScroller.handleRange(SCROLLBAR_HEIGHT);
-            scrollOffset = Math.max(0, Math.min(maxListScroll(), Math.round(ratio * maxListScroll())));
+            scrollOffset = GuiScroller.scrollOffsetFromTrackClick(
+                    event.y(), barY, SCROLLBAR_HEIGHT, maxListScroll());
             rebuild();
             return true;
         }
         if (event.button() == 0 && isDraggingStageHandle && maxStageScroll() > 0) {
             int barY = topPos + GuiScroller.trackY(STAGE_BUTTON_UP_Y);
-            float ratio = (float) (event.y() - barY) / Math.max(1, GuiScroller.handleRange(STAGE_SCROLLBAR_HEIGHT));
-            stageScrollOffset = Math.max(0, Math.min(maxStageScroll(), Math.round(ratio * maxStageScroll())));
+            stageScrollOffset = GuiScroller.scrollOffsetFromTrackClick(
+                    event.y(), barY, STAGE_SCROLLBAR_HEIGHT, maxStageScroll());
             rebuild();
             return true;
         }

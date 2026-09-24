@@ -2235,11 +2235,11 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_ENTRIES);
             int newScrollOffset = GuiScroller.scrollOffsetFromTrackClick(
                     mouseY, guiY + SCROLLBAR_Y, SCROLLBAR_HEIGHT, maxScrollOffset);
-            
-            if (newScrollOffset != filterScrollOffset) {
-                setFilterScrollOffset(newScrollOffset);
-                playButtonSound();
-            }
+            setFilterScrollOffset(newScrollOffset);
+            isDraggingHandle = true;
+            dragStartY = (int) mouseY;
+            dragStartScrollOffset = filterScrollOffset;
+            playButtonSound();
             return true;
         }
         return false;

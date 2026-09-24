@@ -1298,42 +1298,53 @@ public class LabelingMachineScreen extends AbstractContainerScreen<LabelingMachi
     }
 
     private boolean handleSegmentScrollClick(double mouseX, double mouseY) {
+        if (!canScroll()) {
+            return false;
+        }
         int scrollbarX = leftPos + SCROLLBAR_X;
         int scrollbarY = topPos + SCROLLBAR_Y;
-
-        float scrollRatio = 0f;
+        if (mouseX < scrollbarX || mouseX >= scrollbarX + SCROLLBAR_WIDTH
+                || mouseY < scrollbarY || mouseY >= scrollbarY + SCROLLBAR_HEIGHT) {
+            return false;
+        }
         int max = Math.max(0, segments.size() - VISIBLE_SEGMENTS);
-        if (max > 0) {
-            scrollRatio = (float) scrollOffset / max;
-        }
+        float scrollRatio = max > 0 ? (float) scrollOffset / max : 0f;
         int handleY = scrollbarY + (int) (scrollRatio * GuiScroller.handleRange(SCROLLBAR_HEIGHT));
-        if (canScroll() && mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH
-                && mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT) {
-            isDraggingHandle = true;
-            MachineGuiInput.markScrollbarPressed();
-            dragStartY = (int) mouseY;
-            dragStartScrollOffset = scrollOffset;
-            return true;
+        boolean onHandle = mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT;
+        if (!onHandle) {
+            scrollOffset = GuiScroller.scrollOffsetFromTrackClick(
+                    mouseY, scrollbarY, SCROLLBAR_HEIGHT, max);
         }
-        return false;
+        isDraggingHandle = true;
+        MachineGuiInput.markScrollbarPressed();
+        dragStartY = (int) mouseY;
+        dragStartScrollOffset = scrollOffset;
+        return true;
     }
 
     private boolean handleLoreScrollClick(double mouseX, double mouseY) {
+        if (!canScrollLore()) {
+            return false;
+        }
         int scrollbarX = leftPos + SCROLLBAR_X;
         int scrollbarY = topPos + SCROLLBAR_Y;
-
+        if (mouseX < scrollbarX || mouseX >= scrollbarX + SCROLLBAR_WIDTH
+                || mouseY < scrollbarY || mouseY >= scrollbarY + SCROLLBAR_HEIGHT) {
+            return false;
+        }
         int max = Math.max(0, loreLines.size() - VISIBLE_LORE_BTNS);
         float scrollRatio = max > 0 ? (float) loreScrollOffset / max : 0f;
         int handleY = scrollbarY + (int) (scrollRatio * GuiScroller.handleRange(SCROLLBAR_HEIGHT));
-        if (canScrollLore() && mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH
-                && mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT) {
-            isDraggingLoreHandle = true;
-            MachineGuiInput.markScrollbarPressed();
-            dragStartY = (int) mouseY;
-            dragStartScrollOffset = loreScrollOffset;
-            return true;
+        boolean onHandle = mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT;
+        if (!onHandle) {
+            loreScrollOffset = GuiScroller.scrollOffsetFromTrackClick(
+                    mouseY, scrollbarY, SCROLLBAR_HEIGHT, max);
         }
-        return false;
+        isDraggingLoreHandle = true;
+        MachineGuiInput.markScrollbarPressed();
+        dragStartY = (int) mouseY;
+        dragStartScrollOffset = loreScrollOffset;
+        return true;
     }
 
     private int paletteIndexAt(double mouseX, double mouseY) {
