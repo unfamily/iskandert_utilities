@@ -42,6 +42,10 @@ public class PortableShopItem extends Item {
                     return ShopMenu.createPortable(containerId, inv);
                 }
             });
+            // A2/A6: send stage cache to client
+            net.unfamily.iskautils.network.packet.ShopStagesS2CPacket.sendTo(serverPlayer);
+            // A4: send saved UI prefs to client
+            net.unfamily.iskautils.network.packet.ShopUiPrefsS2CPacket.sendTo(serverPlayer);
         }
         return InteractionResult.CONSUME;
     }

@@ -220,6 +220,21 @@ public class ShopLoader {
             category.item = categoryObj.has("item") ? categoryObj.get("item").getAsString() : "minecraft:stone";
             category.inCategory = ShopHierarchy.readInCategory(categoryObj);
             category.priority = categoryObj.has("priority") ? categoryObj.get("priority").getAsInt() : 0;
+            if (categoryObj.has("stages") && categoryObj.get("stages").isJsonArray()) {
+                JsonArray stagesArray = categoryObj.getAsJsonArray("stages");
+                category.stages = new ShopStage[stagesArray.size()];
+                for (int i = 0; i < stagesArray.size(); i++) {
+                    JsonElement stageElement = stagesArray.get(i);
+                    if (stageElement.isJsonObject()) {
+                        JsonObject stageObj = stageElement.getAsJsonObject();
+                        ShopStage stage = new ShopStage();
+                        stage.stage = stageObj.has("stage") ? stageObj.get("stage").getAsString() : "";
+                        stage.stageType = stageObj.has("stage_type") ? stageObj.get("stage_type").getAsString() : "world";
+                        stage.is = stageObj.has("is") ? stageObj.get("is").getAsBoolean() : true;
+                        category.stages[i] = stage;
+                    }
+                }
+            }
             
             CATEGORIES.put(id, category);
             PROTECTED_CATEGORIES.put(id, !overwritable);

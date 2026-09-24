@@ -15,6 +15,7 @@ import net.unfamily.iskautils.util.DeepDrawerItemFilter;
 import net.unfamily.iskalib.item.ItemConverter;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,22 @@ public final class ShopBrowsePanel {
     public enum TradeVisibility {
         SHOW,
         HIDE_UNTRADEABLE
+    }
+
+    /**
+     * A5: Sort mode for the browse list.
+     * Applied when building the mixed row list.
+     */
+    public enum SortMode {
+        PRIORITY("P"),
+        BUY_ASC("B↑"),
+        BUY_DESC("B↓"),
+        SELL_ASC("S↑"),
+        SELL_DESC("S↓");
+
+        private final String label;
+        SortMode(String label) { this.label = label; }
+        public String label() { return label; }
     }
 
     /**
@@ -74,7 +91,8 @@ public final class ShopBrowsePanel {
     public static final int INVENTORY_Y = 154;
     public static final int ENTRY_WIDTH = 220;
     public static final int ENTRY_HEIGHT = 24;
-    public static final int ENTRY_START_X = 19;
+    /** Content column shifted left so currency balances fit beside the Dynaimics scrollbar. */
+    public static final int ENTRY_START_X = 7;
     public static final int ENTRY_START_Y = 20;
     public static final int MAX_VISIBLE_ENTRIES = 4;
 
@@ -84,18 +102,20 @@ public final class ShopBrowsePanel {
     public static final int SCOPE_BUTTON_WIDTH = 16;
     public static final int CURRENCY_BUTTON_WIDTH = 36;
     public static final int AVAILABILITY_BUTTON_WIDTH = 16;
+    public static final int SORT_BUTTON_WIDTH = 22;
     public static final int FILTER_BUTTON_GAP = 2;
 
     /** Search + filter row replaces the first entry slot (same Y as original entry list). */
     public static final int SEARCH_ROW_Y = ENTRY_START_Y;
     public static final int SEARCH_BAR_X = ENTRY_START_X;
     public static final int SEARCH_BAR_WIDTH = ENTRY_WIDTH - SCOPE_BUTTON_WIDTH - CURRENCY_BUTTON_WIDTH
-            - AVAILABILITY_BUTTON_WIDTH - 3 * FILTER_BUTTON_GAP;
+            - AVAILABILITY_BUTTON_WIDTH - SORT_BUTTON_WIDTH - 4 * FILTER_BUTTON_GAP;
     public static final int SEARCH_BAR_Y = SEARCH_ROW_Y + (ENTRY_HEIGHT - SEARCH_BAR_HEIGHT) / 2;
     public static final int FILTER_ROW_Y = SEARCH_BAR_Y;
     public static final int SCOPE_BUTTON_X = SEARCH_BAR_X + SEARCH_BAR_WIDTH + FILTER_BUTTON_GAP;
     public static final int CURRENCY_BUTTON_X = SCOPE_BUTTON_X + SCOPE_BUTTON_WIDTH + FILTER_BUTTON_GAP;
     public static final int AVAILABILITY_BUTTON_X = CURRENCY_BUTTON_X + CURRENCY_BUTTON_WIDTH + FILTER_BUTTON_GAP;
+    public static final int SORT_BUTTON_X = AVAILABILITY_BUTTON_X + AVAILABILITY_BUTTON_WIDTH + FILTER_BUTTON_GAP;
 
     /** @deprecated use {@link #SCOPE_BUTTON_WIDTH} */
     @Deprecated
@@ -105,6 +125,8 @@ public final class ShopBrowsePanel {
     @Nullable
     private String currencyFilterId = null;
     private TradeVisibility tradeVisibility = TradeVisibility.SHOW;
+    /** A5: current sort mode. */
+    private SortMode sortMode = SortMode.PRIORITY;
     private String searchQuery = "";
     private final boolean autoShopMode;
 
@@ -112,6 +134,8 @@ public final class ShopBrowsePanel {
     private List<ShopEntry> categoryItems = List.of();
     private List<ShopCategory> filteredCategories = List.of();
     private List<ShopEntry> filteredItems = List.of();
+    /** A1: unified sorted mixed row list (categories + entries sorted by priority+id). */
+    private List<MixedRow> mixedRows = List.of();
 
     public ShopBrowsePanel() {
         this(false);
@@ -199,6 +223,37 @@ public final class ShopBrowsePanel {
         return tradeVisibility == TradeVisibility.HIDE_UNTRADEABLE ? "H" : "S";
     }
 
+    // ── A5: Sort mode ────────────────────────────────────────────────────────
+
+    public SortMode getSortMode() { return sortMode; }
+
+    public void setSortMode(SortMode mode) { this.sortMode = mode != null ? mode : SortMode.PRIORITY; }
+
+    public void cycleSortMode(boolean backward) {
+        SortMode[] values = SortMode.values();
+        int idx = sortMode.ordinal();
+        if (backward) {
+            idx = (idx - 1 + values.length) % values.length;
+        } else {
+            idx = (idx + 1) % values.length;
+        }
+        sortMode = values[idx];
+    }
+
+    public String sortModeLabel() {
+        return sortMode.label();
+    }
+
+    // ── A4: Player prefs restore support ─────────────────────────────────────
+
+    public void restorePrefs(SearchScope scope, @Nullable String currencyFilter,
+                              TradeVisibility visibility, SortMode sort) {
+        if (scope != null) searchScope = scope;
+        currencyFilterId = currencyFilter;
+        if (visibility != null) tradeVisibility = visibility;
+        if (sort != null) sortMode = sort;
+    }
+
     public void cycleCurrencyFilter(boolean backward) {
         List<String> ids = getSortedCurrencyIds();
         if (ids.isEmpty()) {
@@ -239,25 +294,50 @@ public final class ShopBrowsePanel {
         return filteredItems;
     }
 
-    /** Categories first (already sorted), then entries. */
+    /**
+     * A1: Unified priority mix — categories and entries in one list sorted by priority DESC then id.
+     */
     public int getMixedRowCount() {
-        return filteredCategories.size() + filteredItems.size();
+        return mixedRows.size();
     }
 
     @Nullable
     public MixedRow getMixedRow(int index) {
-        if (index < 0) {
-            return null;
+        if (index < 0 || index >= mixedRows.size()) return null;
+        return mixedRows.get(index);
+    }
+
+    /** Rebuild the unified mixed-row list from filteredCategories + filteredItems (A1 / A5). */
+    private void rebuildMixedRows() {
+        List<MixedRow> rows = new ArrayList<>(filteredCategories.size() + filteredItems.size());
+        if (sortMode == SortMode.PRIORITY) {
+            for (ShopCategory cat : filteredCategories) {
+                rows.add(MixedRow.ofCategory(cat));
+            }
+            for (ShopEntry entry : filteredItems) {
+                rows.add(MixedRow.ofEntry(entry));
+            }
+            // A1: categories and entries interleaved by priority DESC then id ASC
+            rows.sort((a, b) -> {
+                int pa = a.isCategory() ? a.category.priority : a.entry.priority;
+                int pb = b.isCategory() ? b.category.priority : b.entry.priority;
+                if (pb != pa) {
+                    return Integer.compare(pb, pa);
+                }
+                String ia = a.isCategory() ? a.category.id : a.entry.id;
+                String ib = b.isCategory() ? b.category.id : b.entry.id;
+                return ia.compareToIgnoreCase(ib);
+            });
+        } else {
+            // Price sorts: entries first (already sorted by entryComparator), categories last (no price)
+            for (ShopEntry entry : filteredItems) {
+                rows.add(MixedRow.ofEntry(entry));
+            }
+            for (ShopCategory cat : filteredCategories) {
+                rows.add(MixedRow.ofCategory(cat));
+            }
         }
-        int catCount = filteredCategories.size();
-        if (index < catCount) {
-            return MixedRow.ofCategory(filteredCategories.get(index));
-        }
-        int entryIndex = index - catCount;
-        if (entryIndex < filteredItems.size()) {
-            return MixedRow.ofEntry(filteredItems.get(entryIndex));
-        }
-        return null;
+        mixedRows = rows;
     }
 
     public void loadAllCategories() {
@@ -286,12 +366,29 @@ public final class ShopBrowsePanel {
         applyFilters(false);
     }
 
-    private static Comparator<ShopEntry> entryComparator() {
-        return Comparator.comparingInt((ShopEntry e) -> e.priority).reversed()
-                .thenComparing(entry -> {
-                    String selector = ShopEntryHelper.resourceSelector(entry);
-                    return selector != null ? selector : "";
-                });
+    public int sortButtonX() { return SORT_BUTTON_X; }
+
+    private Comparator<ShopEntry> entryComparator() {
+        Comparator<ShopEntry> byPriorityDesc = Comparator.comparingInt((ShopEntry e) -> e.priority).reversed();
+        Comparator<ShopEntry> bySelector = Comparator.comparing(e -> {
+            String s = ShopEntryHelper.resourceSelector(e);
+            return s != null ? s : "";
+        });
+        return switch (sortMode) {
+            case BUY_ASC -> Comparator.comparingDouble((ShopEntry e) -> e.buy)
+                    .thenComparing(byPriorityDesc)
+                    .thenComparing(bySelector);
+            case BUY_DESC -> Comparator.comparingDouble((ShopEntry e) -> e.buy).reversed()
+                    .thenComparing(byPriorityDesc)
+                    .thenComparing(bySelector);
+            case SELL_ASC -> Comparator.comparingDouble((ShopEntry e) -> e.sell)
+                    .thenComparing(byPriorityDesc)
+                    .thenComparing(bySelector);
+            case SELL_DESC -> Comparator.comparingDouble((ShopEntry e) -> e.sell).reversed()
+                    .thenComparing(byPriorityDesc)
+                    .thenComparing(bySelector);
+            default -> byPriorityDesc.thenComparing(bySelector);
+        };
     }
 
     public void applyFilters(boolean categoryView) {
@@ -303,15 +400,18 @@ public final class ShopBrowsePanel {
                     .collect(Collectors.toList());
             filteredCategories = List.of();
         } else {
-            // Root or nested level: mixed child categories + child entries
+            // Root or nested level: mixed child categories + child entries (A6: hide stage-locked)
             filteredCategories = allCategories.stream()
                     .filter(this::matchesCategoryFilters)
                     .collect(Collectors.toList());
             filteredItems = categoryItems.stream()
                     .filter(this::isBrowsable)
                     .filter(this::matchesItemFilters)
+                    .sorted(entryComparator())
                     .collect(Collectors.toList());
         }
+        // A1: rebuild unified mixed rows after filtering
+        rebuildMixedRows();
     }
 
     /** Category list with item query (All/Buyable/Sellable): show matching items, not parent categories. */
@@ -345,6 +445,11 @@ public final class ShopBrowsePanel {
     }
 
     private boolean matchesCategoryFilters(ShopCategory category) {
+        // A6: hide stage-locked categories in HIDE_UNTRADEABLE mode
+        if (tradeVisibility == TradeVisibility.HIDE_UNTRADEABLE
+                && ShopClientStages.isCategoryBlocked(category)) {
+            return false;
+        }
         if (currencyFilterId != null && !categoryHasCurrency(category.id, currencyFilterId)) {
             return false;
         }
@@ -452,6 +557,10 @@ public final class ShopBrowsePanel {
     private boolean passesTradeVisibility(ShopEntry entry) {
         if (tradeVisibility != TradeVisibility.HIDE_UNTRADEABLE) {
             return true;
+        }
+        // A6: hide stage-locked entries
+        if (ShopClientStages.isEntryBlocked(entry)) {
+            return false;
         }
         return canBuyOrSell(entry);
     }

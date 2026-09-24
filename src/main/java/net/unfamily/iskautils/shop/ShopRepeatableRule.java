@@ -18,10 +18,12 @@ public class ShopRepeatableRule {
     public static final String WHEN_MONTHLY = "monthly";
     public static final String WHEN_YEARLY = "yearly";
     public static final String WHEN_ONLY = "only";
+    /** Timed window: window length in ticks, optionally reset-on-saturate. */
+    public static final String WHEN_TIMED = "timed";
 
     /** {@code team} | {@code player} | {@code all} */
     public String scope = SCOPE_TEAM;
-    /** {@code always} | {@code daily} | {@code weekly} | {@code monthly} | {@code yearly} | {@code only} */
+    /** {@code always} | {@code daily} | {@code weekly} | {@code monthly} | {@code yearly} | {@code only} | {@code timed} */
     public String when = WHEN_ALWAYS;
     /** {@code HH:mm} server-local reset time for period modes. Default midnight. */
     public String resetTime = "00:00";
@@ -31,6 +33,18 @@ public class ShopRepeatableRule {
     public int resetMonth = 1;
     /** Max purchases per period, or lifetime for {@code only}. Default 1. */
     public int count = 1;
+    /**
+     * Window length in game ticks for {@link #WHEN_TIMED}.
+     * JSON key: {@code duration_ticks}.
+     */
+    public long durationTicks = 0;
+    /**
+     * For {@link #WHEN_TIMED}: when true, a new window starts the moment the count saturates
+     * (i.e. hits max). When false, the window starts on the first trade and expires after
+     * {@link #durationTicks} regardless of saturation.
+     * JSON key: {@code reset_on_saturate}.
+     */
+    public boolean resetOnSaturate = false;
 
     public static ShopRepeatableRule defaults() {
         return new ShopRepeatableRule();
@@ -74,7 +88,9 @@ public class ShopRepeatableRule {
                 && "00:00".equals(normalizeTime(resetTime))
                 && resetDay == 1
                 && resetMonth == 1
-                && count == 1;
+                && count == 1
+                && durationTicks == 0
+                && !resetOnSaturate;
     }
 
     public ShopRepeatableRule copy() {
@@ -85,6 +101,8 @@ public class ShopRepeatableRule {
         c.resetDay = resetDay;
         c.resetMonth = resetMonth;
         c.count = count;
+        c.durationTicks = durationTicks;
+        c.resetOnSaturate = resetOnSaturate;
         return c;
     }
 
@@ -110,6 +128,12 @@ public class ShopRepeatableRule {
         }
         if (o.has("count")) {
             r.count = Math.max(1, o.get("count").getAsInt());
+        }
+        if (o.has("duration_ticks")) {
+            r.durationTicks = o.get("duration_ticks").getAsLong();
+        }
+        if (o.has("reset_on_saturate")) {
+            r.resetOnSaturate = o.get("reset_on_saturate").getAsBoolean();
         }
         return r.isDefault() ? null : r;
     }
@@ -144,6 +168,14 @@ public class ShopRepeatableRule {
         }
         if (count != 1) {
             o.addProperty("count", count);
+        }
+        if (WHEN_TIMED.equalsIgnoreCase(wh)) {
+            if (durationTicks != 0) {
+                o.addProperty("duration_ticks", durationTicks);
+            }
+            if (resetOnSaturate) {
+                o.addProperty("reset_on_saturate", true);
+            }
         }
         // If when is non-always but all other fields default, still need when in JSON
         if (o.size() == 0 && !WHEN_ALWAYS.equalsIgnoreCase(wh)) {

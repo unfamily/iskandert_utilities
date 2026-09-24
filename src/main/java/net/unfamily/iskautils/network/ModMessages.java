@@ -235,6 +235,23 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.ShopPurchaseLimitsS2CPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.ShopPurchaseLimitsS2CPacket::handle
         );
+        // A2/A6: shop stage cache
+        registrar.playToClient(
+            net.unfamily.iskautils.network.packet.ShopStagesS2CPacket.TYPE,
+            net.unfamily.iskautils.network.packet.ShopStagesS2CPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.ShopStagesS2CPacket::handle
+        );
+        // A4: player UI prefs
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.ShopUiPrefsC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.ShopUiPrefsC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.ShopUiPrefsC2SPacket::handle
+        );
+        registrar.playToClient(
+            net.unfamily.iskautils.network.packet.ShopUiPrefsS2CPacket.TYPE,
+            net.unfamily.iskautils.network.packet.ShopUiPrefsS2CPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.ShopUiPrefsS2CPacket::handle
+        );
         registrar.playToServer(
             AutoShopSetEncapsulatedC2SPacket.TYPE,
             AutoShopSetEncapsulatedC2SPacket.STREAM_CODEC,
@@ -990,6 +1007,16 @@ public class ModMessages {
     public static void requestShopPurchaseLimits() {
         net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new net.unfamily.iskautils.network.packet.ShopPurchaseLimitsRequestC2SPacket());
+    }
+
+    /** A4: Send player UI prefs to server for persistence in player NBT. */
+    public static void sendShopUiPrefs(String scope, @org.jetbrains.annotations.Nullable String currencyFilter,
+                                        String tradeVisibility, String sortMode) {
+        try {
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                    new net.unfamily.iskautils.network.packet.ShopUiPrefsC2SPacket(
+                            scope, currencyFilter, tradeVisibility, sortMode));
+        } catch (Exception ignored) {}
     }
 
     /**

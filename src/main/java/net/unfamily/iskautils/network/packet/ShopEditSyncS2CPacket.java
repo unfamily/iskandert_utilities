@@ -73,6 +73,18 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
             o.addProperty("item", c.item);
             ShopHierarchy.writeInCategory(o, c.inCategory);
             o.addProperty("priority", c.priority);
+            if (c.stages != null && c.stages.length > 0) {
+                JsonArray stages = new JsonArray();
+                for (ShopStage st : c.stages) {
+                    if (st == null) continue;
+                    JsonObject so = new JsonObject();
+                    so.addProperty("stage", st.stage != null ? st.stage : "");
+                    so.addProperty("stage_type", st.stageType != null ? st.stageType : "world");
+                    so.addProperty("is", st.is);
+                    stages.add(so);
+                }
+                o.add("stages", stages);
+            }
             categories.add(o);
         }
         root.add("categories", categories);
@@ -138,6 +150,19 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
                 c.item = o.has("item") ? o.get("item").getAsString() : "minecraft:stone";
                 c.inCategory = ShopHierarchy.readInCategory(o);
                 c.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
+                if (o.has("stages") && o.get("stages").isJsonArray()) {
+                    List<ShopStage> stages = new ArrayList<>();
+                    for (var se : o.getAsJsonArray("stages")) {
+                        if (!se.isJsonObject()) continue;
+                        JsonObject so = se.getAsJsonObject();
+                        ShopStage st = new ShopStage();
+                        st.stage = so.has("stage") ? so.get("stage").getAsString() : "";
+                        st.stageType = so.has("stage_type") ? so.get("stage_type").getAsString() : "world";
+                        st.is = !so.has("is") || so.get("is").getAsBoolean();
+                        stages.add(st);
+                    }
+                    c.stages = stages.toArray(new ShopStage[0]);
+                }
                 data.categories.put(c.id, c);
             }
         }
