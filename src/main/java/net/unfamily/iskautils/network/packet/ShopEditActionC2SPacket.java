@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Client → server shop editor mutation. Server autosaves and replies with {@link ShopEditSyncS2CPacket}.
@@ -79,6 +80,11 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
                     return;
                 }
                 String oldId = payload.has("old_id") ? payload.get("old_id").getAsString() : c.id;
+                boolean isNew = !oldId.equals(c.id) || !data.currencies.containsKey(c.id);
+                // A3: deduplicate - if new ID already exists and it's not a rename of itself
+                if (isNew && !oldId.equals(c.id) && data.currencies.containsKey(c.id)) {
+                    c.id = allocateUniqueId(c.id, data.currencies);
+                }
                 if (!oldId.equals(c.id) && data.currencies.containsKey(oldId)) {
                     data.currencies.remove(oldId);
                 }
@@ -104,6 +110,11 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
                     c.inCategory = parent;
                 }
                 String oldId = payload.has("old_id") ? payload.get("old_id").getAsString() : c.id;
+                boolean catIsNew = !oldId.equals(c.id) || !data.categories.containsKey(c.id);
+                // A3: deduplicate - if new ID already exists and it's not a rename of itself
+                if (catIsNew && !oldId.equals(c.id) && data.categories.containsKey(c.id)) {
+                    c.id = allocateUniqueId(c.id, data.categories);
+                }
                 if (!oldId.equals(c.id) && data.categories.containsKey(oldId)) {
                     data.categories.remove(oldId);
                 }
@@ -122,6 +133,11 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
                     return;
                 }
                 String oldId = payload.has("old_id") ? payload.get("old_id").getAsString() : e.id;
+                boolean entryIsNew = !oldId.equals(e.id) || !data.entries.containsKey(e.id);
+                // A3: deduplicate - if new ID already exists and it's not a rename of itself
+                if (entryIsNew && !oldId.equals(e.id) && data.entries.containsKey(e.id)) {
+                    e.id = allocateUniqueId(e.id, data.entries);
+                }
                 if (!oldId.equals(e.id) && data.entries.containsKey(oldId)) {
                     data.entries.remove(oldId);
                 }
@@ -239,7 +255,38 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
         c.item = o.has("item") ? o.get("item").getAsString() : "minecraft:stone";
         c.inCategory = ShopHierarchy.readInCategory(o);
         c.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
+        if (o.has("stages") && o.get("stages").isJsonArray()) {
+            List<ShopStage> stages = new ArrayList<>();
+            for (var el : o.getAsJsonArray("stages")) {
+                if (!el.isJsonObject()) continue;
+                JsonObject so = el.getAsJsonObject();
+                ShopStage st = new ShopStage();
+                st.stage = so.has("stage") ? so.get("stage").getAsString() : "";
+                st.stageType = so.has("stage_type") ? so.get("stage_type").getAsString() : "world";
+                st.is = !so.has("is") || so.get("is").getAsBoolean();
+                stages.add(st);
+            }
+            c.stages = stages.toArray(new ShopStage[0]);
+        }
         return c;
+    }
+
+    /**
+     * A3: Generate a unique id by appending "_XXXX" (random alphanumeric, 4 chars) until no collision.
+     */
+    private static <T> String allocateUniqueId(String base, Map<String, T> existing) {
+        String chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+        Random rng = new Random();
+        String candidate = base;
+        for (int attempt = 0; attempt < 100; attempt++) {
+            if (!existing.containsKey(candidate)) return candidate;
+            StringBuilder suffix = new StringBuilder(4);
+            for (int i = 0; i < 4; i++) {
+                suffix.append(chars.charAt(rng.nextInt(chars.length())));
+            }
+            candidate = base + "_" + suffix;
+        }
+        return base + "_" + System.nanoTime();
     }
 
     private static ShopEntry readEntry(JsonObject o) {

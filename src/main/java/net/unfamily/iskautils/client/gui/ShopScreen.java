@@ -36,10 +36,10 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     // Background widened only to the right (shop.png 300x240)
     private static final int GUI_WIDTH = 300;
     private static final int GUI_HEIGHT = 240;
-    // Entry texture: enrty_wide_wide_wide.png = 220x24, aligned with inventory start (x=20)
-    private static final int ENTRY_WIDTH = 220;
-    private static final int ENTRY_HEIGHT = 24;
-    private static final int ENTRY_START_X = 19;
+    // Entry list / filters / scrollbar: shifted left for currency column (inventory / Back / ✕ stay put)
+    private static final int ENTRY_WIDTH = ShopBrowsePanel.ENTRY_WIDTH;
+    private static final int ENTRY_HEIGHT = ShopBrowsePanel.ENTRY_HEIGHT;
+    private static final int ENTRY_START_X = ShopBrowsePanel.ENTRY_START_X;
     private static final int SEARCH_DEBOUNCE_TICKS = 4;
     
     // Margin from right edge (don't go below this)
@@ -50,8 +50,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
     private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
     
-    // Scrollbar: right next to entries (Y positions derived from entryStartY())
-    private static final int SCROLLBAR_X = ENTRY_START_X + ENTRY_WIDTH + 4;
+    // Scrollbar: tight against entries (Y positions derived from entryStartY())
+    private static final int SCROLLBAR_X = ENTRY_START_X + ENTRY_WIDTH + 2;
     
     // Buy/Sell button constants
     private static final int BUTTON_WIDTH = 30;
@@ -87,6 +87,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private SymbolIconButton currencyFilterButton;
     private SymbolIconButton scopeFilterButton;
     private SymbolIconButton availabilityFilterButton;
+    private SymbolIconButton sortModeButton; // A5
     
     // Vanilla buttons
     private Button backButton;
@@ -117,7 +118,10 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         super(menu, playerInventory, title);
         this.imageWidth = GUI_WIDTH;
         this.imageHeight = GUI_HEIGHT;
-        
+
+        // A4: restore saved prefs before loading shop data
+        ShopClientPrefs.restoreInto(browsePanel);
+
         // Carica i dati del shop
         loadShopData();
         
@@ -207,6 +211,16 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                 button -> onAvailabilityFilterPressed(),
                 browsePanel::tradeVisibilityLetter,
                 getAvailabilityFilterTooltip()));
+
+        // A5: sort mode button
+        sortModeButton = addRenderableWidget(new SymbolIconButton(
+                leftPos + browsePanel.sortButtonX(),
+                topPos + ShopBrowsePanel.FILTER_ROW_Y,
+                ShopBrowsePanel.SORT_BUTTON_WIDTH,
+                ShopBrowsePanel.FILTER_BUTTON_HEIGHT,
+                button -> onSortModePressed(false),
+                browsePanel::sortModeLabel,
+                getSortModeTooltip()));
         
         // Create vanilla Back button
         backButton = Button.builder(Component.translatable("gui.iska_utils.shop.back"), button -> {
@@ -295,6 +309,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
 
     private void onScopeFilterPressed(boolean backward) {
         browsePanel.cycleSearchScope(backward, showingCategories);
+        ShopClientPrefs.setScope(browsePanel.getSearchScope()); // A4
         updateScopeFilterTooltip();
         refreshFilteredLists();
         playButtonSound();
@@ -302,6 +317,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
 
     private void onCurrencyFilterPressed(boolean backward) {
         browsePanel.cycleCurrencyFilter(backward);
+        ShopClientPrefs.setCurrencyFilter(browsePanel.getCurrencyFilterId()); // A4
         updateCurrencyFilterTooltip();
         refreshFilteredLists();
         playButtonSound();
@@ -309,9 +325,31 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
 
     private void onAvailabilityFilterPressed() {
         browsePanel.cycleTradeVisibility();
+        ShopClientPrefs.setTradeVisibility(browsePanel.getTradeVisibility()); // A4
         updateAvailabilityFilterTooltip();
         refreshFilteredLists();
         playButtonSound();
+    }
+
+    // A5: sort mode
+    private void onSortModePressed(boolean backward) {
+        browsePanel.cycleSortMode(backward);
+        ShopClientPrefs.setSortMode(browsePanel.getSortMode()); // A4
+        if (sortModeButton != null) {
+            sortModeButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(getSortModeTooltip()));
+        }
+        refreshFilteredLists();
+        playButtonSound();
+    }
+
+    private Component getSortModeTooltip() {
+        return switch (browsePanel.getSortMode()) {
+            case PRIORITY -> Component.translatable("gui.iska_utils.shop.sort.priority");
+            case BUY_ASC -> Component.translatable("gui.iska_utils.shop.sort.buy_asc");
+            case BUY_DESC -> Component.translatable("gui.iska_utils.shop.sort.buy_desc");
+            case SELL_ASC -> Component.translatable("gui.iska_utils.shop.sort.sell_asc");
+            case SELL_DESC -> Component.translatable("gui.iska_utils.shop.sort.sell_desc");
+        };
     }
 
     private void updateScopeFilterTooltip() {
@@ -445,6 +483,10 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             }
             if (availabilityFilterButton != null && availabilityFilterButton.isMouseOver(mouseX, mouseY)) {
                 onAvailabilityFilterPressed();
+                return true;
+            }
+            if (sortModeButton != null && sortModeButton.isMouseOver(mouseX, mouseY)) {
+                onSortModePressed(true); // right-click = backward
                 return true;
             }
             if (MachineGuiInput.clearEditBoxOnRightClick(mouseX, mouseY, button, searchBox)) {
@@ -666,6 +708,10 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      * Render a category row
      */
     private void renderCategoryEntry(GuiGraphics guiGraphics, int entryX, int entryY, ShopCategory category) {
+        // A10: red overlay if category is stage-locked
+        if (ShopClientStages.isCategoryBlocked(category)) {
+            guiGraphics.fill(entryX, entryY, entryX + ENTRY_WIDTH, entryY + ENTRY_HEIGHT, 0x80FF0000);
+        }
         int slotX = entryX + 3;
         int slotY = entryY + 3;
         int textX = slotX + 18 + 6;
@@ -684,14 +730,50 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
+     * Overlay for an entry row:
+     * <ul>
+     *   <li>Red — stage locked, or every trade side the entry supports is blocked by rules</li>
+     *   <li>Yellow — entry supports both buy and sell, but rules block exactly one side</li>
+     * </ul>
+     * Sell-only / buy-only by entry definition is never yellow.
+     */
+    private int entryOverlayColor(ShopEntry item) {
+        if (ShopClientStages.isEntryBlocked(item)) {
+            return 0x80FF0000;
+        }
+        boolean supportsBuy = ShopEntryHelper.isBuyAllowed(item);
+        boolean supportsSell = ShopEntryHelper.isSellAllowed(item);
+        if (!supportsBuy && !supportsSell) {
+            return 0;
+        }
+        boolean buyBlocked = supportsBuy
+                && ShopClientPurchaseLimits.isBlocked(item.id, ShopPurchaseLimitsData.TradeSide.BUY);
+        boolean sellBlocked = supportsSell
+                && ShopClientPurchaseLimits.isBlocked(item.id, ShopPurchaseLimitsData.TradeSide.SELL);
+
+        if (supportsBuy && supportsSell) {
+            if (buyBlocked && sellBlocked) {
+                return 0x80FF0000;
+            }
+            if (buyBlocked || sellBlocked) {
+                return 0x80FFFF00;
+            }
+            return 0;
+        }
+        // Entry only supports one side: red if that side is rule-blocked
+        if ((supportsBuy && buyBlocked) || (supportsSell && sellBlocked)) {
+            return 0x80FF0000;
+        }
+        return 0;
+    }
+
+    /**
      * Render an item row
      */
     private void renderItemEntry(GuiGraphics guiGraphics, int entryX, int entryY, ShopEntry item) {
-        boolean isBlocked = isItemBlocked(item);
-        
-        if (isBlocked) {
-            guiGraphics.fill(entryX, entryY, entryX + ENTRY_WIDTH, entryY + ENTRY_HEIGHT,
-                            0x80FF0000);
+        int overlay = entryOverlayColor(item);
+        if (overlay != 0) {
+            guiGraphics.fill(entryX, entryY, entryX + ENTRY_WIDTH, entryY + ENTRY_HEIGHT, overlay);
         }
         
         int slotX = entryX + 3;
@@ -857,10 +939,10 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Keep base behavior (inventory label) but override title.
+        // Keep base behavior (inventory label) but override title — centered on full GUI width.
         Component titleComponent = Component.literal(currentCategoryName);
         int titleWidth = this.font.width(titleComponent);
-        int titleX = ENTRY_START_X + (ENTRY_WIDTH - titleWidth) / 2;
+        int titleX = Math.max(0, (this.imageWidth - titleWidth) / 2);
         guiGraphics.drawString(this.font, titleComponent, titleX, 9, GuiTextColors.TITLE, false);
         // Intentionally do not draw the "Inventory" label (vanilla would).
     }
@@ -986,7 +1068,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Creates the tooltip for the Buy button
+     * Creates the tooltip for the Buy button (A9: shows Y/X and reset time).
      */
     private List<Component> createBuyTooltip(ShopEntry item) {
         List<Component> tooltip = new ArrayList<>();
@@ -997,6 +1079,10 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             String currencySymbol = getCurrencySymbol(item.valute);
             tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.cost", item.buy, currencySymbol));
         }
+
+        // A9: show Y/X usage info if a limit rule applies
+        appendLimitInfo(tooltip, item, ShopPurchaseLimitsData.TradeSide.BUY);
+
         tooltip.add(Component.literal(""));
         tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.click"));
         tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.buy.ctrl"));
@@ -1006,7 +1092,7 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
     
     /**
-     * Creates the tooltip for the Sell button
+     * Creates the tooltip for the Sell button (A9: shows Y/X and reset time).
      */
     private List<Component> createSellTooltip(ShopEntry item) {
         List<Component> tooltip = new ArrayList<>();
@@ -1014,6 +1100,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         // Price with currency symbol
         String currencySymbol = getCurrencySymbol(item.valute);
         tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.price", item.sell, currencySymbol));
+
+        // A9: show Y/X usage info if a limit rule applies
+        appendLimitInfo(tooltip, item, ShopPurchaseLimitsData.TradeSide.SELL);
         
         tooltip.add(Component.literal(""));
         tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.click"));
@@ -1021,6 +1110,21 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.shift"));
         
         return tooltip;
+    }
+
+    /** A9: Append "Used: Y/X (resets at T)" line to tooltip if limit data is available. */
+    private void appendLimitInfo(List<Component> tooltip, ShopEntry item, ShopPurchaseLimitsData.TradeSide side) {
+        if (!ShopClientPurchaseLimits.hasLimit(item.id, side)) return;
+        ShopClientPurchaseLimits.LimitEntry le = ShopClientPurchaseLimits.getLimitEntry(item.id, side);
+        if (le == null) return;
+        tooltip.add(Component.empty());
+        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.limit_used", le.used(), le.max()));
+        if (le.resetEpochMs() > 0) {
+            String formatted = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+                    .withZone(java.time.ZoneId.systemDefault())
+                    .format(java.time.Instant.ofEpochMilli(le.resetEpochMs()));
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.resets_at", formatted));
+        }
     }
     
     /**

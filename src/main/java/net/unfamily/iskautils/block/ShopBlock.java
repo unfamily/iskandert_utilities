@@ -77,6 +77,9 @@ public class ShopBlock extends BaseEntityBlock {
             BlockEntity entity = level.getBlockEntity(pos);
             if (entity instanceof net.unfamily.iskautils.block.entity.ShopBlockEntity shopEntity) {
                 serverPlayer.openMenu(shopEntity);
+                // A2/A6: send stage cache; A4: send saved prefs
+                net.unfamily.iskautils.network.packet.ShopStagesS2CPacket.sendTo(serverPlayer);
+                net.unfamily.iskautils.network.packet.ShopUiPrefsS2CPacket.sendTo(serverPlayer);
                 return InteractionResult.CONSUME;
             }
         }

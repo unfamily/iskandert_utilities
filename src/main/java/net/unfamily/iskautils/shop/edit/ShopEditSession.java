@@ -122,6 +122,17 @@ public final class ShopEditSession {
         c.item = src.item;
         c.inCategory = src.inCategory;
         c.priority = src.priority;
+        if (src.stages != null) {
+            c.stages = new net.unfamily.iskautils.shop.ShopStage[src.stages.length];
+            for (int i = 0; i < src.stages.length; i++) {
+                if (src.stages[i] == null) continue;
+                net.unfamily.iskautils.shop.ShopStage st = new net.unfamily.iskautils.shop.ShopStage();
+                st.stage = src.stages[i].stage;
+                st.stageType = src.stages[i].stageType;
+                st.is = src.stages[i].is;
+                c.stages[i] = st;
+            }
+        }
         return c;
     }
 

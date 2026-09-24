@@ -57,6 +57,7 @@ public class ShopPurchaseLimitsData extends SavedData {
             EntryCounter ec = new EntryCounter();
             ec.periodId = c.getString("period");
             ec.count = c.getInt("count");
+            ec.windowStartTick = c.getLong("window_start_tick");
             data.counters.put(key, ec);
         }
         return data;
@@ -70,6 +71,7 @@ public class ShopPurchaseLimitsData extends SavedData {
             c.putString("key", e.getKey());
             c.putString("period", e.getValue().periodId != null ? e.getValue().periodId : "");
             c.putInt("count", e.getValue().count);
+            c.putLong("window_start_tick", e.getValue().windowStartTick);
             list.add(c);
         }
         tag.put("counters", list);
@@ -92,12 +94,32 @@ public class ShopPurchaseLimitsData extends SavedData {
             return true;
         }
         String key = counterKey(entry.id, side, scopeKey);
+        if (ShopRepeatableRule.WHEN_TIMED.equalsIgnoreCase(rule.when)) {
+            return canTradeTimed(level, key, rule, units);
+        }
         String periodId = currentPeriodId(rule);
         EntryCounter ec = counters.get(key);
         if (ec == null || !periodId.equals(ec.periodId)) {
             return units <= Math.max(1, rule.count);
         }
         return ec.count + Math.max(1, units) <= Math.max(1, rule.count);
+    }
+
+    private boolean canTradeTimed(ServerLevel level, String key, ShopRepeatableRule rule, int units) {
+        long now = level.getGameTime();
+        long duration = Math.max(1, rule.durationTicks);
+        int max = Math.max(1, rule.count);
+        EntryCounter ec = counters.get(key);
+        if (ec == null || ec.windowStartTick <= 0) {
+            // No window started yet — first trade is always allowed
+            return units <= max;
+        }
+        long elapsed = now - ec.windowStartTick;
+        if (elapsed >= duration) {
+            // Window expired → reset
+            return units <= max;
+        }
+        return ec.count + Math.max(1, units) <= max;
     }
 
     public void recordTrade(ServerPlayer player, ShopEntry entry, TradeSide side, int units) {
@@ -119,6 +141,10 @@ public class ShopPurchaseLimitsData extends SavedData {
             return;
         }
         String key = counterKey(entry.id, side, scopeKey);
+        if (ShopRepeatableRule.WHEN_TIMED.equalsIgnoreCase(rule.when)) {
+            recordTradeTimed(level, key, rule, units);
+            return;
+        }
         String periodId = currentPeriodId(rule);
         EntryCounter ec = counters.computeIfAbsent(key, k -> new EntryCounter());
         if (!periodId.equals(ec.periodId)) {
@@ -127,6 +153,81 @@ public class ShopPurchaseLimitsData extends SavedData {
         }
         ec.count += units;
         setDirty();
+    }
+
+    private void recordTradeTimed(ServerLevel level, String key, ShopRepeatableRule rule, int units) {
+        long now = level.getGameTime();
+        long duration = Math.max(1, rule.durationTicks);
+        int max = Math.max(1, rule.count);
+        EntryCounter ec = counters.computeIfAbsent(key, k -> new EntryCounter());
+        if (ec.windowStartTick <= 0) {
+            // Start new window on first trade
+            ec.windowStartTick = now;
+            ec.count = 0;
+        } else {
+            long elapsed = now - ec.windowStartTick;
+            if (elapsed >= duration) {
+                // Window expired → start new window
+                ec.windowStartTick = now;
+                ec.count = 0;
+            }
+        }
+        ec.count += units;
+        // reset_on_saturate: if count hits max, start fresh window immediately
+        if (rule.resetOnSaturate && ec.count >= max) {
+            ec.windowStartTick = now;
+            ec.count = 0;
+        }
+        ec.periodId = "timed";
+        setDirty();
+    }
+
+    /**
+     * Returns used/max/resetEpochMs for A9 tooltip data.
+     * resetEpochMs == -1 means "never resets" or not applicable.
+     * Only meaningful for non-always rules.
+     */
+    public LimitInfo getLimitInfo(ServerLevel level, @Nullable java.util.UUID playerId, @Nullable String teamKey,
+                                   ShopEntry entry, TradeSide side) {
+        ShopRepeatableRule rule = effective(entry, side);
+        if (ShopRepeatableRule.WHEN_ALWAYS.equalsIgnoreCase(rule.when)) {
+            return null; // always allowed, no limit info
+        }
+        String scopeKey = resolveScope(playerId, teamKey, rule);
+        if (scopeKey == null) {
+            return new LimitInfo(0, Math.max(1, rule.count), -1L);
+        }
+        String key = counterKey(entry.id, side, scopeKey);
+        int max = Math.max(1, rule.count);
+        if (ShopRepeatableRule.WHEN_TIMED.equalsIgnoreCase(rule.when)) {
+            long now = level.getGameTime();
+            EntryCounter ec = counters.get(key);
+            if (ec == null || ec.windowStartTick <= 0) {
+                return new LimitInfo(0, max, -1L);
+            }
+            long duration = Math.max(1, rule.durationTicks);
+            long elapsed = now - ec.windowStartTick;
+            if (elapsed >= duration) {
+                return new LimitInfo(0, max, -1L);
+            }
+            long remainingTicks = duration - elapsed;
+            long nowMs = java.lang.System.currentTimeMillis();
+            long resetMs = nowMs + remainingTicks * 50L; // 50ms per tick
+            return new LimitInfo(ec.count, max, resetMs);
+        }
+        String periodId = currentPeriodId(rule);
+        EntryCounter ec = counters.get(key);
+        int used = (ec != null && periodId.equals(ec.periodId)) ? ec.count : 0;
+        Instant resetInstant = nextResetInstant(rule);
+        long resetMs = resetInstant != null ? resetInstant.toEpochMilli() : -1L;
+        return new LimitInfo(used, max, resetMs);
+    }
+
+    /** Simple holder for A9 limit data: used count, max, and reset epoch ms (-1 = no reset). */
+    public record LimitInfo(int used, int max, long resetEpochMs) {
+        public boolean isSaturated() {
+            return used >= max;
+        }
     }
 
     public static ShopRepeatableRule effective(@Nullable ShopEntry entry, TradeSide side) {
@@ -271,5 +372,7 @@ public class ShopPurchaseLimitsData extends SavedData {
     private static final class EntryCounter {
         String periodId = "";
         int count;
+        /** Game-time tick when the current timed window started. 0 means no window active. */
+        long windowStartTick;
     }
 }

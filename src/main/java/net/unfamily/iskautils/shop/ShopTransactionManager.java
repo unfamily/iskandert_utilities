@@ -11,6 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Inventory;
 import java.util.Map;
 import java.util.HashMap;
+import net.unfamily.iskautils.shop.ShopHierarchy;
 
 /**
  * Manages shop transactions using team currencies
@@ -190,51 +191,55 @@ public class ShopTransactionManager {
     }
     
     /**
-     * Checks if a player meets all stage requirements for a shop entry
+     * Checks if a player meets all stage requirements for a shop entry,
+     * including all ancestor category stages (A2).
      */
     private static boolean checkStageRequirements(ServerPlayer player, ShopEntry entry) {
-        if (entry.stages == null || entry.stages.length == 0) {
-            return true; // No stage requirements
-        }
-        
         StageRegistry registry = StageRegistry.getInstance(player.getServer());
         if (registry == null) {
             LOGGER.warn("StageRegistry not available for player {}", player.getName().getString());
             return false;
         }
-        
-        for (ShopStage stage : entry.stages) {
-            boolean stageMet = false;
-            
-            switch (stage.stageType.toLowerCase()) {
-                case "player":
-                    boolean hasPlayerStage = registry.hasPlayerStage(player, stage.stage);
-                    stageMet = (hasPlayerStage == stage.is);
-                    break;
-                    
-                case "world":
-                    boolean hasWorldStage = registry.hasWorldStage(stage.stage);
-                    stageMet = (hasWorldStage == stage.is);
-                    break;
-                    
-                case "team":
-                    boolean hasTeamStage = registry.hasPlayerTeamStage(player, stage.stage);
-                    stageMet = (hasTeamStage == stage.is);
-                    break;
-                    
-                default:
-                    LOGGER.warn("Unknown stage type: {}", stage.stageType);
-                    stageMet = false;
-                    break;
+
+        // Check entry own stages
+        if (entry.stages != null && entry.stages.length > 0) {
+            if (!checkStages(player, registry, entry.stages)) return false;
+        }
+
+        // Check ancestor category chain (A2)
+        Map<String, ShopCategory> categories = ShopLoader.getCategories();
+        String parentId = ShopHierarchy.normalizeParent(entry.inCategory);
+        int safety = 0;
+        while (parentId != null && safety++ < 32) {
+            ShopCategory cat = categories.get(parentId);
+            if (cat == null) break;
+            if (cat.stages != null && cat.stages.length > 0) {
+                if (!checkStages(player, registry, cat.stages)) return false;
             }
-            
+            parentId = ShopHierarchy.normalizeParent(cat.inCategory);
+        }
+
+        return true;
+    }
+
+    private static boolean checkStages(ServerPlayer player, StageRegistry registry, ShopStage[] stages) {
+        for (ShopStage stage : stages) {
+            if (stage == null || stage.stageType == null) continue;
+            boolean stageMet = switch (stage.stageType.toLowerCase()) {
+                case "player" -> registry.hasPlayerStage(player, stage.stage) == stage.is;
+                case "world" -> registry.hasWorldStage(stage.stage) == stage.is;
+                case "team" -> registry.hasPlayerTeamStage(player, stage.stage) == stage.is;
+                default -> {
+                    LOGGER.warn("Unknown stage type: {}", stage.stageType);
+                    yield false;
+                }
+            };
             if (!stageMet) {
-                LOGGER.debug("Player {} failed stage requirement: {} {} {}", 
-                    player.getName().getString(), stage.stageType, stage.stage, stage.is);
+                LOGGER.debug("Player {} failed stage requirement: {} {} {}",
+                        player.getName().getString(), stage.stageType, stage.stage, stage.is);
                 return false;
             }
         }
-        
         return true;
     }
     

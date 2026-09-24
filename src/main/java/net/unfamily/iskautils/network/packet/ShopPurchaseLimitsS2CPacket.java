@@ -14,30 +14,38 @@ import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.shop.ShopPurchaseLimitsData;
 import net.unfamily.iskautils.shop.ShopRepeatableRule;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Server-evaluated buy/sell limit state for the current shop player. */
-public record ShopPurchaseLimitsS2CPacket(Map<String, Long> blocked) implements CustomPacketPayload {
+/**
+ * Server → client: used/max/resetEpochMs for each entry|side that has a non-always rule.
+ * A9: send for ALL such entries, not only blocked ones, so tooltips can show Y/X.
+ */
+public record ShopPurchaseLimitsS2CPacket(Map<String, long[]> limits) implements CustomPacketPayload {
     public static final Type<ShopPurchaseLimitsS2CPacket> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "shop_purchase_limits"));
 
     public static final StreamCodec<FriendlyByteBuf, ShopPurchaseLimitsS2CPacket> STREAM_CODEC = StreamCodec.of(
             (buf, packet) -> {
-                buf.writeVarInt(packet.blocked.size());
-                packet.blocked.forEach((key, reset) -> {
+                buf.writeVarInt(packet.limits.size());
+                packet.limits.forEach((key, arr) -> {
                     buf.writeUtf(key, 512);
-                    buf.writeLong(reset);
+                    buf.writeVarInt((int) arr[0]); // used
+                    buf.writeVarInt((int) arr[1]); // max
+                    buf.writeLong(arr[2]);          // resetEpochMs
                 });
             },
             buf -> {
                 int size = buf.readVarInt();
-                Map<String, Long> blocked = new HashMap<>();
+                Map<String, long[]> limits = new HashMap<>();
                 for (int i = 0; i < size; i++) {
-                    blocked.put(buf.readUtf(512), buf.readLong());
+                    String key = buf.readUtf(512);
+                    int used = buf.readVarInt();
+                    int max = buf.readVarInt();
+                    long reset = buf.readLong();
+                    limits.put(key, new long[]{used, max, reset});
                 }
-                return new ShopPurchaseLimitsS2CPacket(blocked);
+                return new ShopPurchaseLimitsS2CPacket(limits);
             });
 
     @Override
@@ -47,21 +55,27 @@ public record ShopPurchaseLimitsS2CPacket(Map<String, Long> blocked) implements 
 
     public static void sendTo(ServerPlayer player) {
         ShopPurchaseLimitsData data = ShopPurchaseLimitsData.get(player.serverLevel());
-        Map<String, Long> blocked = new HashMap<>();
+        net.unfamily.iskalib.team.ShopTeamManager tm =
+                net.unfamily.iskalib.team.ShopTeamManager.getInstance(player.serverLevel());
+        Map<String, long[]> limits = new HashMap<>();
         for (ShopEntry entry : ShopLoader.getEntries().values()) {
             for (ShopPurchaseLimitsData.TradeSide side : ShopPurchaseLimitsData.TradeSide.values()) {
-                if (!data.canTrade(player, entry, side, 1)) {
-                    ShopRepeatableRule rule = ShopPurchaseLimitsData.effective(entry, side);
-                    Instant reset = ShopPurchaseLimitsData.nextResetInstant(rule);
-                    blocked.put(ShopClientPurchaseLimits.key(entry.id, side),
-                            reset != null ? reset.toEpochMilli() : -1L);
+                ShopRepeatableRule rule = ShopPurchaseLimitsData.effective(entry, side);
+                if (ShopRepeatableRule.WHEN_ALWAYS.equalsIgnoreCase(rule.when)) {
+                    continue; // always-allowed rules don't need tracking
                 }
+                ShopPurchaseLimitsData.LimitInfo info = data.getLimitInfo(
+                        player.serverLevel(), player.getUUID(),
+                        tm.getPlayerTeam(player), entry, side);
+                if (info == null) continue;
+                String key = ShopClientPurchaseLimits.key(entry.id, side);
+                limits.put(key, new long[]{info.used(), info.max(), info.resetEpochMs()});
             }
         }
-        PacketDistributor.sendToPlayer(player, new ShopPurchaseLimitsS2CPacket(blocked));
+        PacketDistributor.sendToPlayer(player, new ShopPurchaseLimitsS2CPacket(limits));
     }
 
     public static void handle(ShopPurchaseLimitsS2CPacket packet, IPayloadContext context) {
-        context.enqueueWork(() -> ShopClientPurchaseLimits.replace(packet.blocked));
+        context.enqueueWork(() -> ShopClientPurchaseLimits.replace(packet.limits()));
     }
 }

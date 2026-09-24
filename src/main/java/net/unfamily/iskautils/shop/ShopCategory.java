@@ -15,4 +15,9 @@ public class ShopCategory {
     public String inCategory;
     /** Display order: higher value = shown first. Default 0. */
     public int priority = 0;
+    /**
+     * Stage gate requirements. If any fail the category (and all its children) are inaccessible.
+     * Same semantics as {@link ShopEntry#stages}.
+     */
+    public ShopStage[] stages;
 } 
