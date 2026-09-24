@@ -20,6 +20,7 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.unfamily.iskautils.block.DeepDrawerExtractorBlock;
 import net.unfamily.iskautils.util.DeepDrawerConnectorHelper;
 import net.unfamily.iskautils.util.DeepDrawerFilterConcatEvaluator;
+import net.unfamily.iskautils.util.FilterLineTextUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -168,26 +169,11 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
     }
     
     /**
-     * Reorders filters by computational cost (cheapest first)
-     * Order: - (ID), @ (mod ID), & (macro), # (tag), ? (NBT)
-     * This optimizes filter checking by trying cheaper filters first
+     * Reorders filters Dynaimics-style: concat groups first, then specificity
+     * ({@code -} → {@code #} → {@code @} → {@code &} → {@code ?}), empties last.
      */
     private void reorderFilters() {
-        // Helper method to get filter priority (lower = cheaper)
-        java.util.function.Function<String, Integer> getPriority = (filter) -> {
-            if (filter == null || filter.trim().isEmpty()) {
-                return 999; // Empty filters go to the end
-            }
-            String trimmed = filter.trim();
-            if (trimmed.startsWith("-")) return 1; // ID filter - cheapest
-            if (trimmed.startsWith("@")) return 2; // Mod ID filter
-            if (trimmed.startsWith("&")) return 3; // Macro filter
-            if (trimmed.startsWith("#")) return 4; // Tag filter
-            if (trimmed.startsWith("?")) return 5; // NBT filter - most expensive
-            return 6; // Unknown format - goes last
-        };
-        
-        record FilterEntry(String value, int concat) {}
+        record FilterEntry(String value, int concat, int origIndex) {}
 
         java.util.List<FilterEntry> normalFilters = new java.util.ArrayList<>();
         java.util.List<FilterEntry> invertedFilters = new java.util.ArrayList<>();
@@ -195,16 +181,31 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         for (int i = 0; i < getMaxFilterSlots(); i++) {
             String filter = filterFields[i];
             if (filter != null && !filter.trim().isEmpty()) {
-                normalFilters.add(new FilterEntry(filter, allowConcatChannels[i]));
+                normalFilters.add(new FilterEntry(filter, allowConcatChannels[i], i));
             }
             String invertedFilter = invertedFilterFields[i];
             if (invertedFilter != null && !invertedFilter.trim().isEmpty()) {
-                invertedFilters.add(new FilterEntry(invertedFilter, denyConcatChannels[i]));
+                invertedFilters.add(new FilterEntry(invertedFilter, denyConcatChannels[i], i));
             }
         }
 
-        normalFilters.sort((a, b) -> Integer.compare(getPriority.apply(a.value()), getPriority.apply(b.value())));
-        invertedFilters.sort((a, b) -> Integer.compare(getPriority.apply(a.value()), getPriority.apply(b.value())));
+        java.util.Comparator<FilterEntry> cmp = (a, b) -> {
+            boolean aConcat = a.concat() > 0;
+            boolean bConcat = b.concat() > 0;
+            if (aConcat != bConcat) {
+                return aConcat ? -1 : 1;
+            }
+            if (aConcat) {
+                int byChannel = Integer.compare(a.concat(), b.concat());
+                if (byChannel != 0) return byChannel;
+                return Integer.compare(a.origIndex(), b.origIndex());
+            }
+            int byWeight = Integer.compare(filterSpecificityWeight(a.value()), filterSpecificityWeight(b.value()));
+            if (byWeight != 0) return byWeight;
+            return a.value().compareToIgnoreCase(b.value());
+        };
+        normalFilters.sort(cmp);
+        invertedFilters.sort(cmp);
 
         for (int i = 0; i < getMaxFilterSlots(); i++) {
             filterFields[i] = "";
@@ -223,6 +224,20 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             invertedFilterFields[i] = e.value();
             denyConcatChannels[i] = e.concat();
         }
+    }
+
+    /** Lower = earlier. Matches DeepDrawerFilterVariants / Another Dynamics weights. */
+    private static int filterSpecificityWeight(String filter) {
+        if (filter == null || filter.trim().isEmpty()) {
+            return 10000;
+        }
+        String trimmed = filter.trim();
+        if (trimmed.startsWith("-")) return 0;
+        if (trimmed.startsWith("#")) return 100;
+        if (trimmed.startsWith("@")) return 200;
+        if (trimmed.startsWith("&")) return 300;
+        if (trimmed.startsWith("?")) return 400;
+        return 600;
     }
     
     @Override
@@ -916,7 +931,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 if (field != null) {
                     field = field.trim();
                     // Only strip wrapping quotes; do NOT remove quotes inside the string (NBT/JSON relies on them).
-                    field = stripWrappingQuotes(field);
+                    field = FilterLineTextUtil.stripWrappingQuotes(field);
                     filterFields[i] = field;
                 }
             }
@@ -956,7 +971,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 if (field != null) {
                     field = field.trim();
                     // Only strip wrapping quotes; do NOT remove quotes inside the string (NBT/JSON relies on them).
-                    field = stripWrappingQuotes(field);
+                    field = FilterLineTextUtil.stripWrappingQuotes(field);
                     invertedFilterFields[i] = field;
                 }
             }
@@ -984,7 +999,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 String value = entry.getValue();
                 if (index >= 0 && index < maxSlots && value != null) {
                     value = value.trim();
-                    value = stripWrappingQuotes(value);
+                    value = FilterLineTextUtil.stripWrappingQuotes(value);
                     invertedFilterFields[index] = value;
                 }
             }
@@ -1010,7 +1025,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
                 if (index >= 0 && index < maxSlots) {
                     if (value != null) {
                         value = value.trim();
-                        value = stripWrappingQuotes(value);
+                        value = FilterLineTextUtil.stripWrappingQuotes(value);
                         filterFields[index] = value;
                     } else {
                         filterFields[index] = "";
@@ -1040,9 +1055,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         int maxSlots = getMaxFilterSlots();
         if (index >= 0 && index < maxSlots) {
             if (filter != null) {
-                filter = filter.trim();
-                // Only strip wrapping quotes; do NOT remove quotes inside the string (NBT/JSON relies on them).
-                filter = stripWrappingQuotes(filter);
+                filter = FilterLineTextUtil.normalizeForCommit(filter);
             }
             filterFields[index] = filter != null ? filter : "";
             setChanged();
@@ -1052,20 +1065,6 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
         }
     }
 
-    private static String stripWrappingQuotes(String s) {
-        if (s == null) {
-            return null;
-        }
-        String t = s.trim();
-        if (t.length() >= 2) {
-            char first = t.charAt(0);
-            char last = t.charAt(t.length() - 1);
-            if ((first == '\'' && last == '\'') || (first == '"' && last == '"')) {
-                return t.substring(1, t.length() - 1);
-            }
-        }
-        return t;
-    }
     
     /**
      * Gets the maximum number of filter slots (from config)
@@ -1176,7 +1175,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             int count = Math.min(maxSlots, lines.size());
             for (int i = 0; i < count; i++) {
                 String line = lines.get(i);
-                filterFields[i] = line != null ? stripWrappingQuotes(line.trim()) : "";
+                filterFields[i] = line != null ? FilterLineTextUtil.stripWrappingQuotes(line.trim()) : "";
                 if (concat != null && i < concat.size() && concat.get(i) != null) {
                     allowConcatChannels[i] = Math.clamp(concat.get(i), 0,
                             net.unfamily.iskautils.util.DeepDrawerFilterConcatChannel.MAX_LETTER);
@@ -1200,7 +1199,7 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             int count = Math.min(maxSlots, lines.size());
             for (int i = 0; i < count; i++) {
                 String line = lines.get(i);
-                invertedFilterFields[i] = line != null ? stripWrappingQuotes(line.trim()) : "";
+                invertedFilterFields[i] = line != null ? FilterLineTextUtil.stripWrappingQuotes(line.trim()) : "";
                 if (concat != null && i < concat.size() && concat.get(i) != null) {
                     denyConcatChannels[i] = Math.clamp(concat.get(i), 0,
                             net.unfamily.iskautils.util.DeepDrawerFilterConcatChannel.MAX_LETTER);

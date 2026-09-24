@@ -38,16 +38,12 @@ public class AncientTableMenu extends AbstractContainerMenu {
     public static final int GRID_COLS = 3;
     public static final int GRID_WIDTH = GRID_COLS * SLOT_SIZE;
 
-    public static final int SCROLLBAR_WIDTH = 8;
+    public static final int SCROLLBAR_WIDTH = 12;
     /**
      * Empty space between a 3×3 grid edge and the adjacent scrollbar (same on input and output).
      * Output at {@link #OUTPUT_GRID_X} + {@link #GRID_WIDTH} + gap = 128 + 54 + 2 = 184.
      */
     public static final int SCROLLBAR_GAP_X = 2;
-    public static final int SCROLLBAR_HANDLE_SIZE = 8;
-    public static final int SCROLLBAR_TRACK_HEIGHT = 34;
-    public static final int SCROLLBAR_COLUMN_HEIGHT =
-            SCROLLBAR_HANDLE_SIZE + SCROLLBAR_TRACK_HEIGHT + SCROLLBAR_HANDLE_SIZE;
 
     /** Left of input grid: 2px further left than the default gap (20 − 2 − 8 − 2 = 8). */
     public static final int INPUT_SCROLL_X = INPUT_GRID_X - SCROLLBAR_GAP_X - SCROLLBAR_WIDTH - 2;
@@ -67,17 +63,11 @@ public class AncientTableMenu extends AbstractContainerMenu {
         return OUTPUT_GRID_X + GRID_WIDTH;
     }
 
-    /** Nudge so the drawn column lines up with the visible slot block (items render at +1 in each slot). */
-    private static final int SCROLL_VISUAL_Y_OFFSET = -1;
-
-    /** Vertically centers the scrollbar column on the middle row of the 3×3 slot grid. */
-    public static int scrollButtonUpY(int gridTopY) {
-        int middleRowCenterY = gridTopY + SLOT_SIZE + SLOT_SIZE / 2;
-        return middleRowCenterY - SCROLLBAR_COLUMN_HEIGHT / 2 + SCROLL_VISUAL_Y_OFFSET;
-    }
-
-    public static final int INPUT_SCROLL_UP_Y = scrollButtonUpY(INPUT_GRID_Y);
-    public static final int OUTPUT_SCROLL_UP_Y = scrollButtonUpY(OUTPUT_GRID_Y);
+    /** Full grid height: up at grid top, down flush with grid bottom (Dynaimics). */
+    public static final int INPUT_SCROLL_UP_Y = INPUT_GRID_Y;
+    public static final int OUTPUT_SCROLL_UP_Y = OUTPUT_GRID_Y;
+    public static final int INPUT_SCROLL_DOWN_Y = INPUT_GRID_Y + VISIBLE_GRID_ROWS * SLOT_SIZE - 12;
+    public static final int OUTPUT_SCROLL_DOWN_Y = OUTPUT_GRID_Y + VISIBLE_GRID_ROWS * SLOT_SIZE - 12;
 
     private static final int VISIBLE_SLOTS = 9;
     /** Container slot index for fuel in {@link AncientTableMenu}. */

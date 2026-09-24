@@ -26,7 +26,6 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     // Same background as main Sound Muffler GUI (230x180)
     private static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/sound_muffler.png");
     private static final ResourceLocation ENTRY_TEXTURE = ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/entry_low_wide_wide.png");
-    private static final ResourceLocation SCROLLBAR_TEXTURE = ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
     // Same size as main muffler; 9px margin each side => entry = 230 - 9 - 4 - 8 - 9 = 200
     private static final int BORDER_MARGIN = 9;
     private static final int GUI_WIDTH = 230;
@@ -40,18 +39,19 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     private static final int ENTRIES_START_Y = 30;
     private static final int ENTRY_SPACING = 0;
     private static final int GAP_ENTRY_SCROLLBAR = 4;
-    private static final int SCROLLBAR_WIDTH = 8;
-    private static final int HANDLE_SIZE = 8;
+    private static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
+    private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
+    private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
     private static final int SCROLLBAR_X = ENTRIES_START_X + ENTRY_WIDTH + GAP_ENTRY_SCROLLBAR;
     private static final int SEARCH_BAR_Y = ENTRIES_START_Y;
     private static final int SEARCH_BAR_HEIGHT = 20;
     private static final int LIST_ENTRIES_START_Y = ENTRIES_START_Y + SEARCH_BAR_HEIGHT + 2;
-    private static final int BUTTON_UP_Y = LIST_ENTRIES_START_Y;
-    private static final int SCROLLBAR_Y = BUTTON_UP_Y + HANDLE_SIZE;
-    private static final int SCROLLBAR_HEIGHT = 34;
-    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
     // 8 entries fit in 180px height
     private static final int VISIBLE_ENTRIES = 8;
+    private static final int BUTTON_UP_Y = LIST_ENTRIES_START_Y;
+    private static final int BUTTON_DOWN_Y = GuiScroller.buttonDownY(BUTTON_UP_Y, VISIBLE_ENTRIES, ENTRY_HEIGHT);
+    private static final int SCROLLBAR_Y = GuiScroller.trackY(BUTTON_UP_Y);
+    private static final int SCROLLBAR_HEIGHT = GuiScroller.trackHeight(BUTTON_UP_Y, BUTTON_DOWN_Y);
     // Same height as the two buttons on main Sound Muffler screen (BOTTOM_BUTTONS_Y = 154)
     private static final int BOTTOM_ROW_Y = 154;
     private static final int BOTTOM_BUTTON_W = 52;
@@ -80,6 +80,8 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     private Button saveButton;
     private Button cancelButton;
     private Button closeButton;
+    private Button scrollUpButton;
+    private Button scrollDownButton;
     private final Button[] selectionDotButtons = new Button[VISIBLE_ENTRIES];
 
     /** Parent screen to return to on Apply/Cancel (e.g. main Sound Muffler screen). If null, onClose() is used. */
@@ -123,6 +125,7 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
             if (!selectedSoundIds.contains(id)) filteredSoundIds.add(id);
         }
         scrollOffset = Math.max(0, Math.min(scrollOffset, Math.max(0, filteredSoundIds.size() - VISIBLE_ENTRIES)));
+        updateScrollArrowState();
     }
 
     @Override
@@ -160,11 +163,21 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
                 .build();
         addRenderableWidget(closeButton);
 
+        scrollUpButton = addRenderableWidget(GuiScroller.createUpButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_UP_Y, this::scrollUp));
+        scrollDownButton = addRenderableWidget(GuiScroller.createDownButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_DOWN_Y, this::scrollDown));
+        updateScrollArrowState();
+
         for (int i = 0; i < VISIBLE_ENTRIES; i++) {
             final int row = i;
             selectionDotButtons[i] = addRenderableWidget(MachineGuiButtons.selectionDot(0, 0, false, b -> onSelectionDotPressed(row)));
             selectionDotButtons[i].visible = false;
         }
+    }
+
+    private void updateScrollArrowState() {
+        GuiScroller.setArrowActive(scrollUpButton, scrollDownButton, filteredSoundIds.size() > VISIBLE_ENTRIES);
     }
 
     /**
@@ -310,20 +323,14 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
     }
 
     private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        int scrollbarX = leftPos + SCROLLBAR_X;
-        int scrollbarY = topPos + SCROLLBAR_Y;
-        int buttonUpY = topPos + BUTTON_UP_Y;
-        int buttonDownY = topPos + BUTTON_DOWN_Y;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
-        boolean upHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonUpY, SCROLLBAR_WIDTH * 2, upHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        boolean downHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonDownY, SCROLLBAR_WIDTH * 3, downHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        int total = filteredSoundIds.size();
-        float scrollRatio = total <= VISIBLE_ENTRIES ? 0 : (float) scrollOffset / (total - VISIBLE_ENTRIES);
-        int handleY = scrollbarY + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        boolean handleHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, handleY, SCROLLBAR_WIDTH, handleHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        updateScrollArrowState();
+        GuiScroller.draw(
+                guiGraphics,
+                leftPos + SCROLLBAR_X,
+                topPos + BUTTON_UP_Y,
+                topPos + BUTTON_DOWN_Y,
+                scrollOffset,
+                Math.max(0, filteredSoundIds.size() - VISIBLE_ENTRIES));
     }
 
     private void scrollUp() {
@@ -342,23 +349,8 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
         }
         if (button == 0) {
             int scrollbarX = leftPos + SCROLLBAR_X;
-            if (filteredSoundIds.size() > VISIBLE_ENTRIES) {
-                int upButtonY = topPos + BUTTON_UP_Y;
-                if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && mouseY >= upButtonY && mouseY < upButtonY + HANDLE_SIZE) {
-                    scrollUp();
-                    playButtonSound();
-                    MachineGuiInput.markScrollbarPressed();
-                    return true;
-                }
-                int downButtonY = topPos + BUTTON_DOWN_Y;
-                if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && mouseY >= downButtonY && mouseY < downButtonY + HANDLE_SIZE) {
-                    scrollDown();
-                    playButtonSound();
-                    MachineGuiInput.markScrollbarPressed();
-                    return true;
-                }
-            }
-            if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE && mouseY >= topPos + SCROLLBAR_Y && mouseY < topPos + BUTTON_DOWN_Y) {
+            if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLL_ARROW_SIZE
+                    && mouseY >= topPos + SCROLLBAR_Y && mouseY < topPos + BUTTON_DOWN_Y) {
                 isDraggingHandle = true;
                 dragStartY = (int) mouseY;
                 dragStartScrollOffset = scrollOffset;
@@ -394,7 +386,7 @@ public class SoundMufflerFilterScreen extends AbstractContainerScreen<SoundMuffl
         if (isDraggingHandle && filteredSoundIds.size() > VISIBLE_ENTRIES) {
             int deltaY = (int) mouseY - dragStartY;
             int maxOffset = filteredSoundIds.size() - VISIBLE_ENTRIES;
-            int handleRange = SCROLLBAR_HEIGHT - HANDLE_SIZE;
+            int handleRange = GuiScroller.handleRange(SCROLLBAR_HEIGHT);
             if (handleRange > 0) {
                 int deltaScroll = Math.round((float) deltaY / handleRange * maxOffset);
                 scrollOffset = Math.max(0, Math.min(maxOffset, dragStartScrollOffset + deltaScroll));

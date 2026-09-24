@@ -42,7 +42,7 @@ public final class IskaUtilsJeiDynamicRefresh {
     }
 
     public static void scheduleRefresh(Minecraft mc) {
-        if (mc == null || runtime == null) {
+        if (mc == null || runtime == null || !net.unfamily.iskautils.Config.enableJeiIntegration) {
             return;
         }
         long now = System.currentTimeMillis();

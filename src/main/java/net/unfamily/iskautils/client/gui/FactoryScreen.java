@@ -14,8 +14,7 @@ import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.FactoryBlockEntity;
 import net.unfamily.iskautils.client.FactoryClientSourcesBootstrap;
 import net.unfamily.iskautils.data.load.FactoryLoader;
-import net.unfamily.iskautils.integration.jei.FactoryJeiRecipes;
-import net.unfamily.iskautils.integration.jei.IskaUtilsJeiDynamicRefresh;
+import net.unfamily.iskautils.client.RecipeViewerClientBridge;
 import net.unfamily.iskautils.network.ModMessages;
 
 import java.util.ArrayList;
@@ -29,8 +28,6 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
     private static final int GUI_WIDTH = 176;
     private static final int GUI_HEIGHT = 190;
 
-    private static final ResourceLocation SCROLLBAR_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
 
     private static final ResourceLocation ENERGY_BAR_TEXTURE =
             ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/energy_bar.png");
@@ -54,11 +51,9 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
                                             - GRID_PIXEL_H)
                                     / 2);
 
-    private static final int SCROLLBAR_WIDTH = 8;
-    private static final int HANDLE_SIZE = 8;
-    /** Middle track height (same as DeepDrawersScreen / SoundMufflerFilterScreen). */
-    private static final int SCROLLBAR_HEIGHT = 34;
-
+    private static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
+    private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
+    private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
     /** Scrollbar to the right of the grid; whole column vertically centered on the 3 button rows. */
     private static final int SCROLLBAR_GAP_X = 2;
     private static final int SCROLLBAR_X = GRID_START_X + GRID_PIXEL_W + SCROLLBAR_GAP_X;
@@ -69,10 +64,11 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
 
     private static final int REDSTONE_BUTTON_SIZE = 16;
 
-    private static final int SCROLLBAR_COLUMN_TOTAL = HANDLE_SIZE + SCROLLBAR_HEIGHT + HANDLE_SIZE;
-    private static final int BUTTON_UP_Y = GRID_START_Y + (GRID_PIXEL_H - SCROLLBAR_COLUMN_TOTAL) / 2;
-    private static final int SCROLLBAR_Y = BUTTON_UP_Y + HANDLE_SIZE;
-    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
+    private static final int BUTTON_UP_Y = GRID_START_Y;
+    private static final int BUTTON_DOWN_Y = GuiScroller.buttonDownY(BUTTON_UP_Y, GRID_ROWS_VISIBLE, CELL_STEP);
+    private static final int SCROLLBAR_Y = GuiScroller.trackY(BUTTON_UP_Y);
+    private static final int SCROLLBAR_HEIGHT = GuiScroller.trackHeight(BUTTON_UP_Y, BUTTON_DOWN_Y);
+    private static final int SCROLLBAR_COLUMN_TOTAL = GRID_PIXEL_H;
 
     /** Horizontally centered on the scroll-down button; vertically centered on the output slot row. */
     private static final int REDSTONE_BUTTON_X =
@@ -82,6 +78,8 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
 
     private final List<AbstractButton> colorGridButtons = new ArrayList<>();
     private ItemIconButton redstoneModeButton;
+    private Button scrollUpButton;
+    private Button scrollDownButton;
 
     private int scrollOffset = 0;
     private boolean isDraggingHandle = false;
@@ -108,9 +106,8 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
     @Override
     protected void init() {
         if (minecraft != null) {
-            FactoryJeiRecipes.reloadForClient(minecraft);
             FactoryClientSourcesBootstrap.ensureLoaded();
-            IskaUtilsJeiDynamicRefresh.scheduleRefresh(minecraft);
+            RecipeViewerClientBridge.scheduleJeiRefresh(minecraft);
         }
         super.init();
         this.scrollOffset = menu.getScrollOffset();
@@ -125,6 +122,12 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
                 b -> onRedstoneModePressed(false),
                 menu::getRedstoneMode,
                 true));
+
+        scrollUpButton = addRenderableWidget(GuiScroller.createUpButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_UP_Y, () -> scrollBy(-GRID_COLS)));
+        scrollDownButton = addRenderableWidget(GuiScroller.createDownButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_DOWN_Y, () -> scrollBy(GRID_COLS)));
+        updateScrollArrowState();
     }
 
     @Override
@@ -287,34 +290,15 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
 
     private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         int total = getCurrentEntries().size();
-        int visible = GRID_COLS * GRID_ROWS_VISIBLE;
-        if (total <= visible) return;
-
-        int guiX = leftPos;
-        int guiY = topPos;
-
-        // Middle track: full 8×34 strip (same as DeepDrawersScreen).
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + SCROLLBAR_Y, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
-
-        boolean upHovered = mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE;
-        int upV = upHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_UP_Y, SCROLLBAR_WIDTH * 2, upV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-
-        boolean downHovered = mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE;
-        int downV = downHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_DOWN_Y, SCROLLBAR_WIDTH * 3, downV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-
         int maxScroll = getMaxScrollOffset(total);
-        if (maxScroll > 0) {
-            double ratio = (double) scrollOffset / maxScroll;
-            int handleY = guiY + SCROLLBAR_Y + (int) (ratio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-            boolean handleHovered = mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE
-                    && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-            int handleV = handleHovered ? HANDLE_SIZE : 0;
-            guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY, SCROLLBAR_WIDTH, handleV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        }
+        updateScrollArrowState();
+        GuiScroller.draw(
+                guiGraphics,
+                leftPos + SCROLLBAR_X,
+                topPos + BUTTON_UP_Y,
+                topPos + BUTTON_DOWN_Y,
+                scrollOffset,
+                maxScroll);
     }
 
     private int getMaxScrollOffset(int totalEntries) {
@@ -335,10 +319,6 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
             return true;
         }
         if (button == 0) {
-            if (handleScrollButtonClick(mouseX, mouseY)) {
-                MachineGuiInput.markScrollbarPressed();
-                return true;
-            }
             if (handleHandleClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();
                 return true;
@@ -349,6 +329,12 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private void updateScrollArrowState() {
+        int total = getCurrentEntries().size();
+        int visible = GRID_COLS * GRID_ROWS_VISIBLE;
+        GuiScroller.setArrowActive(scrollUpButton, scrollDownButton, total > visible);
     }
 
     private void setSelectedIndex(int idx) {
@@ -364,34 +350,6 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
         }
     }
 
-    private boolean handleScrollButtonClick(double mouseX, double mouseY) {
-        int total = getCurrentEntries().size();
-        int visible = GRID_COLS * GRID_ROWS_VISIBLE;
-        if (total <= visible) return false;
-
-        int guiX = this.leftPos;
-        int guiY = this.topPos;
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-            mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE) {
-            int old = this.scrollOffset;
-            scrollBy(-GRID_COLS);
-            if (this.scrollOffset != old) {
-                playClick();
-            }
-            return true;
-        }
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-            mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE) {
-            int old = this.scrollOffset;
-            scrollBy(GRID_COLS);
-            if (this.scrollOffset != old) {
-                playClick();
-            }
-            return true;
-        }
-        return false;
-    }
-
     private boolean handleHandleClick(double mouseX, double mouseY) {
         int total = getCurrentEntries().size();
         int visible = GRID_COLS * GRID_ROWS_VISIBLE;
@@ -402,9 +360,9 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
         int guiX = this.leftPos;
         int guiY = this.topPos;
         double ratio = (double) scrollOffset / maxScroll;
-        int handleY = guiY + SCROLLBAR_Y + (int) (ratio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE &&
-            mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
+        int handleY = guiY + SCROLLBAR_Y + (int) (ratio * GuiScroller.handleRange(SCROLLBAR_HEIGHT));
+        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
+            mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT) {
             isDraggingHandle = true;
             dragStartY = (int) mouseY;
             dragStartScrollOffset = scrollOffset;
@@ -424,8 +382,8 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
         int guiY = this.topPos;
         if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
             mouseY >= guiY + SCROLLBAR_Y && mouseY < guiY + SCROLLBAR_Y + SCROLLBAR_HEIGHT) {
-            double clickTrack = (mouseY - (guiY + SCROLLBAR_Y)) - (HANDLE_SIZE / 2.0);
-            double denom = Math.max(1.0, (double) (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+            double clickTrack = (mouseY - (guiY + SCROLLBAR_Y)) - (SCROLLER_HEIGHT / 2.0);
+            double denom = Math.max(1.0, (double) GuiScroller.handleRange(SCROLLBAR_HEIGHT));
             double ratio = Math.max(0.0, Math.min(1.0, clickTrack / denom));
             int newOffset = (int) Math.round(ratio * maxScroll);
             newOffset = (newOffset / GRID_COLS) * GRID_COLS;
@@ -466,7 +424,7 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
             int maxScroll = getMaxScrollOffset(total);
             int deltaY = (int) mouseY - dragStartY;
             if (maxScroll > 0) {
-                float ratio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+                float ratio = (float) deltaY / GuiScroller.handleRange(SCROLLBAR_HEIGHT);
                 int newOffset = dragStartScrollOffset + (int) (ratio * maxScroll);
                 newOffset = (newOffset / GRID_COLS) * GRID_COLS;
                 setScrollOffset(newOffset);

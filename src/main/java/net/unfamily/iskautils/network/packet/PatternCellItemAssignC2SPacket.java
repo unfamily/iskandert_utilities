@@ -46,7 +46,8 @@ public record PatternCellItemAssignC2SPacket(BlockPos pos, int cellIndex, ItemSt
             ServerPlayer player = (ServerPlayer) context.player();
             BlockEntity blockEntity = player.serverLevel().getBlockEntity(packet.pos());
             if (blockEntity instanceof ImprovedPatternCrafterBlockEntity crafter) {
-                crafter.applyPatternItemAssignment(packet.cellIndex(), packet.stack());
+                // Variables only — pattern cell stays client-pending until Save.
+                crafter.ensureExactItemVariable(packet.stack());
             }
         });
     }

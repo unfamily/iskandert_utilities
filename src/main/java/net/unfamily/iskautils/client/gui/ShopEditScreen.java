@@ -36,6 +36,7 @@ import net.unfamily.iskautils.shop.edit.ShopEditResourceFormats;
 import net.unfamily.iskautils.shop.edit.ShopEditSession;
 import net.unfamily.iskautils.shop.edit.ShopEditWorkspace;
 import net.unfamily.iskautils.util.DeepDrawerFilterVariants;
+import net.unfamily.iskautils.util.FilterLineTextUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -63,8 +64,6 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
 
     private static final ResourceLocation TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/shop.png");
-    private static final ResourceLocation SCROLLBAR_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
     private static final ResourceLocation SINGLE_SLOT_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
 
@@ -80,9 +79,12 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private static final int RESOURCE_ARROW_GAP = 4;
     private static final int RESOURCE_SLOT_SIZE = 18;
 
-    private static final int SCROLLBAR_WIDTH = 8;
-    private static final int SCROLLBAR_HEIGHT = 34;
-    private static final int HANDLE_SIZE = 8;
+    private static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
+    private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
+    private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
+    private static final int BUTTON_UP_Y = ENTRY_START_Y;
+    private static final int BUTTON_DOWN_Y = GuiScroller.buttonDownY(ENTRY_START_Y, MAX_VISIBLE, ENTRY_HEIGHT);
+    private static final int SCROLLBAR_HEIGHT = GuiScroller.trackHeight(BUTTON_UP_Y, BUTTON_DOWN_Y);
 
     /** Buttons beside the player inventory (inventory starts at x=20,y=154). */
     private static final int SIDE_BTN_X = 188;
@@ -114,6 +116,11 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     /** Scrollbar sits at Done's right edge so the stage delete button aligns with Done. */
     private static final int STAGE_SCROLLBAR_X = FORM_RIGHT;
     private static final int STAGE_LIST_WIDTH = FORM_RIGHT - STAGE_LIST_X;
+    private static final int STAGE_BUTTON_UP_Y = STAGE_LIST_Y;
+    private static final int STAGE_BUTTON_DOWN_Y =
+            GuiScroller.buttonDownY(STAGE_LIST_Y, MAX_VISIBLE_STAGES, STAGE_ROW_HEIGHT);
+    private static final int STAGE_SCROLLBAR_HEIGHT =
+            GuiScroller.trackHeight(STAGE_BUTTON_UP_Y, STAGE_BUTTON_DOWN_Y);
 
     private record FormLabel(int x, int y, Component text) {}
     /** Left-side list preview: item icon slot, entry (item/fluid/gas), currency symbol, or empty. */
@@ -219,6 +226,10 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private Button repeatScopeButton;
     private Button repeatWhenButton;
     private Button iconCycleButton;
+    private Button listScrollUpButton;
+    private Button listScrollDownButton;
+    private Button stageScrollUpButton;
+    private Button stageScrollDownButton;
 
     private String stageTypeDraft = "world";
     private boolean stageIsDraft = true;
@@ -443,6 +454,61 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             case CURRENCIES -> buildCurrencies();
             case CURRENCY_EDIT -> buildCurrencyEdit();
             case MOVE -> buildMove();
+        }
+        addScrollArrowButtons();
+    }
+
+    private void addScrollArrowButtons() {
+        if (isListView() && maxListScroll() > 0) {
+            listScrollUpButton = addDyn(GuiScroller.createUpButton(
+                    leftPos + SCROLLBAR_X, topPos + BUTTON_UP_Y, this::scrollListUp));
+            listScrollDownButton = addDyn(GuiScroller.createDownButton(
+                    leftPos + SCROLLBAR_X, topPos + BUTTON_DOWN_Y, this::scrollListDown));
+        } else {
+            listScrollUpButton = null;
+            listScrollDownButton = null;
+        }
+        boolean stageView = subView == SubView.ENTRY_STAGES
+                || subView == SubView.ENTRY_STAGE_REWARDS
+                || subView == SubView.ENTRY_STRING_LIST;
+        if (stageView && maxStageScroll() > 0) {
+            stageScrollUpButton = addDyn(GuiScroller.createUpButton(
+                    leftPos + STAGE_SCROLLBAR_X, topPos + STAGE_BUTTON_UP_Y, this::scrollStageUp));
+            stageScrollDownButton = addDyn(GuiScroller.createDownButton(
+                    leftPos + STAGE_SCROLLBAR_X, topPos + STAGE_BUTTON_DOWN_Y, this::scrollStageDown));
+        } else {
+            stageScrollUpButton = null;
+            stageScrollDownButton = null;
+        }
+    }
+
+    private void scrollListUp() {
+        if (scrollOffset > 0) {
+            scrollOffset--;
+            rebuild();
+        }
+    }
+
+    private void scrollListDown() {
+        int max = maxListScroll();
+        if (scrollOffset < max) {
+            scrollOffset++;
+            rebuild();
+        }
+    }
+
+    private void scrollStageUp() {
+        if (stageScrollOffset > 0) {
+            stageScrollOffset--;
+            rebuild();
+        }
+    }
+
+    private void scrollStageDown() {
+        int max = maxStageScroll();
+        if (stageScrollOffset < max) {
+            stageScrollOffset++;
+            rebuild();
         }
     }
 
@@ -1092,7 +1158,9 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             return null;
         }
         if (handler.usesResultButton()) {
-            String display = displayBox != null ? displayBox.getValue().trim() : nullSafe(draftEntry.display);
+            String display = displayBox != null
+                    ? FilterLineTextUtil.normalizeForCommit(displayBox.getValue())
+                    : FilterLineTextUtil.normalizeForCommit(nullSafe(draftEntry.display));
             if (display.isBlank()) {
                 return Component.translatable("gui.iska_utils.shop_edit.warn.missing_display");
             }
@@ -1107,7 +1175,9 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             }
             return null;
         }
-        String resource = resourceBox != null ? resourceBox.getValue().trim() : resourceString(draftEntry).trim();
+        String resource = resourceBox != null
+                ? FilterLineTextUtil.normalizeForCommit(resourceBox.getValue())
+                : FilterLineTextUtil.normalizeForCommit(resourceString(draftEntry));
         double buy = buyBox != null ? parseDouble(buyBox.getValue(), draftEntry.buy) : draftEntry.buy;
         double sell = sellBox != null ? parseDouble(sellBox.getValue(), draftEntry.sell) : draftEntry.sell;
         boolean free = draftEntry.free;
@@ -1307,7 +1377,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         if (stageNameBox == null) {
             return;
         }
-        String stage = stageNameBox.getValue().trim();
+        String stage = FilterLineTextUtil.normalizeForCommit(stageNameBox.getValue());
         if (stage.isEmpty()) {
             return;
         }
@@ -1383,7 +1453,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         if (stringValueBox == null) {
             return;
         }
-        String value = stringValueBox.getValue().trim();
+        String value = FilterLineTextUtil.normalizeForCommit(stringValueBox.getValue());
         if (value.isEmpty()) {
             return;
         }
@@ -1646,18 +1716,18 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
 
     private void flushFormToDraft() {
         if (subView == SubView.CATEGORY_EDIT && draftCategory != null) {
-            if (idBox != null) draftCategory.id = idBox.getValue().trim();
+            if (idBox != null) draftCategory.id = FilterLineTextUtil.normalizeForCommit(idBox.getValue());
             if (nameBox != null) draftCategory.name = nameBox.getValue();
             if (descBox != null) draftCategory.description = descBox.getValue();
             if (priorityBox != null) draftCategory.priority = parseInt(priorityBox.getValue(), 0);
-            if (resourceBox != null) draftCategory.item = resourceBox.getValue().trim();
+            if (resourceBox != null) draftCategory.item = FilterLineTextUtil.normalizeForCommit(resourceBox.getValue());
         } else if (subView == SubView.CURRENCY_EDIT && draftCurrency != null) {
-            if (idBox != null) draftCurrency.id = idBox.getValue().trim();
+            if (idBox != null) draftCurrency.id = FilterLineTextUtil.normalizeForCommit(idBox.getValue());
             if (nameBox != null) draftCurrency.name = nameBox.getValue();
             if (symbolBox != null) draftCurrency.charSymbol = symbolBox.getValue();
             if (priorityBox != null) draftCurrency.priority = parseInt(priorityBox.getValue(), 0);
         } else if (subView == SubView.ENTRY_EDIT && draftEntry != null) {
-            if (idBox != null) draftEntry.id = idBox.getValue().trim();
+            if (idBox != null) draftEntry.id = FilterLineTextUtil.normalizeForCommit(idBox.getValue());
             if (amountBox != null) {
                 draftEntry.amount = Math.max(1, parseInt(amountBox.getValue(), 1));
                 draftEntry.itemCount = draftEntry.amount;
@@ -1665,8 +1735,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             if (buyBox != null) draftEntry.buy = parseDouble(buyBox.getValue(), 0);
             if (sellBox != null) draftEntry.sell = parseDouble(sellBox.getValue(), 0);
             if (priorityBox != null) draftEntry.priority = parseInt(priorityBox.getValue(), 0);
-            if (resourceBox != null) applyResourceString(resourceBox.getValue().trim());
-            if (displayBox != null) draftEntry.display = displayBox.getValue().trim();
+            if (resourceBox != null) applyResourceString(FilterLineTextUtil.normalizeForCommit(resourceBox.getValue()));
+            if (displayBox != null) draftEntry.display = FilterLineTextUtil.normalizeForCommit(displayBox.getValue());
             ShopEntryTypeHandler flushHandler = ShopEntryTypeRegistry.require(draftEntry);
             if (!flushHandler.usesBuy()) {
                 draftEntry.buy = 0;
@@ -2250,8 +2320,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private boolean isCategoryDraftValid() {
-        String id = idBox != null ? idBox.getValue().trim()
-                : (draftCategory != null ? nullSafe(draftCategory.id).trim() : "");
+        String id = idBox != null ? FilterLineTextUtil.normalizeForCommit(idBox.getValue())
+                : FilterLineTextUtil.normalizeForCommit(draftCategory != null ? nullSafe(draftCategory.id) : "");
         String name = nameBox != null ? nameBox.getValue().trim()
                 : (draftCategory != null ? nullSafe(draftCategory.name).trim() : "");
         return !id.isBlank() && !name.isBlank();
@@ -2262,7 +2332,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         if (subView != SubView.CATEGORY_EDIT || draftCategory == null || dialog != Dialog.NONE) {
             return null;
         }
-        String id = idBox != null ? idBox.getValue().trim() : nullSafe(draftCategory.id).trim();
+        String id = idBox != null ? FilterLineTextUtil.normalizeForCommit(idBox.getValue())
+                : FilterLineTextUtil.normalizeForCommit(nullSafe(draftCategory.id));
         if (id.isBlank()) {
             return Component.translatable("gui.iska_utils.shop_edit.warn.missing_category_id");
         }
@@ -2472,55 +2543,32 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         return new String(cps, 0, cps.length);
     }
 
+
     private void renderListScrollbar(GuiGraphics graphics, int mouseX, int mouseY) {
         if (listTotalCount() <= MAX_VISIBLE) {
             return;
         }
-        int upY = ENTRY_START_Y;
-        int barY = ENTRY_START_Y + HANDLE_SIZE;
-        int downY = barY + SCROLLBAR_HEIGHT;
-        int sx = leftPos + SCROLLBAR_X;
-        graphics.blit(SCROLLBAR_TEXTURE, sx, topPos + barY, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
-        boolean upHover = mouseX >= sx && mouseX < sx + SCROLLBAR_WIDTH
-                && mouseY >= topPos + upY && mouseY < topPos + upY + HANDLE_SIZE;
-        graphics.blit(SCROLLBAR_TEXTURE, sx, topPos + upY, SCROLLBAR_WIDTH * 2, upHover ? HANDLE_SIZE : 0,
-                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        boolean downHover = mouseX >= sx && mouseX < sx + SCROLLBAR_WIDTH
-                && mouseY >= topPos + downY && mouseY < topPos + downY + HANDLE_SIZE;
-        graphics.blit(SCROLLBAR_TEXTURE, sx, topPos + downY, SCROLLBAR_WIDTH * 3, downHover ? HANDLE_SIZE : 0,
-                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        double ratio = maxListScroll() == 0 ? 0 : (double) scrollOffset / maxListScroll();
-        int handleY = topPos + barY + (int) (ratio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        boolean handleHover = mouseX >= sx && mouseX < sx + HANDLE_SIZE
-                && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        graphics.blit(SCROLLBAR_TEXTURE, sx, handleY, SCROLLBAR_WIDTH, handleHover ? HANDLE_SIZE : 0,
-                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        GuiScroller.draw(
+                graphics,
+                leftPos + SCROLLBAR_X,
+                topPos + BUTTON_UP_Y,
+                topPos + BUTTON_DOWN_Y,
+                scrollOffset,
+                maxListScroll());
     }
+
 
     private void renderStageScrollbar(GuiGraphics graphics, int mouseX, int mouseY) {
         if (activeSubListSize() <= MAX_VISIBLE_STAGES) {
             return;
         }
-        int stageBarH = Math.max(HANDLE_SIZE, MAX_VISIBLE_STAGES * STAGE_ROW_HEIGHT - HANDLE_SIZE * 2);
-        int upY = STAGE_LIST_Y;
-        int barY = STAGE_LIST_Y + HANDLE_SIZE;
-        int downY = barY + stageBarH;
-        int sx = leftPos + STAGE_SCROLLBAR_X;
-        graphics.blit(SCROLLBAR_TEXTURE, sx, topPos + barY, 0, 0, SCROLLBAR_WIDTH, Math.min(SCROLLBAR_HEIGHT, stageBarH), 32, 34);
-        boolean upHover = mouseX >= sx && mouseX < sx + SCROLLBAR_WIDTH
-                && mouseY >= topPos + upY && mouseY < topPos + upY + HANDLE_SIZE;
-        graphics.blit(SCROLLBAR_TEXTURE, sx, topPos + upY, SCROLLBAR_WIDTH * 2, upHover ? HANDLE_SIZE : 0,
-                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        boolean downHover = mouseX >= sx && mouseX < sx + SCROLLBAR_WIDTH
-                && mouseY >= topPos + downY && mouseY < topPos + downY + HANDLE_SIZE;
-        graphics.blit(SCROLLBAR_TEXTURE, sx, topPos + downY, SCROLLBAR_WIDTH * 3, downHover ? HANDLE_SIZE : 0,
-                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        double ratio = maxStageScroll() == 0 ? 0 : (double) stageScrollOffset / maxStageScroll();
-        int handleY = topPos + barY + (int) (ratio * Math.max(1, stageBarH - HANDLE_SIZE));
-        boolean handleHover = mouseX >= sx && mouseX < sx + HANDLE_SIZE
-                && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        graphics.blit(SCROLLBAR_TEXTURE, sx, handleY, SCROLLBAR_WIDTH, handleHover ? HANDLE_SIZE : 0,
-                HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        GuiScroller.draw(
+                graphics,
+                leftPos + STAGE_SCROLLBAR_X,
+                topPos + STAGE_BUTTON_UP_Y,
+                topPos + STAGE_BUTTON_DOWN_Y,
+                stageScrollOffset,
+                maxStageScroll());
     }
 
     private int listTotalCount() {
@@ -2773,16 +2821,15 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (button == 0 && isDraggingHandle && maxListScroll() > 0) {
-            int barY = topPos + ENTRY_START_Y + HANDLE_SIZE;
-            float ratio = (float) (mouseY - barY) / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+            int barY = topPos + GuiScroller.trackY(BUTTON_UP_Y);
+            float ratio = (float) (mouseY - barY) / GuiScroller.handleRange(SCROLLBAR_HEIGHT);
             scrollOffset = Math.max(0, Math.min(maxListScroll(), Math.round(ratio * maxListScroll())));
             rebuild();
             return true;
         }
         if (button == 0 && isDraggingStageHandle && maxStageScroll() > 0) {
-            int stageBarH = Math.max(HANDLE_SIZE, MAX_VISIBLE_STAGES * STAGE_ROW_HEIGHT - HANDLE_SIZE * 2);
-            int barY = topPos + STAGE_LIST_Y + HANDLE_SIZE;
-            float ratio = (float) (mouseY - barY) / Math.max(1, stageBarH - HANDLE_SIZE);
+            int barY = topPos + GuiScroller.trackY(STAGE_BUTTON_UP_Y);
+            float ratio = (float) (mouseY - barY) / Math.max(1, GuiScroller.handleRange(STAGE_SCROLLBAR_HEIGHT));
             stageScrollOffset = Math.max(0, Math.min(maxStageScroll(), Math.round(ratio * maxStageScroll())));
             rebuild();
             return true;
@@ -2795,22 +2842,11 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             return false;
         }
         int sx = leftPos + SCROLLBAR_X;
-        int upY = topPos + ENTRY_START_Y;
-        int barY = topPos + ENTRY_START_Y + HANDLE_SIZE;
-        int downY = barY + SCROLLBAR_HEIGHT;
+        int barY = topPos + GuiScroller.trackY(BUTTON_UP_Y);
         if (mouseX < sx || mouseX >= sx + SCROLLBAR_WIDTH) {
             return false;
         }
-        if (mouseY >= upY && mouseY < upY + HANDLE_SIZE) {
-            scrollOffset = Math.max(0, scrollOffset - 1);
-            rebuild();
-            return true;
-        }
-        if (mouseY >= downY && mouseY < downY + HANDLE_SIZE) {
-            scrollOffset = Math.min(maxListScroll(), scrollOffset + 1);
-            rebuild();
-            return true;
-        }
+        // Arrows are real Buttons; only track / handle here.
         if (mouseY >= barY && mouseY < barY + SCROLLBAR_HEIGHT) {
             isDraggingHandle = true;
             float ratio = (float) (mouseY - barY) / SCROLLBAR_HEIGHT;
@@ -2826,26 +2862,13 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             return false;
         }
         int sx = leftPos + STAGE_SCROLLBAR_X;
-        int stageBarH = Math.max(HANDLE_SIZE, MAX_VISIBLE_STAGES * STAGE_ROW_HEIGHT - HANDLE_SIZE * 2);
-        int upY = topPos + STAGE_LIST_Y;
-        int barY = topPos + STAGE_LIST_Y + HANDLE_SIZE;
-        int downY = barY + stageBarH;
+        int barY = topPos + GuiScroller.trackY(STAGE_BUTTON_UP_Y);
         if (mouseX < sx || mouseX >= sx + SCROLLBAR_WIDTH) {
             return false;
         }
-        if (mouseY >= upY && mouseY < upY + HANDLE_SIZE) {
-            stageScrollOffset = Math.max(0, stageScrollOffset - 1);
-            rebuild();
-            return true;
-        }
-        if (mouseY >= downY && mouseY < downY + HANDLE_SIZE) {
-            stageScrollOffset = Math.min(maxStageScroll(), stageScrollOffset + 1);
-            rebuild();
-            return true;
-        }
-        if (mouseY >= barY && mouseY < barY + stageBarH) {
+        if (mouseY >= barY && mouseY < barY + STAGE_SCROLLBAR_HEIGHT) {
             isDraggingStageHandle = true;
-            float ratio = (float) (mouseY - barY) / stageBarH;
+            float ratio = (float) (mouseY - barY) / STAGE_SCROLLBAR_HEIGHT;
             stageScrollOffset = Math.max(0, Math.min(maxStageScroll(), Math.round(ratio * maxStageScroll())));
             rebuild();
             return true;

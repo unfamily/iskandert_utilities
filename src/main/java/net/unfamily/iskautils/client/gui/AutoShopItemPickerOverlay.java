@@ -37,8 +37,6 @@ public final class AutoShopItemPickerOverlay {
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/shop.png");
     private static final ResourceLocation ENTRY_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/enrty_wide_wide_wide.png");
-    private static final ResourceLocation SCROLLBAR_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
     private static final ResourceLocation SINGLE_SLOT_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
 
@@ -49,9 +47,9 @@ public final class AutoShopItemPickerOverlay {
 
     private static final int ENTRY_HEIGHT = ShopBrowsePanel.ENTRY_HEIGHT;
     private static final int ENTRY_START_X = ShopBrowsePanel.ENTRY_START_X;
-    private static final int SCROLLBAR_WIDTH = 8;
-    private static final int SCROLLBAR_HEIGHT = 34;
-    private static final int HANDLE_SIZE = 8;
+    private static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
+    private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
+    private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
     /** Scrollbar anchored near the right edge of the shop background. */
     private static final int SCROLLBAR_X = GUI_WIDTH - 16 - SCROLLBAR_WIDTH;
     /** Extended entry rows: fill space from entry start to scrollbar gap. */
@@ -89,6 +87,8 @@ public final class AutoShopItemPickerOverlay {
     private SymbolIconButton availabilityFilterButton;
     private Button backButton;
     private Button closeButton;
+    private Button scrollUpButton;
+    private Button scrollDownButton;
     private final List<Button> selectBuyButtons = new ArrayList<>();
     private final List<Button> selectSellButtons = new ArrayList<>();
 
@@ -193,6 +193,11 @@ public final class AutoShopItemPickerOverlay {
             playButtonSound.run();
             onCloseHost.run();
         }).bounds(leftPos + CLOSE_BUTTON_X, topPos + CLOSE_BUTTON_Y, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE).build());
+
+        scrollUpButton = screen.addPickerWidget(GuiScroller.createUpButton(
+                leftPos + SCROLLBAR_X, topPos + buttonUpY(), this::scrollUp));
+        scrollDownButton = screen.addPickerWidget(GuiScroller.createDownButton(
+                leftPos + SCROLLBAR_X, topPos + buttonDownY(), this::scrollDown));
 
         updateSelectButtons(screen);
         refreshFilteredLists();
@@ -362,10 +367,6 @@ public final class AutoShopItemPickerOverlay {
             }
         }
         if (button == 0) {
-            if (handleScrollButtonClick(mouseX, mouseY)) {
-                MachineGuiInput.markScrollbarPressed();
-                return true;
-            }
             if (handleHandleClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();
                 return true;
@@ -398,7 +399,7 @@ public final class AutoShopItemPickerOverlay {
             if (max <= 0) {
                 return true;
             }
-            int track = SCROLLBAR_HEIGHT - HANDLE_SIZE;
+            int track = GuiScroller.handleRange(scrollbarHeight());
             int delta = (int) mouseY - dragStartY;
             int newOffset = dragStartScrollOffset + (int) ((double) delta / track * max);
             scrollOffset = Math.max(0, Math.min(max, newOffset));
@@ -449,6 +450,31 @@ public final class AutoShopItemPickerOverlay {
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset()));
         updateBackButtonState();
         rebuildSelectButtons.run();
+        updateScrollArrowState();
+    }
+
+    private void layoutScrollButtons() {
+        if (scrollUpButton == null || scrollDownButton == null) {
+            return;
+        }
+        int leftPos = leftPosSupplier.getAsInt();
+        int topPos = topPosSupplier.getAsInt();
+        scrollUpButton.setX(leftPos + SCROLLBAR_X);
+        scrollUpButton.setY(topPos + buttonUpY());
+        scrollDownButton.setX(leftPos + SCROLLBAR_X);
+        scrollDownButton.setY(topPos + buttonDownY());
+    }
+
+    private void updateScrollArrowState() {
+        layoutScrollButtons();
+        boolean canScroll = maxScrollOffset() > 0;
+        GuiScroller.setArrowActive(scrollUpButton, scrollDownButton, canScroll);
+        if (scrollUpButton != null) {
+            scrollUpButton.visible = canScroll;
+        }
+        if (scrollDownButton != null) {
+            scrollDownButton.visible = canScroll;
+        }
     }
 
     private void updateSelectButtons(AutoShopScreen screen) {
@@ -603,11 +629,15 @@ public final class AutoShopItemPickerOverlay {
     }
 
     private int scrollbarY() {
-        return browsePanel.getBrowseAreaStartY() + HANDLE_SIZE;
+        return GuiScroller.trackY(browsePanel.getBrowseAreaStartY());
     }
 
     private int buttonDownY() {
-        return scrollbarY() + SCROLLBAR_HEIGHT;
+        return GuiScroller.buttonDownY(buttonUpY(), browsePanel.getVisibleEntryCount(), ENTRY_HEIGHT);
+    }
+
+    private int scrollbarHeight() {
+        return GuiScroller.trackHeight(buttonUpY(), buttonDownY());
     }
 
     private void onScopeFilterPressed(boolean backward) {
@@ -739,36 +769,20 @@ public final class AutoShopItemPickerOverlay {
                 ShopEntryHelper.displayLabelForEntry(item), textX, textY, maxTextWidth, GuiTextColors.TITLE);
     }
 
+
     private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        int entries = visibleEntries();
-        if (totalShopEntries <= entries) {
+        if (maxScrollOffset() <= 0) {
             return;
         }
         int leftPos = leftPosSupplier.getAsInt();
         int topPos = topPosSupplier.getAsInt();
-        int upY = buttonUpY();
-        int barY = scrollbarY();
-        int downY = buttonDownY();
-
-        guiGraphics.blit(SCROLLBAR_TEXTURE,
-                leftPos + SCROLLBAR_X, topPos + barY, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
-
-        boolean upHovered = mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= topPos + upY && mouseY < topPos + upY + HANDLE_SIZE;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, leftPos + SCROLLBAR_X, topPos + upY,
-                SCROLLBAR_WIDTH * 2, upHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-
-        boolean downHovered = mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= topPos + downY && mouseY < topPos + downY + HANDLE_SIZE;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, leftPos + SCROLLBAR_X, topPos + downY,
-                SCROLLBAR_WIDTH * 3, downHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-
-        double scrollRatio = (double) scrollOffset / maxScrollOffset();
-        int handleY = topPos + barY + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        boolean handleHovered = mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + HANDLE_SIZE
-                && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, leftPos + SCROLLBAR_X, handleY,
-                SCROLLBAR_WIDTH, handleHovered ? HANDLE_SIZE : 0, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        GuiScroller.draw(
+                guiGraphics,
+                leftPos + SCROLLBAR_X,
+                topPos + buttonUpY(),
+                topPos + buttonDownY(),
+                scrollOffset,
+                maxScrollOffset());
     }
 
     private boolean handleEntryClick(double mouseX, double mouseY) {
@@ -815,25 +829,6 @@ public final class AutoShopItemPickerOverlay {
         return false;
     }
 
-    private boolean handleScrollButtonClick(double mouseX, double mouseY) {
-        if (totalShopEntries <= visibleEntries()) {
-            return false;
-        }
-        int leftPos = leftPosSupplier.getAsInt();
-        int topPos = topPosSupplier.getAsInt();
-        if (mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= topPos + buttonUpY() && mouseY < topPos + buttonUpY() + HANDLE_SIZE) {
-            scrollUp();
-            return true;
-        }
-        if (mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= topPos + buttonDownY() && mouseY < topPos + buttonDownY() + HANDLE_SIZE) {
-            scrollDown();
-            return true;
-        }
-        return false;
-    }
-
     private boolean handleHandleClick(double mouseX, double mouseY) {
         if (totalShopEntries <= visibleEntries()) {
             return false;
@@ -842,9 +837,9 @@ public final class AutoShopItemPickerOverlay {
         int topPos = topPosSupplier.getAsInt();
         int barY = topPos + scrollbarY();
         double scrollRatio = (double) scrollOffset / maxScrollOffset();
-        int handleY = barY + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        if (mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + HANDLE_SIZE
-                && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
+        int handleY = barY + (int) (scrollRatio * GuiScroller.handleRange(scrollbarHeight()));
+        if (mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH
+                && mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT) {
             isDraggingHandle = true;
             dragStartY = (int) mouseY;
             dragStartScrollOffset = scrollOffset;
@@ -862,10 +857,10 @@ public final class AutoShopItemPickerOverlay {
         int topPos = topPosSupplier.getAsInt();
         int barY = topPos + scrollbarY();
         if (mouseX < leftPos + SCROLLBAR_X || mouseX >= leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH
-                || mouseY < barY || mouseY >= barY + SCROLLBAR_HEIGHT) {
+                || mouseY < barY || mouseY >= barY + scrollbarHeight()) {
             return false;
         }
-        float clickRatio = (float) (mouseY - barY) / SCROLLBAR_HEIGHT;
+        float clickRatio = (float) (mouseY - barY) / scrollbarHeight();
         scrollOffset = Math.max(0, Math.min(maxScrollOffset(), (int) (clickRatio * maxScrollOffset())));
         rebuildSelectButtons.run();
         playButtonSound.run();

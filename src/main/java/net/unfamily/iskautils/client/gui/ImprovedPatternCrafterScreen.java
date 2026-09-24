@@ -15,6 +15,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.sounds.SoundEvents;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.iskautils.IskaUtils;
+import net.unfamily.iskautils.util.FilterLineTextUtil;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.integration.anotherdynamics.AnotherDynamicsCompat;
 import net.unfamily.iskautils.integration.anotherdynamics.client.DeepDrawerSettingsCopierClient;
@@ -64,8 +65,6 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
     private static final ResourceLocation ENTRY_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/enrty_wide_wide_wide.png");
-    private static final ResourceLocation SCROLLBAR_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
 
     // Upgrade slot ghost previews (Fan / Structure Placer style via GhostItemRenderer)
     private static final ItemStack GHOST_LOGIC_MODULE = new ItemStack(ModItems.LOGIC_MODULE.get());
@@ -107,6 +106,8 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
     private static final int CLOSE_BUTTON_Y = 5;
     private Button closeButton;
+    private Button scrollUpButton;
+    private Button scrollDownButton;
     private Button redstoneButton;
 
     // Mark Input under Save in the pattern control column
@@ -181,15 +182,16 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     private static final int ENTRY_HEIGHT = 24;
     private static final int VISIBLE_ENTRIES = 4;
     private static final int FIRST_ROW_Y = 28; // slightly higher so 4 rows fit above editor
-    private static final int SCROLLBAR_WIDTH = 8;
-    private static final int HANDLE_SIZE = 8;
-    private static final int SCROLLBAR_HEIGHT = 34;
+    private static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
+    private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
+    private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
     /** Entry + gap + scrollbar block centered in GUI. */
     private static final int ENTRY_X = (GUI_WIDTH - (ENTRY_WIDTH + 4 + SCROLLBAR_WIDTH)) / 2;
     private static final int SCROLLBAR_X = ENTRY_X + ENTRY_WIDTH + 4;
     private static final int BUTTON_UP_Y = FIRST_ROW_Y;
-    private static final int SCROLLBAR_Y = BUTTON_UP_Y + HANDLE_SIZE;
-    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
+    private static final int BUTTON_DOWN_Y = GuiScroller.buttonDownY(BUTTON_UP_Y, VISIBLE_ENTRIES, ENTRY_HEIGHT);
+    private static final int SCROLLBAR_Y = GuiScroller.trackY(BUTTON_UP_Y);
+    private static final int SCROLLBAR_HEIGHT = GuiScroller.trackHeight(BUTTON_UP_Y, BUTTON_DOWN_Y);
     private static final int MAX_FORBIDDEN_SLOTS = 30;
     private int filterListScroll = 0;
     private boolean isDraggingHandle = false;
@@ -387,6 +389,11 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 .bounds(this.leftPos + CLOSE_BUTTON_X, this.topPos + CLOSE_BUTTON_Y, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
                 .build();
         addRenderableWidget(closeButton);
+
+        scrollUpButton = addRenderableWidget(GuiScroller.createUpButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_UP_Y, this::scrollForbiddenUp));
+        scrollDownButton = addRenderableWidget(GuiScroller.createDownButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_DOWN_Y, this::scrollForbiddenDown));
 
         // Output column: Forbidden → 3×3 → page → Mark Output (aligned to hotbar), with gaps
         int markOutputY = ImprovedPatternCrafterMenu.MARK_OUTPUT_Y;
@@ -1006,13 +1013,22 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
     private void assignPatternItem(int cellIndex, ItemStack stack) {
         if (menu.getBlockEntity() == null || stack.isEmpty()) return;
+        var be = menu.getBlockEntity();
+        // Allocate variable immediately (like JEI recipe transfer); pattern cell waits for Save.
+        int letter = be.ensureExactItemVariable(stack);
+        if (letter == PatternData.EMPTY) return;
         PacketDistributor.sendToServer(new PatternCellItemAssignC2SPacket(
-                menu.getBlockEntity().getBlockPos(), cellIndex, stack.copyWithCount(1)));
-        int letter = menu.getBlockEntity().previewExactAssignLetter(stack);
-        if (letter != PatternData.EMPTY) {
-            pendingGridValues[cellIndex] = letter;
-            pendingGridDirty[cellIndex] = true;
+                be.getBlockPos(), cellIndex, stack.copyWithCount(1)));
+        pendingGridValues[cellIndex] = letter;
+        pendingGridDirty[cellIndex] = true;
+        pendingGridDisplays[cellIndex] = stack.copyWithCount(1);
+        int row = cellIndex / 3;
+        int col = cellIndex % 3;
+        if (gridCells[row][col] != null) {
+            gridCells[row][col].setValue(letter);
+            gridCells[row][col].setDisplayItems(List.of(pendingGridDisplays[cellIndex]));
         }
+        playButtonSound();
     }
 
     // ===== Filter Label Actions =====
@@ -1746,7 +1762,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         if (button == 0 && isDraggingHandle && getForbiddenSlotCount() > visible) {
             int maxScrollOffset = Math.max(0, getForbiddenSlotCount() - visible);
             int deltaY = (int) mouseY - dragStartY;
-            float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+            float scrollRatio = (float) deltaY / GuiScroller.handleRange(SCROLLBAR_HEIGHT);
             int newOffset = dragStartScrollOffset + Math.round(scrollRatio * maxScrollOffset);
             filterListScroll = Math.max(0, Math.min(maxScrollOffset, newOffset));
             updateForbiddenEditButtons();
@@ -2156,6 +2172,34 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 refreshCopierPasteUi();
             }
         }
+        updateScrollArrowState();
+    }
+
+    private void updateScrollArrowState() {
+        boolean show = subView == SubView.FORBIDDEN
+                && getForbiddenSlotCount() > getVisibleForbiddenEntries();
+        GuiScroller.setArrowActive(scrollUpButton, scrollDownButton, show);
+        if (scrollUpButton != null) {
+            scrollUpButton.visible = show;
+        }
+        if (scrollDownButton != null) {
+            scrollDownButton.visible = show;
+        }
+    }
+
+    private void scrollForbiddenUp() {
+        if (filterListScroll > 0) {
+            filterListScroll--;
+            updateForbiddenEditButtons();
+        }
+    }
+
+    private void scrollForbiddenDown() {
+        int maxScrollOffset = Math.max(0, getForbiddenSlotCount() - getVisibleForbiddenEntries());
+        if (filterListScroll < maxScrollOffset) {
+            filterListScroll++;
+            updateForbiddenEditButtons();
+        }
     }
 
     /**
@@ -2244,7 +2288,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
 
     private void applyFilterEdit() {
         if (menu.getBlockEntity() == null || filterEditBox == null) return;
-        String value = filterEditBox.getValue() == null ? "" : filterEditBox.getValue().trim();
+        String value = FilterLineTextUtil.normalizeForCommit(filterEditBox.getValue() == null ? "" : filterEditBox.getValue());
         if (subView == SubView.FORBIDDEN && nestedFilterEdit) {
             while (draftForbidden.size() <= nestedEditIndex) draftForbidden.add("");
             if (value.isEmpty()) {
@@ -2502,34 +2546,16 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         }
     }
 
+
     private void renderForbiddenScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        int visible = getVisibleForbiddenEntries();
-        int guiX = this.leftPos;
-        int guiY = this.topPos;
-
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + SCROLLBAR_Y, 0, 0,
-                SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
-
-        boolean upHovered = mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_UP_Y,
-                SCROLLBAR_WIDTH * 2, (float) (upHovered ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-
-        boolean downHovered = mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_DOWN_Y,
-                SCROLLBAR_WIDTH * 3, (float) (downHovered ? HANDLE_SIZE : 0), HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-
-        int maxScrollOffset = Math.max(0, getForbiddenSlotCount() - visible);
-        if (maxScrollOffset > 0) {
-            double scrollRatio = (double) filterListScroll / maxScrollOffset;
-            int handleY = guiY + SCROLLBAR_Y + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-            boolean handleHovered = mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE
-                    && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-            guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY,
-                    (float) SCROLLBAR_WIDTH, (float) (handleHovered ? HANDLE_SIZE : 0),
-                    HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        }
+        int maxScrollOffset = Math.max(0, getForbiddenSlotCount() - getVisibleForbiddenEntries());
+        GuiScroller.draw(
+                guiGraphics,
+                leftPos + SCROLLBAR_X,
+                topPos + BUTTON_UP_Y,
+                topPos + BUTTON_DOWN_Y,
+                filterListScroll,
+                maxScrollOffset);
     }
 
     private boolean handleScrollbarClick(double mouseX, double mouseY) {
@@ -2538,25 +2564,11 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         int guiY = this.topPos;
         int maxScrollOffset = Math.max(0, getForbiddenSlotCount() - visible);
 
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE) {
-            filterListScroll = Math.max(0, filterListScroll - 1);
-            updateForbiddenEditButtons();
-            playButtonSound();
-            return true;
-        }
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE) {
-            filterListScroll = Math.min(maxScrollOffset, filterListScroll + 1);
-            updateForbiddenEditButtons();
-            playButtonSound();
-            return true;
-        }
         if (maxScrollOffset > 0) {
             double scrollRatio = (double) filterListScroll / maxScrollOffset;
-            int handleY = guiY + SCROLLBAR_Y + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-            if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE
-                    && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
+            int handleY = guiY + SCROLLBAR_Y + (int) (scrollRatio * GuiScroller.handleRange(SCROLLBAR_HEIGHT));
+            if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH
+                    && mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT) {
                 isDraggingHandle = true;
                 dragStartY = (int) mouseY;
                 dragStartScrollOffset = filterListScroll;

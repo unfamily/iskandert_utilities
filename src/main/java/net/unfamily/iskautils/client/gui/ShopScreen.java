@@ -30,8 +30,6 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/shop.png");
     private static final ResourceLocation ENTRY_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/enrty_wide_wide_wide.png");
-    private static final ResourceLocation SCROLLBAR_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
     private static final ResourceLocation SINGLE_SLOT_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
 
@@ -48,9 +46,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     private static final int RIGHT_EDGE_MARGIN = 10;
     
     // Scrollbar constants (from StructurePlacerScreen)
-    private static final int SCROLLBAR_WIDTH = 8;
-    private static final int SCROLLBAR_HEIGHT = 34;
-    private static final int HANDLE_SIZE = 8;
+    private static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
+    private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
+    private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
     
     // Scrollbar: right next to entries (Y positions derived from entryStartY())
     private static final int SCROLLBAR_X = ENTRY_START_X + ENTRY_WIDTH + 4;
@@ -93,6 +91,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     // Vanilla buttons
     private Button backButton;
     private Button closeButton;
+    private Button scrollUpButton;
+    private Button scrollDownButton;
     private List<Button> buyButtons = new ArrayList<>();
     private List<Button> sellButtons = new ArrayList<>();
     
@@ -142,11 +142,15 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     }
 
     private int scrollbarY() {
-        return browsePanel.getBrowseAreaStartY() + HANDLE_SIZE;
+        return GuiScroller.trackY(browsePanel.getBrowseAreaStartY());
     }
 
     private int buttonDownY() {
-        return scrollbarY() + SCROLLBAR_HEIGHT;
+        return GuiScroller.buttonDownY(buttonUpY(), visibleEntries(), ShopBrowsePanel.ENTRY_HEIGHT);
+    }
+
+    private int scrollbarHeight() {
+        return GuiScroller.trackHeight(buttonUpY(), buttonDownY());
     }
 
     private int maxScrollOffset() {
@@ -223,6 +227,11 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
                                   CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
                            .build();
         addRenderableWidget(closeButton);
+
+        scrollUpButton = addRenderableWidget(GuiScroller.createUpButton(
+                leftPos + SCROLLBAR_X, topPos + buttonUpY(), this::scrollUp));
+        scrollDownButton = addRenderableWidget(GuiScroller.createDownButton(
+                leftPos + SCROLLBAR_X, topPos + buttonDownY(), this::scrollDown));
         
         // Update button state and create Buy/Sell buttons
         updateBackButtonState();
@@ -259,6 +268,29 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             scrollOffset = 0;
         }
         updateBuySellButtons();
+        updateScrollArrowState();
+    }
+
+    private void layoutScrollButtons() {
+        if (scrollUpButton == null || scrollDownButton == null) {
+            return;
+        }
+        scrollUpButton.setX(leftPos + SCROLLBAR_X);
+        scrollUpButton.setY(topPos + buttonUpY());
+        scrollDownButton.setX(leftPos + SCROLLBAR_X);
+        scrollDownButton.setY(topPos + buttonDownY());
+    }
+
+    private void updateScrollArrowState() {
+        layoutScrollButtons();
+        boolean canScroll = maxScrollOffset() > 0;
+        GuiScroller.setArrowActive(scrollUpButton, scrollDownButton, canScroll);
+        if (scrollUpButton != null) {
+            scrollUpButton.visible = canScroll;
+        }
+        if (scrollDownButton != null) {
+            scrollDownButton.visible = canScroll;
+        }
     }
 
     private void onScopeFilterPressed(boolean backward) {
@@ -389,40 +421,15 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
 
     private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         int entries = visibleEntries();
-        // Only show scrollbar if there are more entries than can fit
         if (totalShopEntries <= entries) return;
-        
-        int guiX = this.leftPos;
-        int guiY = this.topPos;
-        int upY = buttonUpY();
-        int barY = scrollbarY();
-        int downY = buttonDownY();
-        
-        // Draw scrollbar background (8 pixels wide, height 34)
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + barY, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
-        
-        // UP button (8x8 pixels) - above scrollbar
-        boolean upButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-                                  mouseY >= guiY + upY && mouseY < guiY + upY + HANDLE_SIZE);
-        int upButtonV = upButtonHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + upY, SCROLLBAR_WIDTH * 2, upButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        
-        // DOWN button (8x8 pixels) - below scrollbar
-        boolean downButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-                                    mouseY >= guiY + downY && mouseY < guiY + downY + HANDLE_SIZE);
-        int downButtonV = downButtonHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + downY, SCROLLBAR_WIDTH * 3, downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        
-        // Handle (8x8 pixels) - position based on scroll offset
-        if (totalShopEntries > entries) {
-            double scrollRatio = (double) scrollOffset / maxScrollOffset();
-            int handleY = guiY + barY + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-            
-            boolean handleHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE &&
-                                    mouseY >= handleY && mouseY < handleY + HANDLE_SIZE);
-            int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-            guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY, SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        }
+
+        GuiScroller.draw(
+                guiGraphics,
+                leftPos + SCROLLBAR_X,
+                topPos + buttonUpY(),
+                topPos + buttonDownY(),
+                scrollOffset,
+                maxScrollOffset());
     }
     
     @Override
@@ -445,10 +452,6 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
             }
         }
         if (button == 0) {
-            if (handleScrollButtonClick(mouseX, mouseY)) {
-                MachineGuiInput.markScrollbarPressed();
-                return true;
-            }
             if (handleHandleClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();
                 return true;
@@ -496,39 +499,13 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (button == 0 && isDraggingHandle && totalShopEntries > visibleEntries()) {
             int deltaY = (int) mouseY - dragStartY;
-            float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+            float scrollRatio = (float) deltaY / GuiScroller.handleRange(scrollbarHeight());
             int newScrollOffset = dragStartScrollOffset + (int) (scrollRatio * maxScrollOffset());
             scrollOffset = Math.max(0, Math.min(maxScrollOffset(), newScrollOffset));
             updateBuySellButtons();
             return true;
         }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
-    }
-    
-    private boolean handleScrollButtonClick(double mouseX, double mouseY) {
-        int entries = visibleEntries();
-        if (totalShopEntries <= entries) return false;
-        
-        int guiX = this.leftPos;
-        int guiY = this.topPos;
-        int upY = buttonUpY();
-        int downY = buttonDownY();
-        
-        // UP button
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-            mouseY >= guiY + upY && mouseY < guiY + upY + HANDLE_SIZE) {
-            scrollUp();
-            return true;
-        }
-        
-        // DOWN button
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-            mouseY >= guiY + downY && mouseY < guiY + downY + HANDLE_SIZE) {
-            scrollDown();
-            return true;
-        }
-        
-        return false;
     }
     
     private boolean handleHandleClick(double mouseX, double mouseY) {
@@ -541,10 +518,10 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int scrollbarYPos = y + scrollbarY();
         
         float scrollRatio = maxScrollOffset() > 0 ? (float) scrollOffset / maxScrollOffset() : 0.0f;
-        int handleY = scrollbarYPos + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+        int handleY = scrollbarYPos + (int)(scrollRatio * GuiScroller.handleRange(scrollbarHeight()));
         
-        if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-            mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
+        if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLL_ARROW_SIZE &&
+            mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT) {
             
             isDraggingHandle = true;
             dragStartY = (int) mouseY;
@@ -565,9 +542,9 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         int scrollbarYPos = y + scrollbarY();
         
         if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH &&
-            mouseY >= scrollbarYPos && mouseY < scrollbarYPos + SCROLLBAR_HEIGHT) {
+            mouseY >= scrollbarYPos && mouseY < scrollbarYPos + scrollbarHeight()) {
             
-            float clickRatio = (float)(mouseY - scrollbarYPos) / SCROLLBAR_HEIGHT;
+            float clickRatio = (float)(mouseY - scrollbarYPos) / scrollbarHeight();
             clickRatio = Math.max(0, Math.min(1, clickRatio));
             
             int newScrollOffset = (int)(clickRatio * maxScrollOffset());

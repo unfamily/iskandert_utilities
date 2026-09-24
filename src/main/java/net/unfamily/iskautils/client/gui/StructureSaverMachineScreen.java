@@ -13,6 +13,7 @@ import net.minecraft.world.inventory.Slot;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskalib.structure.StructureLoader;
 import net.unfamily.iskautils.network.ModMessages;
+import net.unfamily.iskautils.util.FilterLineTextUtil;
 
 public class StructureSaverMachineScreen extends AbstractContainerScreen<StructureSaverMachineMenu> {
     
@@ -20,8 +21,6 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
         ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/block_structure_save.png");
     private static final ResourceLocation ENTRY_TEXTURE = 
         ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/entry_wide.png");
-    private static final ResourceLocation SCROLLBAR_TEXTURE = 
-        ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
     private static final ResourceLocation SINGLE_SLOT_TEXTURE = 
         ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/single_slot.png");
     
@@ -31,9 +30,9 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     private static final int VISIBLE_ENTRIES = 3;
     
     // Scrollbar dimensions (identical to StructureSelectionScreen)
-    private static final int SCROLLBAR_WIDTH = 8;
-    private static final int SCROLLBAR_HEIGHT = 34;
-    private static final int HANDLE_SIZE = 8;
+    private static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
+    private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
+    private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
     
     // Slot dimensions
     private static final int SLOT_SIZE = 18;
@@ -47,8 +46,9 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     // Scrollbar positions (updated for new entry position)
     private static final int SCROLLBAR_X = ENTRIES_START_X + ENTRY_WIDTH + 4;
     private static final int BUTTON_UP_Y = ENTRIES_START_Y;
-    private static final int SCROLLBAR_Y = ENTRIES_START_Y + HANDLE_SIZE;
-    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
+    private static final int BUTTON_DOWN_Y = GuiScroller.buttonDownY(BUTTON_UP_Y, VISIBLE_ENTRIES, ENTRY_HEIGHT);
+    private static final int SCROLLBAR_Y = GuiScroller.trackY(BUTTON_UP_Y);
+    private static final int SCROLLBAR_HEIGHT = GuiScroller.trackHeight(BUTTON_UP_Y, BUTTON_DOWN_Y);
     
     // Scrolling variables
     private int scrollOffset = 0;
@@ -65,6 +65,8 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
     private Button saveButton;
     private Button modeButton;
     private Button closeButton;
+    private Button scrollUpButton;
+    private Button scrollDownButton;
     private final Button[] selectionDotButtons = new Button[VISIBLE_ENTRIES];
 
     // Placement mode
@@ -163,11 +165,22 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
                            .build();
         addRenderableWidget(closeButton);
 
+        scrollUpButton = addRenderableWidget(GuiScroller.createUpButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_UP_Y, this::scrollUp));
+        scrollDownButton = addRenderableWidget(GuiScroller.createDownButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_DOWN_Y, this::scrollDown));
+        updateScrollArrowState();
+
         for (int i = 0; i < VISIBLE_ENTRIES; i++) {
             final int row = i;
             selectionDotButtons[i] = addRenderableWidget(MachineGuiButtons.selectionDot(0, 0, false, b -> onSelectionDotPressed(row)));
             selectionDotButtons[i].visible = false;
         }
+    }
+
+    private void updateScrollArrowState() {
+        int total = clientStructures != null ? clientStructures.size() : 0;
+        GuiScroller.setArrowActive(scrollUpButton, scrollDownButton, total > VISIBLE_ENTRIES);
     }
     
     /**
@@ -311,41 +324,14 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
      * Renders the scrollbar with handle and buttons (IDENTICAL to StructureSelectionScreen)
      */
     private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        int scrollbarX = this.leftPos + SCROLLBAR_X;
-        int scrollbarY = this.topPos + SCROLLBAR_Y;
-        int buttonUpY = this.topPos + BUTTON_UP_Y;
-        int buttonDownY = this.topPos + BUTTON_DOWN_Y;
-        
-        // Draw the complete scrollbar (8 pixel wide, 34 pixel height)
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, scrollbarY, 0, 0, 
-                        SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
-        
-        // Up button (8x8 pixel) - above the scrollbar
-        boolean upHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                           mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE;
-        int upTextureY = upHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonUpY, 
-                        SCROLLBAR_WIDTH * 2, upTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        
-        // Down button (8x8 pixel) - below the scrollbar  
-        boolean downHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                             mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE;
-        int downTextureY = downHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, buttonDownY, 
-                        SCROLLBAR_WIDTH * 3, downTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        
-        // Handle (8x8 pixel) - always visible, but mobile only if necessary
-        float scrollRatio = 0;
-        if (clientStructures.size() > VISIBLE_ENTRIES) {
-            scrollRatio = (float) scrollOffset / (clientStructures.size() - VISIBLE_ENTRIES);
-        }
-        int handleY = scrollbarY + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        
-        boolean handleHovered = mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-                               mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, scrollbarX, handleY, 
-                        SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        updateScrollArrowState();
+        GuiScroller.draw(
+                guiGraphics,
+                leftPos + SCROLLBAR_X,
+                topPos + BUTTON_UP_Y,
+                topPos + BUTTON_DOWN_Y,
+                scrollOffset,
+                Math.max(0, clientStructures.size() - VISIBLE_ENTRIES));
     }
     
     @Override
@@ -442,7 +428,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
             int maxScroll = clientStructures.size() - VISIBLE_ENTRIES;
             
             // Calculate new offset based on movement
-            int newScrollOffset = dragStartScrollOffset + (deltaY * maxScroll) / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+            int newScrollOffset = dragStartScrollOffset + (deltaY * maxScroll) / GuiScroller.handleRange(SCROLLBAR_HEIGHT);
             scrollOffset = Math.max(0, Math.min(maxScroll, newScrollOffset));
             
             return true;
@@ -498,8 +484,10 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
      * Handles the click on the Save button
      */
     private void onSaveButtonClicked() {
-        String structureName = nameEditBox.getValue().trim();
-        String structureId = idEditBox.getValue().trim();
+        String structureName = FilterLineTextUtil.normalizeForCommit(nameEditBox.getValue());
+        String structureId = FilterLineTextUtil.normalizeForCommit(idEditBox.getValue());
+        nameEditBox.setValue(structureName);
+        idEditBox.setValue(structureId);
         
         // Validation: both fields are required
         if (structureName.isEmpty()) {
@@ -803,8 +791,7 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
          
          if (button == 0) { // Left click
              // Handle various clicks in priority order (like StructureSelectionScreen)
-             if (handleScrollButtonClick(mouseX, mouseY) ||
-                 handleHandleClick(mouseX, mouseY) ||
+             if (handleHandleClick(mouseX, mouseY) ||
                  handleScrollbarClick(mouseX, mouseY)) {
                  MachineGuiInput.markScrollbarPressed();
                  return true;
@@ -812,31 +799,6 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
          }
          
          return super.mouseClicked(mouseX, mouseY, button);
-     }
-     
-     /**
-      * Handles clicks on scroll buttons (up/down arrows)
-      */
-     private boolean handleScrollButtonClick(double mouseX, double mouseY) {
-         int scrollbarX = this.leftPos + SCROLLBAR_X;
-         int buttonUpY = this.topPos + BUTTON_UP_Y;
-         int buttonDownY = this.topPos + BUTTON_DOWN_Y;
-         
-         // Up button (above scrollbar)
-         if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-             mouseY >= buttonUpY && mouseY < buttonUpY + HANDLE_SIZE) {
-             scrollUp();
-             return true;
-         }
-         
-         // Down button (below scrollbar)
-         if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-             mouseY >= buttonDownY && mouseY < buttonDownY + HANDLE_SIZE) {
-             scrollDown();
-             return true;
-         }
-         
-         return false;
      }
      
      /**
@@ -849,10 +811,10 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
          int scrollbarY = this.topPos + SCROLLBAR_Y;
          
          float scrollRatio = (float) scrollOffset / (clientStructures.size() - VISIBLE_ENTRIES);
-         int handleY = scrollbarY + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+         int handleY = scrollbarY + (int)(scrollRatio * GuiScroller.handleRange(SCROLLBAR_HEIGHT));
          
-         if (mouseX >= scrollbarX && mouseX < scrollbarX + HANDLE_SIZE &&
-             mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
+         if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLL_ARROW_SIZE &&
+             mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT) {
              
              isDraggingHandle = true;
              dragStartY = (int) mouseY;

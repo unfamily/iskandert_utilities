@@ -1612,6 +1612,13 @@ public class Config
             .comment("List of fluids that should be crude oil")
             .defineList("001_crude_oils", java.util.Arrays.asList("#c:oil"), obj -> obj instanceof String);
 
+    private static final ModConfigSpec.ConfigValue<String> SUSPICIOUS_DELIVERY_TRADE_COST = BUILDER
+            .comment("Wandering Trader cost for Suspicious Delivery trades.",
+                    "Format: item_id;min-max (inclusive counts).",
+                    "Default: minecraft:emerald;12-16 (vanilla rare-pool style).",
+                    "Invalid item or range falls back to emerald 12-16.")
+            .define("002_suspicious_delivery_trade_cost", "minecraft:emerald;12-16");
+
             
     static {
         BUILDER.pop(); // End of tweaks category
@@ -1942,6 +1949,20 @@ public class Config
     static {
         BUILDER.pop(); // End of evil_things category
 
+        BUILDER.comment("Optional recipe-viewer integrations (JEI / EMI / REI)").push("integrations");
+    }
+
+    private static final ModConfigSpec.BooleanValue ENABLE_JEI_INTEGRATION = BUILDER
+            .comment("If true and JEI is installed, enables JEI categories, ghost ingredients, Pattern Crafter transfer, and dynamic recipe refresh. Safe to leave true when JEI is absent.")
+            .define("000_enable_jei", true);
+
+    private static final ModConfigSpec.BooleanValue ENABLE_RECIPE_VIEWER_TRANSFER = BUILDER
+            .comment("If true, enables Pattern Crafter recipe transfer / fill for JEI, EMI, and REI when those mods are present.")
+            .define("001_enable_recipe_viewer_transfer", true);
+
+    static {
+        BUILDER.pop(); // End of integrations category
+
         BUILDER.comment("Mod logging (off by default in production)").push("logging");
     }
 
@@ -1952,6 +1973,10 @@ public class Config
     private static final ModConfigSpec.BooleanValue ENABLE_ERROR_LOGGING = BUILDER
             .comment("If true, enables error-level log output from IskaUtils.")
             .define("001_enable_error_logging", true);
+
+    private static final ModConfigSpec.BooleanValue ENABLE_PATTERN_CRAFTER_PERF_LOGGING = BUILDER
+            .comment("If true, logs aggressive Pattern Crafter timing (serverTick / attemptCraft phases). Off by default.")
+            .define("002_enable_pattern_crafter_perf_logging", false);
 
     static {
         BUILDER.pop(); // End of logging category
@@ -1993,6 +2018,9 @@ public class Config
     public static boolean portableDislocatorPrioritizeEnergy;
     public static boolean portableDislocatorPrioritizeXp;
     public static java.util.List<String> stickyFluids;
+    public static java.util.List<String> crudeOils;
+    /** Raw {@code item_id;min-max} for Suspicious Delivery wanderer trade cost. */
+    public static String suspiciousDeliveryTradeCostSpec;
     public static int electricTreetapEnergyConsume;
     public static int electricTreetapEnergyBuffer;
     public static int rubberSapExtractorEnergyConsume;
@@ -2000,7 +2028,6 @@ public class Config
     public static int rubberSapExtractorSpeed;
     public static boolean generateRubberTrees;
     public static boolean swissWrenchLegacyModes;
-    public static java.util.List<String> crudeOils;
     public static int scannerScanRange;
     public static java.util.List<Integer> scannerRangeOptions;
     public static int scannerDefaultRange;
@@ -2107,6 +2134,9 @@ public class Config
     public static boolean allowClientStructurePlayerLike;
     public static boolean devLoggingEnabled = false;
     public static boolean errorLoggingEnabled = true;
+    public static boolean enableJeiIntegration = true;
+    public static boolean enableRecipeViewerTransfer = true;
+    public static boolean patternCrafterPerfLoggingEnabled = false;
     public static int blazingAltarMaxChunkRadius;
     public static int blazingAltarTickInterval;
     public static int blazingAltarPlacementsPerTick;
@@ -2348,6 +2378,8 @@ public class Config
         portableDislocatorPrioritizeXp = PORTABLE_DISLOCATOR_PRIORITIZE_XP.get();
         stickyFluids = new java.util.ArrayList<>(sticky_fluids.get());
         crudeOils = new java.util.ArrayList<>(crude_oils.get());
+        suspiciousDeliveryTradeCostSpec = SUSPICIOUS_DELIVERY_TRADE_COST.get();
+        net.unfamily.iskautils.obtaining.SuspiciousDeliveryTradeUtil.reloadTradeCostFromConfig();
         // Electric Treetap logic
         electricTreetapEnergyConsume = ELECTRIC_TREETAP_ENERGY_CONSUME.get();
         electricTreetapEnergyBuffer = ELECTRIC_TREETAP_ENERGY_BUFFER.get();
@@ -2446,6 +2478,9 @@ public class Config
         allowClientStructurePlayerLike = ALLOW_CLIENT_STRUCTURE_PLAYER_LIKE.get();
         devLoggingEnabled = ENABLE_DEV_LOGGING.get();
         errorLoggingEnabled = ENABLE_ERROR_LOGGING.get();
+        enableJeiIntegration = ENABLE_JEI_INTEGRATION.get();
+        enableRecipeViewerTransfer = ENABLE_RECIPE_VIEWER_TRANSFER.get();
+        patternCrafterPerfLoggingEnabled = ENABLE_PATTERN_CRAFTER_PERF_LOGGING.get();
 
         blazingAltarMaxChunkRadius = BLAZING_ALTAR_MAX_CHUNK_RADIUS.get();
         blazingAltarTickInterval = BLAZING_ALTAR_TICK_INTERVAL.get();

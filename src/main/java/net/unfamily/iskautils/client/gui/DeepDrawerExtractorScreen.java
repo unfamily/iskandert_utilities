@@ -24,6 +24,7 @@ import net.unfamily.iskautils.integration.anotherdynamics.client.DeepDrawerSetti
 import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2SPacket;
 import net.unfamily.iskautils.integration.jei.ghost.IIskaUtilsGhostTarget;
+import net.unfamily.iskautils.util.FilterLineTextUtil;
 
 /**
  * Screen for Deep Drawer Extractor GUI
@@ -40,7 +41,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             IskaUtils.MOD_ID, "textures/gui/backgrounds/deep_drawer_extractor_empty.png");
     
     // Scrollbar texture (identica a DeepDrawersScreen)
-    private static final ResourceLocation SCROLLBAR_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/scrollbar.png");
     // Wide entry texture for filter entries
     private static final ResourceLocation ENTRY_TEXTURE = ResourceLocation.fromNamespaceAndPath("iska_utils", "textures/gui/entry_wide.png");
     // Single slot texture for item display
@@ -74,7 +74,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final int ENTRY_X = 8;
     private static final int ENTRY_WIDTH = 140;
     private static final int ENTRY_HEIGHT = 24;
-    private static final int SCROLLBAR_WIDTH = 8;
+    private static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
     private static final int FILTERS_LABEL_Y = 30;
     private static final int FIRST_ROW_Y = FILTERS_LABEL_Y + 12;
     private static final int ENTRY_SPACING = 0;
@@ -87,12 +87,13 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private static final int VISIBLE_ENTRIES = 7;
     
     // Scrollbar constants
-    private static final int SCROLLBAR_HEIGHT = 34;
-    private static final int HANDLE_SIZE = 8;
+    private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
+    private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
     private static final int SCROLLBAR_X = ENTRY_X + ENTRY_WIDTH + 4;
     private static final int BUTTON_UP_Y = FIRST_ROW_Y;
-    private static final int SCROLLBAR_Y = BUTTON_UP_Y + HANDLE_SIZE;
-    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
+    private static final int BUTTON_DOWN_Y = GuiScroller.buttonDownY(BUTTON_UP_Y, VISIBLE_ENTRIES, ENTRY_HEIGHT);
+    private static final int SCROLLBAR_Y = GuiScroller.trackY(BUTTON_UP_Y);
+    private static final int SCROLLBAR_HEIGHT = GuiScroller.trackHeight(BUTTON_UP_Y, BUTTON_DOWN_Y);
     
     // Top-right row: Allow | <<<<>>>> | Deny | Redstone
     private static final int TOP_ROW_Y = FIRST_ROW_Y;
@@ -117,6 +118,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     private Button allowNavButton;
     private Button listLogicButton;
     private Button backButton;
+    private Button scrollUpButton;
+    private Button scrollDownButton;
     
     private ItemIconButton redstoneModeButton;
     
@@ -264,6 +267,12 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 .bounds(this.leftPos + BACK_BUTTON_X, this.topPos + BACK_BUTTON_Y, NAV_TEXT_BTN_WIDTH, NAV_BTN_HEIGHT)
                 .build();
         addRenderableWidget(backButton);
+
+        scrollUpButton = addRenderableWidget(GuiScroller.createUpButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_UP_Y, this::scrollUp));
+        scrollDownButton = addRenderableWidget(GuiScroller.createDownButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_DOWN_Y, this::scrollDown));
+        updateScrollArrowState();
 
         applySubViewVisibility();
         tryRestoreSavedFilterSubview();
@@ -628,6 +637,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         if (howTo && editingEditBox != null) {
             editingEditBox.visible = false;
         }
+        updateScrollArrowState();
     }
 
     /** On the edit row; follows close button while editing. */
@@ -854,9 +864,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             java.util.Map<Integer, String> filterMap = new java.util.HashMap<>();
             java.util.Map<Integer, Integer> concatMap = new java.util.HashMap<>();
             for (int i = 0; i < cachedFilterFields.size(); i++) {
-                String filter = cachedFilterFields.get(i);
-                if (filter != null && !filter.trim().isEmpty()) {
-                    filterMap.put(i, filter.trim());
+                String filter = FilterLineTextUtil.normalizeForCommit(cachedFilterFields.get(i));
+                if (!filter.isEmpty()) {
+                    cachedFilterFields.set(i, filter);
+                    filterMap.put(i, filter);
                     int ch = (i < cachedConcatFields.size() && cachedConcatFields.get(i) != null)
                             ? cachedConcatFields.get(i) : 0;
                     if (ch > 0) {
@@ -1157,38 +1168,14 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      * Renders the scrollbar with UP/DOWN buttons and draggable handle.
      */
     private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Only show scrollbar if there are more slots than can fit
         if (MAX_FILTER_SLOTS <= VISIBLE_ENTRIES) return;
-        
-        int guiX = this.leftPos;
-        int guiY = this.topPos;
-        
-        // Draw scrollbar background (8 pixels wide, height as defined)
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + SCROLLBAR_Y, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
-        
-        // UP button (8x8 pixels) - above scrollbar
-        boolean upButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-                                  mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE);
-        int upButtonV = upButtonHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_UP_Y, SCROLLBAR_WIDTH * 2, (float)upButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        
-        // DOWN button (8x8 pixels) - below scrollbar
-        boolean downButtonHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-                                    mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE);
-        int downButtonV = downButtonHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_DOWN_Y, SCROLLBAR_WIDTH * 3, (float)downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        
-        // Handle (8x8 pixels) - position based on scroll offset
-        int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_ENTRIES);
-        if (maxScrollOffset > 0) {
-            double scrollRatio = (double) filterScrollOffset / maxScrollOffset;
-            int handleY = guiY + SCROLLBAR_Y + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-            
-            boolean handleHovered = (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE &&
-                                    mouseY >= handleY && mouseY < handleY + HANDLE_SIZE);
-            int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-            guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY, (float)SCROLLBAR_WIDTH, (float)handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-        }
+        GuiScroller.draw(
+                guiGraphics,
+                leftPos + SCROLLBAR_X,
+                topPos + BUTTON_UP_Y,
+                topPos + BUTTON_DOWN_Y,
+                filterScrollOffset,
+                Math.max(0, MAX_FILTER_SLOTS - VISIBLE_ENTRIES));
     }
     
     /**
@@ -1461,7 +1448,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             button -> {
                 // Save the current textbox value
                 if (editModeTextBox != null && editModeFilterIndex >= 0) {
-                    String value = editModeTextBox.getValue();
+                    String value = FilterLineTextUtil.normalizeForCommit(editModeTextBox.getValue());
+                    editModeTextBox.setValue(value);
                     while (cachedFilterFields.size() <= editModeFilterIndex) {
                         cachedFilterFields.add("");
                     }
@@ -1709,7 +1697,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
                 cachedFilterFields.add("");
             }
             
-            String trimmedValue = value.trim();
+            String trimmedValue = FilterLineTextUtil.normalizeForCommit(value);
+            if (!trimmedValue.equals(value)) {
+                editingEditBox.setValue(trimmedValue);
+            }
             cachedFilterFields.set(filterIndex, trimmedValue);
             
             saveFilterData();
@@ -2114,7 +2105,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_ENTRIES);
             
             if (maxScrollOffset > 0) {
-                float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+                float scrollRatio = (float) deltaY / GuiScroller.handleRange(SCROLLBAR_HEIGHT);
                 
                 int newScrollOffset = dragStartScrollOffset + (int)(scrollRatio * maxScrollOffset);
                 newScrollOffset = Math.max(0, Math.min(maxScrollOffset, newScrollOffset));
@@ -2126,30 +2117,20 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
     
-    /**
-     * Handles clicks on UP/DOWN buttons
-     */
     private boolean handleScrollButtonClick(double mouseX, double mouseY) {
-        if (MAX_FILTER_SLOTS <= VISIBLE_ENTRIES) return false;
-        
-        int guiX = this.leftPos;
-        int guiY = this.topPos;
-        
-        // UP button
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-            mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE) {
-            scrollUp();
-            return true;
-        }
-        
-        // DOWN button
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
-            mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE) {
-            scrollDown();
-            return true;
-        }
-        
+        // Arrows are real Button widgets; only track / handle remain here.
         return false;
+    }
+
+    private void updateScrollArrowState() {
+        boolean canScroll = MAX_FILTER_SLOTS > VISIBLE_ENTRIES && isFilterListOpen() && !inEditMode();
+        GuiScroller.setArrowActive(scrollUpButton, scrollDownButton, canScroll);
+        if (scrollUpButton != null) {
+            scrollUpButton.visible = canScroll;
+        }
+        if (scrollDownButton != null) {
+            scrollDownButton.visible = canScroll;
+        }
     }
     
     /**
@@ -2164,10 +2145,10 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         int maxScrollOffset = Math.max(0, MAX_FILTER_SLOTS - VISIBLE_ENTRIES);
         if (maxScrollOffset > 0) {
             double scrollRatio = (double) filterScrollOffset / maxScrollOffset;
-            int handleY = guiY + SCROLLBAR_Y + (int)(scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+            int handleY = guiY + SCROLLBAR_Y + (int)(scrollRatio * GuiScroller.handleRange(SCROLLBAR_HEIGHT));
             
-            if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE &&
-                mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
+            if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
+                mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT) {
                 
                 isDraggingHandle = true;
                 dragStartY = (int) mouseY;

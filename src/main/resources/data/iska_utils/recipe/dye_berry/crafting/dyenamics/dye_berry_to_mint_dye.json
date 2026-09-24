@@ -1,11 +1,5 @@
 {
   "type": "minecraft:crafting_shaped",
-  "conditions": [
-    {
-      "type": "neoforge:mod_loaded",
-      "modid": "dyenamics"
-    }
-  ],
   "pattern": [
     "V B",
     "  B",
@@ -22,5 +16,11 @@
   "result": {
     "id": "dyenamics:mint_dye",
     "count": 5
-  }
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "dyenamics"
+    }
+  ]
 }

@@ -1,29 +1,29 @@
 {
   "type": "minecraft:crafting_shaped",
-  "conditions": [
-    {
-      "type": "neoforge:item_exists",
-      "item": "iska_utils:iska_utils_slowness"
-    }
-  ],
   "pattern": [
     " C ",
     "CAC",
     " B "
   ],
   "key": {
-   "A": {
-    "item": "minecraft:honey_bottle"
-   },
-   "B": {
-    "item": "iska_utils:plate_base_block"
-   },  
-   "C": {
-    "item": "minecraft:clay_ball"
-   }
+    "A": {
+      "item": "minecraft:honey_bottle"
+    },
+    "B": {
+      "item": "iska_utils:plate_base_block"
+    },
+    "C": {
+      "item": "minecraft:clay_ball"
+    }
   },
   "result": {
     "id": "iska_utils:iska_utils_slowness",
     "count": 1
-  }
-} 
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "iska_utils:iska_utils_slowness"
+    }
+  ]
+}

@@ -31,22 +31,21 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
 
     private static final ResourceLocation TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/deep_drawer.png");
-    private static final ResourceLocation SCROLLBAR_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
 
     private static final int TEXTURE_WIDTH = 197;
     private static final int TEXTURE_HEIGHT = 235;
     private static final int GUI_WIDTH = TEXTURE_WIDTH;
     private static final int GUI_HEIGHT = TEXTURE_HEIGHT;
 
-    private static final int SCROLLBAR_WIDTH = 8;
-    private static final int SCROLLBAR_HEIGHT = 34;
-    private static final int HANDLE_SIZE = 8;
+    private static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
+    private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
+    private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
 
     private static final int SCROLLBAR_X = 180;
     private static final int BUTTON_UP_Y = DeepDrawersMenu.STORAGE_SLOTS_VISIBLE_Y;
-    private static final int SCROLLBAR_Y = BUTTON_UP_Y + HANDLE_SIZE;
-    private static final int BUTTON_DOWN_Y = SCROLLBAR_Y + SCROLLBAR_HEIGHT;
+    private static final int BUTTON_DOWN_Y = GuiScroller.buttonDownY(BUTTON_UP_Y, DeepDrawersMenu.VISIBLE_ROWS, 18);
+    private static final int SCROLLBAR_Y = GuiScroller.trackY(BUTTON_UP_Y);
+    private static final int SCROLLBAR_HEIGHT = GuiScroller.trackHeight(BUTTON_UP_Y, BUTTON_DOWN_Y);
 
     private int scrollOffset = 0;
     private boolean isDraggingHandle = false;
@@ -57,6 +56,8 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     private int searchDebounceTicks = 0;
 
     private Button closeButton;
+    private Button scrollUpButton;
+    private Button scrollDownButton;
     private static final int CLOSE_BUTTON_Y = 5;
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
@@ -92,6 +93,12 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
                 .bounds(leftPos + CLOSE_BUTTON_X, topPos + CLOSE_BUTTON_Y, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
                 .build();
         addRenderableWidget(closeButton);
+
+        scrollUpButton = addRenderableWidget(GuiScroller.createUpButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_UP_Y, this::scrollUp));
+        scrollDownButton = addRenderableWidget(GuiScroller.createDownButton(
+                leftPos + SCROLLBAR_X, topPos + BUTTON_DOWN_Y, this::scrollDown));
+        updateScrollArrowState();
     }
 
     @Override
@@ -144,29 +151,14 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
     }
 
     private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        int guiX = leftPos;
-        int guiY = topPos;
-
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + SCROLLBAR_Y, 0, 0, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 32, 34);
-
-        boolean upButtonHovered = mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE;
-        int upButtonV = upButtonHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_UP_Y, SCROLLBAR_WIDTH * 2, upButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-
-        boolean downButtonHovered = mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE;
-        int downButtonV = downButtonHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, guiY + BUTTON_DOWN_Y, SCROLLBAR_WIDTH * 3, downButtonV, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
-
-        int maxScrollOffset = menu.getMaxScrollOffset();
-        double scrollRatio = maxScrollOffset > 0 ? (double) scrollOffset / maxScrollOffset : 0.0;
-        int handleY = guiY + SCROLLBAR_Y + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-
-        boolean handleHovered = mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE
-                && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE;
-        int handleTextureY = handleHovered ? HANDLE_SIZE : 0;
-        guiGraphics.blit(SCROLLBAR_TEXTURE, guiX + SCROLLBAR_X, handleY, SCROLLBAR_WIDTH, handleTextureY, HANDLE_SIZE, HANDLE_SIZE, 32, 34);
+        updateScrollArrowState();
+        GuiScroller.draw(
+                guiGraphics,
+                leftPos + SCROLLBAR_X,
+                topPos + BUTTON_UP_Y,
+                topPos + BUTTON_DOWN_Y,
+                scrollOffset,
+                menu.getMaxScrollOffset());
     }
 
     @Override
@@ -214,10 +206,6 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
             return true;
         }
         if (button == 0) {
-            if (handleScrollButtonClick(mouseX, mouseY)) {
-                MachineGuiInput.markScrollbarPressed();
-                return true;
-            }
             if (handleHandleClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();
                 return true;
@@ -230,23 +218,8 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    private boolean handleScrollButtonClick(double mouseX, double mouseY) {
-        int guiX = leftPos;
-        int guiY = topPos;
-
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= guiY + BUTTON_UP_Y && mouseY < guiY + BUTTON_UP_Y + HANDLE_SIZE) {
-            scrollUp();
-            return true;
-        }
-
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= guiY + BUTTON_DOWN_Y && mouseY < guiY + BUTTON_DOWN_Y + HANDLE_SIZE) {
-            scrollDown();
-            return true;
-        }
-
-        return false;
+    private void updateScrollArrowState() {
+        GuiScroller.setArrowActive(scrollUpButton, scrollDownButton, menu.getMaxScrollOffset() > 0);
     }
 
     private boolean handleHandleClick(double mouseX, double mouseY) {
@@ -254,10 +227,10 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         int guiY = topPos;
         int maxScrollOffset = menu.getMaxScrollOffset();
         double scrollRatio = maxScrollOffset > 0 ? (double) scrollOffset / maxScrollOffset : 0.0;
-        int handleY = guiY + SCROLLBAR_Y + (int) (scrollRatio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+        int handleY = guiY + SCROLLBAR_Y + (int) (scrollRatio * GuiScroller.handleRange(SCROLLBAR_HEIGHT));
 
-        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + HANDLE_SIZE
-                && mouseY >= handleY && mouseY < handleY + HANDLE_SIZE) {
+        if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH
+                && mouseY >= handleY && mouseY < handleY + SCROLLER_HEIGHT) {
             isDraggingHandle = true;
             dragStartY = (int) mouseY;
             dragStartScrollOffset = scrollOffset;
@@ -306,7 +279,7 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
         if (button == 0 && isDraggingHandle) {
             int deltaY = (int) mouseY - dragStartY;
             int maxScrollOffset = menu.getMaxScrollOffset();
-            float scrollRatio = (float) deltaY / (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+            float scrollRatio = (float) deltaY / GuiScroller.handleRange(SCROLLBAR_HEIGHT);
             int newScrollOffset = dragStartScrollOffset + (int) (scrollRatio * maxScrollOffset);
             newScrollOffset = Math.max(0, Math.min(maxScrollOffset, newScrollOffset));
             setScrollOffset(newScrollOffset);

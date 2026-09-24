@@ -12,7 +12,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.integration.jei.IskaUtilsJeiDynamicRefresh;
+import net.unfamily.iskautils.client.RecipeViewerClientBridge;
 import net.unfamily.iskautils.block.entity.AncientTableBlockEntity;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.network.ModMessages;
@@ -21,8 +21,6 @@ import net.unfamily.iskautils.network.packet.AncientTableScrollC2SPacket;
 public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu> {
     private static final ResourceLocation TEXTURE =
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/backgrounds/ancient_table.png");
-    private static final ResourceLocation SCROLLBAR_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "textures/gui/scrollbar.png");
     public static final int GUI_WIDTH = 200;
     public static final int GUI_HEIGHT = 190;
 
@@ -32,20 +30,23 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
     private static final int GRID_PIXEL_W = GRID_COLS * CELL_STEP;
     private static final int GRID_PIXEL_H = GRID_ROWS_VISIBLE * CELL_STEP;
 
-    private static final int SCROLLBAR_WIDTH = AncientTableMenu.SCROLLBAR_WIDTH;
-    private static final int HANDLE_SIZE = AncientTableMenu.SCROLLBAR_HANDLE_SIZE;
-    private static final int SCROLLBAR_HEIGHT = AncientTableMenu.SCROLLBAR_TRACK_HEIGHT;
+    private static final int SCROLLBAR_WIDTH = GuiScroller.SCROLLER_WIDTH;
+    private static final int SCROLLER_HEIGHT = GuiScroller.SCROLLER_HEIGHT;
+    private static final int SCROLL_ARROW_SIZE = GuiScroller.SCROLL_ARROW_SIZE;
 
     private static final int INPUT_SCROLL_X = AncientTableMenu.INPUT_SCROLL_X;
     private static final int OUTPUT_SCROLL_X = AncientTableMenu.OUTPUT_SCROLL_X;
 
     private static final int INPUT_BUTTON_UP_Y = AncientTableMenu.INPUT_SCROLL_UP_Y;
-    private static final int INPUT_SCROLLBAR_Y = INPUT_BUTTON_UP_Y + HANDLE_SIZE;
-    private static final int INPUT_BUTTON_DOWN_Y = INPUT_SCROLLBAR_Y + SCROLLBAR_HEIGHT;
+    private static final int INPUT_SCROLLBAR_Y = GuiScroller.trackY(INPUT_BUTTON_UP_Y);
+    private static final int INPUT_BUTTON_DOWN_Y = AncientTableMenu.INPUT_SCROLL_DOWN_Y;
 
     private static final int OUTPUT_BUTTON_UP_Y = AncientTableMenu.OUTPUT_SCROLL_UP_Y;
-    private static final int OUTPUT_SCROLLBAR_Y = OUTPUT_BUTTON_UP_Y + HANDLE_SIZE;
-    private static final int OUTPUT_BUTTON_DOWN_Y = OUTPUT_SCROLLBAR_Y + SCROLLBAR_HEIGHT;
+    private static final int OUTPUT_SCROLLBAR_Y = GuiScroller.trackY(OUTPUT_BUTTON_UP_Y);
+    private static final int OUTPUT_BUTTON_DOWN_Y = AncientTableMenu.OUTPUT_SCROLL_DOWN_Y;
+
+    private static final int SCROLLBAR_HEIGHT = GuiScroller.trackHeight(
+            INPUT_BUTTON_UP_Y, INPUT_BUTTON_DOWN_Y);
 
     private static final int TITLE_Y = 8;
     private static final int CLOSE_BUTTON_Y = 5;
@@ -62,6 +63,10 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
 
     private Button closeButton;
     private ItemIconButton redstoneModeButton;
+    private Button inputScrollUpButton;
+    private Button inputScrollDownButton;
+    private Button outputScrollUpButton;
+    private Button outputScrollDownButton;
 
     private int inputScroll;
     private int outputScroll;
@@ -80,7 +85,7 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
     protected void init() {
         super.init();
         if (minecraft != null) {
-            IskaUtilsJeiDynamicRefresh.scheduleRefresh(minecraft);
+            RecipeViewerClientBridge.scheduleJeiRefresh(minecraft);
         }
         int titleWidth = font.width(MACHINE_TITLE);
         titleLabelX = (imageWidth - titleWidth) / 2;
@@ -99,6 +104,20 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
                 b -> onRedstoneModePressed(false),
                 menu::getRedstoneMode,
                 true));
+
+        inputScrollUpButton = addRenderableWidget(GuiScroller.createUpButton(
+                leftPos + INPUT_SCROLL_X, topPos + INPUT_BUTTON_UP_Y,
+                () -> scrollBy(true, -GRID_COLS)));
+        inputScrollDownButton = addRenderableWidget(GuiScroller.createDownButton(
+                leftPos + INPUT_SCROLL_X, topPos + INPUT_BUTTON_DOWN_Y,
+                () -> scrollBy(true, GRID_COLS)));
+        outputScrollUpButton = addRenderableWidget(GuiScroller.createUpButton(
+                leftPos + OUTPUT_SCROLL_X, topPos + OUTPUT_BUTTON_UP_Y,
+                () -> scrollBy(false, -GRID_COLS)));
+        outputScrollDownButton = addRenderableWidget(GuiScroller.createDownButton(
+                leftPos + OUTPUT_SCROLL_X, topPos + OUTPUT_BUTTON_DOWN_Y,
+                () -> scrollBy(false, GRID_COLS)));
+        updateScrollArrowState();
     }
 
     @Override
@@ -106,6 +125,7 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
         super.containerTick();
         inputScroll = menu.getInputScrollOffset();
         outputScroll = menu.getOutputScrollOffset();
+        updateScrollArrowState();
     }
 
     @Override
@@ -171,6 +191,7 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
         return true;
     }
 
+
     private void renderScrollbarColumn(
             GuiGraphics graphics,
             int mouseX,
@@ -182,72 +203,13 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
         if (maxScroll <= 0) {
             return;
         }
-
-        int guiX = leftPos;
-        int guiY = topPos;
-        int trackY = buttonUpY + HANDLE_SIZE;
-        int buttonDownY = trackY + SCROLLBAR_HEIGHT;
-
-        graphics.blit(
-                SCROLLBAR_TEXTURE,
-                guiX + scrollX,
-                guiY + trackY,
-                0,
-                0,
-                SCROLLBAR_WIDTH,
-                SCROLLBAR_HEIGHT,
-                32,
-                34);
-
-        boolean upHovered = mouseX >= guiX + scrollX
-                && mouseX < guiX + scrollX + SCROLLBAR_WIDTH
-                && mouseY >= guiY + buttonUpY
-                && mouseY < guiY + buttonUpY + HANDLE_SIZE;
-        int upV = upHovered ? HANDLE_SIZE : 0;
-        graphics.blit(
-                SCROLLBAR_TEXTURE,
-                guiX + scrollX,
-                guiY + buttonUpY,
-                SCROLLBAR_WIDTH * 2,
-                upV,
-                HANDLE_SIZE,
-                HANDLE_SIZE,
-                32,
-                34);
-
-        boolean downHovered = mouseX >= guiX + scrollX
-                && mouseX < guiX + scrollX + SCROLLBAR_WIDTH
-                && mouseY >= guiY + buttonDownY
-                && mouseY < guiY + buttonDownY + HANDLE_SIZE;
-        int downV = downHovered ? HANDLE_SIZE : 0;
-        graphics.blit(
-                SCROLLBAR_TEXTURE,
-                guiX + scrollX,
-                guiY + buttonDownY,
-                SCROLLBAR_WIDTH * 3,
-                downV,
-                HANDLE_SIZE,
-                HANDLE_SIZE,
-                32,
-                34);
-
-        double ratio = (double) offset / maxScroll;
-        int handleY = guiY + trackY + (int) (ratio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
-        boolean handleHovered = mouseX >= guiX + scrollX
-                && mouseX < guiX + scrollX + HANDLE_SIZE
-                && mouseY >= handleY
-                && mouseY < handleY + HANDLE_SIZE;
-        int handleV = handleHovered ? HANDLE_SIZE : 0;
-        graphics.blit(
-                SCROLLBAR_TEXTURE,
-                guiX + scrollX,
-                handleY,
-                SCROLLBAR_WIDTH,
-                handleV,
-                HANDLE_SIZE,
-                HANDLE_SIZE,
-                32,
-                34);
+        GuiScroller.draw(
+                graphics,
+                leftPos + scrollX,
+                topPos + buttonUpY,
+                topPos + (scrollX == INPUT_SCROLL_X ? INPUT_BUTTON_DOWN_Y : OUTPUT_BUTTON_DOWN_Y),
+                offset,
+                maxScroll);
     }
 
     private void onRedstoneModePressed(boolean backward) {
@@ -270,9 +232,7 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
             return true;
         }
         if (button == 0) {
-            if (handleScrollButtonClick(mouseX, mouseY, true)
-                    || handleScrollButtonClick(mouseX, mouseY, false)
-                    || handleHandleClick(mouseX, mouseY, true)
+            if (handleHandleClick(mouseX, mouseY, true)
                     || handleHandleClick(mouseX, mouseY, false)
                     || handleScrollbarTrackClick(mouseX, mouseY, true)
                     || handleScrollbarTrackClick(mouseX, mouseY, false)) {
@@ -282,37 +242,9 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    private boolean handleScrollButtonClick(double mouseX, double mouseY, boolean input) {
-        int max = input ? maxInputScroll() : maxOutputScroll();
-        if (max <= 0) {
-            return false;
-        }
-        int scrollX = leftPos + (input ? INPUT_SCROLL_X : OUTPUT_SCROLL_X);
-        int buttonUpY = topPos + (input ? INPUT_BUTTON_UP_Y : OUTPUT_BUTTON_UP_Y);
-        int buttonDownY = buttonUpY + HANDLE_SIZE + SCROLLBAR_HEIGHT;
-        if (mouseX >= scrollX
-                && mouseX < scrollX + SCROLLBAR_WIDTH
-                && mouseY >= buttonUpY
-                && mouseY < buttonUpY + HANDLE_SIZE) {
-            int old = input ? inputScroll : outputScroll;
-            scrollBy(input, -GRID_COLS);
-            if ((input ? inputScroll : outputScroll) != old) {
-                playClick();
-            }
-            return true;
-        }
-        if (mouseX >= scrollX
-                && mouseX < scrollX + SCROLLBAR_WIDTH
-                && mouseY >= buttonDownY
-                && mouseY < buttonDownY + HANDLE_SIZE) {
-            int old = input ? inputScroll : outputScroll;
-            scrollBy(input, GRID_COLS);
-            if ((input ? inputScroll : outputScroll) != old) {
-                playClick();
-            }
-            return true;
-        }
-        return false;
+    private void updateScrollArrowState() {
+        GuiScroller.setArrowActive(inputScrollUpButton, inputScrollDownButton, maxInputScroll() > 0);
+        GuiScroller.setArrowActive(outputScrollUpButton, outputScrollDownButton, maxOutputScroll() > 0);
     }
 
     private boolean handleHandleClick(double mouseX, double mouseY, boolean input) {
@@ -324,11 +256,11 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
         int scrollX = leftPos + (input ? INPUT_SCROLL_X : OUTPUT_SCROLL_X);
         int trackY = topPos + (input ? INPUT_SCROLLBAR_Y : OUTPUT_SCROLLBAR_Y);
         double ratio = (double) offset / max;
-        int handleY = trackY + (int) (ratio * (SCROLLBAR_HEIGHT - HANDLE_SIZE));
+        int handleY = trackY + (int) (ratio * GuiScroller.handleRange(SCROLLBAR_HEIGHT));
         if (mouseX >= scrollX
-                && mouseX < scrollX + HANDLE_SIZE
+                && mouseX < scrollX + SCROLL_ARROW_SIZE
                 && mouseY >= handleY
-                && mouseY < handleY + HANDLE_SIZE) {
+                && mouseY < handleY + SCROLLER_HEIGHT) {
             dragSide = input ? 0 : 1;
             dragStartY = (int) mouseY;
             dragStartScroll = offset;
@@ -348,8 +280,8 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
                 && mouseX < scrollX + SCROLLBAR_WIDTH
                 && mouseY >= trackY
                 && mouseY < trackY + SCROLLBAR_HEIGHT) {
-            double clickTrack = (mouseY - trackY) - (HANDLE_SIZE / 2.0);
-            double denom = Math.max(1.0, SCROLLBAR_HEIGHT - HANDLE_SIZE);
+            double clickTrack = (mouseY - trackY) - (SCROLLER_HEIGHT / 2.0);
+            double denom = Math.max(1.0, GuiScroller.handleRange(SCROLLBAR_HEIGHT));
             double ratio = Mth.clamp(clickTrack / denom, 0.0, 1.0);
             int newOffset = (int) Math.round(ratio * max);
             int old = input ? inputScroll : outputScroll;
@@ -378,7 +310,7 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
             int max = input ? maxInputScroll() : maxOutputScroll();
             if (max > 0) {
                 int deltaY = (int) mouseY - dragStartY;
-                float ratio = deltaY / (float) (SCROLLBAR_HEIGHT - HANDLE_SIZE);
+                float ratio = deltaY / (float) GuiScroller.handleRange(SCROLLBAR_HEIGHT);
                 int newOffset = dragStartScroll + (int) (ratio * max);
                 setScroll(input, newOffset);
             }

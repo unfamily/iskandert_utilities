@@ -27,6 +27,7 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.pattern.PatternData;
 import net.unfamily.iskautils.util.DeepDrawerItemFilter;
+import net.unfamily.iskautils.util.ModLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,6 +43,8 @@ import java.util.Optional;
  * and crafting patterns.
  */
 public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
+
+    private static final ModLogger LOGGER = ModLogger.of(ImprovedPatternCrafterBlockEntity.class);
 
     // Input filter ghost slots: count = getMaxKeyInputs() (config: improved 90, normal 18)
     private ItemStackHandler inputFilterHandler;
@@ -820,29 +823,34 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
     }
 
     /**
-     * Assigns a JEI crafting grid to the current pattern, reusing matching variables and
-     * allocating empty filter slots for new item types.
+     * Ensures an exact-item variable ({@code -id}) exists for {@code stack}, allocating a free
+     * filter slot/letter if needed. Does not modify the pattern grid (that stays pending until Save).
+     *
+     * @return letter for the item, or {@link PatternData#EMPTY} if no slot/letter is available
      */
-    public boolean applyPatternItemAssignment(int cell, ItemStack stack) {
-        PatternData pattern = getCurrentPattern();
-        if (pattern == null || cell < 0 || cell >= PatternData.GRID_SIZE || stack.isEmpty()) return false;
-
+    public int ensureExactItemVariable(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return PatternData.EMPTY;
         int letter = findLetterForExactItem(stack);
-        if (letter == PatternData.EMPTY) {
-            int freeSlot = findFreeFilterSlot();
-            int freeLetter = findFreeLetter();
-            if (freeSlot < 0 || freeLetter == PatternData.EMPTY) return false;
-            inputFilterStrings[freeSlot] = "-" + BuiltInRegistries.ITEM.getKey(stack.getItem());
-            filterLetters[freeSlot] = freeLetter;
-            letter = freeLetter;
-        }
-        pattern.setCell(cell, letter);
+        if (letter != PatternData.EMPTY) return letter;
+        int freeSlot = findFreeFilterSlot();
+        int freeLetter = findFreeLetter();
+        if (freeSlot < 0 || freeLetter == PatternData.EMPTY) return PatternData.EMPTY;
+        inputFilterStrings[freeSlot] = "-" + BuiltInRegistries.ITEM.getKey(stack.getItem());
+        filterLetters[freeSlot] = freeLetter;
         setChanged();
-        return true;
+        return freeLetter;
     }
 
     /**
-     * Predicts the letter {@link #applyPatternItemAssignment} would use (exact {@code -id} only).
+     * @deprecated Prefer {@link #ensureExactItemVariable(ItemStack)} + pending Save for the grid cell.
+     * Kept for binary compatibility; no longer writes the pattern cell.
+     */
+    public boolean applyPatternItemAssignment(int cell, ItemStack stack) {
+        return ensureExactItemVariable(stack) != PatternData.EMPTY;
+    }
+
+    /**
+     * Predicts the letter {@link #ensureExactItemVariable} would use (exact {@code -id} only).
      * Does not mutate state; for newly allocated letters returns the next free letter.
      */
     public int previewExactAssignLetter(ItemStack stack) {
@@ -1088,6 +1096,7 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
      * Called every tick on the server side by the BlockEntityTicker.
      */
     public static void serverTick(Level level, BlockPos pos, BlockState state, ImprovedPatternCrafterBlockEntity entity) {
+        long tickStartNs = Config.patternCrafterPerfLoggingEnabled ? System.nanoTime() : 0L;
         // When logic modules are removed, effective pattern count can drop: reset to first pattern (1) if current is out of range
         int effectiveCount = entity.getEffectivePatternCount();
         if (entity.currentPatternIndex >= effectiveCount) {
@@ -1097,6 +1106,7 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
 
         // Stay entirely idle until inventory/filter state changes.
         if (entity.craftIdleUntilChange || !entity.hasAnyInputFilterActive() || !entity.hasAnyMachineInput()) {
+            entity.logPerf("serverTick.idle_skip", tickStartNs);
             return;
         }
 
@@ -1124,10 +1134,12 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
                     entity.attemptCraft();
                 }
             }
+            entity.logPerf("serverTick.pulse", tickStartNs);
             return;
         }
 
         if (!entity.isRedstoneAllowed()) {
+            entity.logPerf("serverTick.redstone_blocked", tickStartNs);
             return;
         }
 
@@ -1137,7 +1149,24 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         if (entity.craftingTimer >= interval) {
             entity.craftingTimer = 0;
             entity.attemptCraft();
+            entity.logPerf("serverTick.craft", tickStartNs);
+        } else {
+            entity.logPerf("serverTick.wait_interval", tickStartNs);
         }
+    }
+
+    private void logPerf(String phase, long startNs) {
+        if (!Config.patternCrafterPerfLoggingEnabled || startNs <= 0L) {
+            return;
+        }
+        long elapsedUs = (System.nanoTime() - startNs) / 1000L;
+        LOGGER.info("[PatternCrafterPerf] {} @ {} took {} µs (timer={}, interval={}, idle={})",
+                phase,
+                worldPosition,
+                elapsedUs,
+                craftingTimer,
+                getEffectiveCraftingInterval(),
+                craftIdleUntilChange);
     }
 
     private boolean hasAnyMachineInput() {

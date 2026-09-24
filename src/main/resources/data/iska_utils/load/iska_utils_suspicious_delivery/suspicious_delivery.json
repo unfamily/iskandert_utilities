@@ -192,6 +192,17 @@
     },
     {
       "weight": 100,
+      "luck": 750,
+      "jeimode": "show",
+      "do": [
+        {
+          "drop": "iska_utils:calling_bell"
+        }
+      ],
+      "quick_open": true
+    },
+    {
+      "weight": 100,
       "luck": 700,
       "jeimode": "show",
       "do": [
