@@ -278,11 +278,9 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
                 && mouseX < scrollX + SCROLLBAR_WIDTH
                 && mouseY >= trackY
                 && mouseY < trackY + SCROLLBAR_HEIGHT) {
-            double clickTrack = (mouseY - trackY) - (SCROLLER_HEIGHT / 2.0);
-            double denom = Math.max(1.0, GuiScroller.handleRange(SCROLLBAR_HEIGHT));
-            double ratio = Mth.clamp(clickTrack / denom, 0.0, 1.0);
+            int newOffset = GuiScroller.scrollOffsetFromTrackClick(mouseY, trackY, SCROLLBAR_HEIGHT, max);
             int old = input ? inputScroll : outputScroll;
-            setScroll(input, (int) Math.round(ratio * max));
+            setScroll(input, newOffset);
             if ((input ? inputScroll : outputScroll) != old) {
                 playClick();
             }

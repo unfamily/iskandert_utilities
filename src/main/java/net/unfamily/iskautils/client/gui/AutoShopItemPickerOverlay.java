@@ -875,8 +875,8 @@ public final class AutoShopItemPickerOverlay {
                 || mouseY < barY || mouseY >= barY + scrollbarHeight()) {
             return false;
         }
-        float clickRatio = (float) (mouseY - barY) / scrollbarHeight();
-        scrollOffset = Math.max(0, Math.min(maxScrollOffset(), (int) (clickRatio * maxScrollOffset())));
+        scrollOffset = GuiScroller.scrollOffsetFromTrackClick(
+                mouseY, barY, scrollbarHeight(), maxScrollOffset());
         rebuildSelectButtons.run();
         playButtonSound.run();
         return true;

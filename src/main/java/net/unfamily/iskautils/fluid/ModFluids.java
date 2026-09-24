@@ -1,31 +1,24 @@
 package net.unfamily.iskautils.fluid;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.item.BucketItem;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.LiquidBlock;
-import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
-import net.neoforged.neoforge.common.SoundActions;
-import net.neoforged.neoforge.fluids.BaseFlowingFluid;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.fluids.FluidType;
-import net.neoforged.neoforge.registries.DeferredBlock;
-import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
+import net.unfamily.iskalib.liquid.IskaLibLiquids;
+import net.unfamily.iskalib.liquid.LiquidBlockProperties;
+import net.unfamily.iskalib.liquid.LiquidRegistrationRegisters;
+import net.unfamily.iskalib.liquid.LiquidSpec;
+import net.unfamily.iskalib.liquid.RegisteredLiquid;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.item.ModItems;
 
 /**
- * Tinted fluid registration (Colossal Reactors {@code ModFluids} shape on NeoForge 26).
- * Static fields populate deferred registers before {@link #FLUID_TYPES} / {@link #FLUIDS} subscribe on the mod bus.
+ * Consumer liquid registration via {@link IskaLibLiquids} (NeoForge 26+).
  */
 public final class ModFluids {
 
@@ -40,88 +33,33 @@ public final class ModFluids {
     public static final DeferredRegister<Fluid> FLUIDS =
             DeferredRegister.create(BuiltInRegistries.FLUID, IskaUtils.MOD_ID);
 
-    public static final TintedFluid CONDENSED_KNOWLEDGE = registerCondensedKnowledge();
+    /** Set in {@link #register(IEventBus)}; not available before mod construction. */
+    public static RegisteredLiquid CONDENSED_KNOWLEDGE;
 
     private ModFluids() {}
 
-    private static TintedFluid registerCondensedKnowledge() {
-        DeferredHolder<FluidType, FluidType> type = FLUID_TYPES.register("condensed_knowledge_type",
-                () -> new FluidType(FluidType.Properties.create()
-                        .descriptionId("fluid.iska_utils.condensed_knowledge")
-                        .lightLevel(10)
-                        .density(1000)
-                        .viscosity(1000)
-                        .temperature(300)
-                        .canConvertToSource(false)
-                        .sound(SoundActions.BUCKET_FILL, SoundEvents.BUCKET_FILL)
-                        .sound(SoundActions.BUCKET_EMPTY, SoundEvents.BUCKET_EMPTY)));
+    public static void register(IEventBus modEventBus) {
+        LiquidRegistrationRegisters registers = new LiquidRegistrationRegisters(
+                FLUID_TYPES, FLUIDS, ModBlocks.BLOCKS, ModItems.ITEMS);
 
-        return registerTintedFluid("condensed_knowledge", type, 10, true);
-    }
+        CONDENSED_KNOWLEDGE = IskaLibLiquids.registerLiquid(
+                modEventBus,
+                registers,
+                LiquidSpec.withThinVanillaWaterSprites(
+                                IskaUtils.MOD_ID,
+                                "condensed_knowledge",
+                                FluidColors.CONDENSED_KNOWLEDGE,
+                                "fluid.iska_utils.condensed_knowledge",
+                                10,
+                                true)
+                        .withBlockProperties(new LiquidBlockProperties(
+                                MapColor.COLOR_LIGHT_GREEN,
+                                100.0F,
+                                PushReaction.DESTROY,
+                                -1,
+                                null)));
 
-    /**
-     * Shared registration for a tinted fluid (block, bucket, source, flowing).
-     * Replace this body with {@code IskaLibLiquids} later without changing call sites.
-     */
-    private static TintedFluid registerTintedFluid(
-            String name,
-            DeferredHolder<FluidType, FluidType> type,
-            int blockLightLevel,
-            boolean sourceIdIsBaseName
-    ) {
-        var refs = new Object() {
-            DeferredHolder<Fluid, BaseFlowingFluid.Source> source;
-            DeferredHolder<Fluid, FlowingFluid> flowing;
-            DeferredBlock<Block> block;
-            DeferredHolder<Item, BucketItem> bucket;
-        };
-
-        BaseFlowingFluid.Properties prop = new BaseFlowingFluid.Properties(
-                        type,
-                        () -> refs.source.get(),
-                        () -> refs.flowing.get())
-                .block(() -> (LiquidBlock) refs.block.get())
-                .bucket(() -> refs.bucket.get());
-
-        String sourceId = sourceIdIsBaseName ? name : (name + "_source");
-        refs.source = FLUIDS.register(sourceId, () -> new BaseFlowingFluid.Source(prop));
-        refs.flowing = FLUIDS.register(name + "_flowing", () -> new BaseFlowingFluid.Flowing(prop));
-        refs.block = ModBlocks.BLOCKS.registerBlock(name,
-                props -> new LiquidBlock(refs.flowing.get(), props),
-                p -> p.mapColor(MapColor.COLOR_LIGHT_GREEN)
-                        .replaceable()
-                        .strength(100.0F)
-                        .pushReaction(PushReaction.DESTROY)
-                        .noLootTable()
-                        .liquid()
-                        .lightLevel(state -> blockLightLevel));
-        refs.bucket = ModItems.ITEMS.registerItem(name + "_bucket",
-                props -> new BucketItem(refs.source.get(), props),
-                () -> new Item.Properties().craftRemainder(Items.BUCKET).stacksTo(1));
-
-        return new TintedFluid(refs.source, refs.flowing, refs.block, refs.bucket);
-    }
-
-    public record TintedFluid(
-            DeferredHolder<Fluid, BaseFlowingFluid.Source> source,
-            DeferredHolder<Fluid, FlowingFluid> flowing,
-            DeferredBlock<Block> block,
-            DeferredHolder<Item, BucketItem> bucket
-    ) {
-        public Fluid getSource() {
-            return source.get();
-        }
-
-        public Fluid getFlowing() {
-            return flowing.get();
-        }
-
-        public Block getBlock() {
-            return block.get();
-        }
-
-        public Item getBucket() {
-            return bucket.get();
-        }
+        FLUID_TYPES.register(modEventBus);
+        FLUIDS.register(modEventBus);
     }
 }

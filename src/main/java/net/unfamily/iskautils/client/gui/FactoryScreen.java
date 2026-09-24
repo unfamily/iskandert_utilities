@@ -429,9 +429,8 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
         int guiY = this.topPos;
         if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH &&
             mouseY >= guiY + SCROLLBAR_Y && mouseY < guiY + SCROLLBAR_Y + SCROLLBAR_HEIGHT) {
-            double clickTrack = (mouseY - (guiY + SCROLLBAR_Y)) - (SCROLLER_HEIGHT / 2.0);
-            double denom = Math.max(1.0, (double) GuiScroller.handleRange(SCROLLBAR_HEIGHT));
-            double ratio = Math.max(0.0, Math.min(1.0, clickTrack / denom));
+            double ratio = GuiScroller.scrollRatioFromTrackClick(
+                    mouseY, guiY + SCROLLBAR_Y, SCROLLBAR_HEIGHT);
             int newOffset = (int) Math.round(ratio * maxScroll);
             newOffset = (newOffset / GRID_COLS) * GRID_COLS;
             int old = this.scrollOffset;

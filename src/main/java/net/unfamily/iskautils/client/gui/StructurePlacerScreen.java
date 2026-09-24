@@ -416,11 +416,9 @@ public class StructurePlacerScreen extends AbstractContainerScreen<StructurePlac
             mouseY >= scrollbarY && mouseY < scrollbarY + SCROLLBAR_HEIGHT) {
             
             // Calcola la nuova posizione del scroll in base al click
-            float clickRatio = (float)(mouseY - scrollbarY) / SCROLLBAR_HEIGHT;
-            clickRatio = Math.max(0, Math.min(1, clickRatio)); // Clamp tra 0 e 1
-            
-            int newScrollOffset = (int)(clickRatio * (availableStructures.size() - visibleEntries));
-            newScrollOffset = Math.max(0, Math.min(availableStructures.size() - visibleEntries, newScrollOffset));
+            int max = availableStructures.size() - visibleEntries;
+            int newScrollOffset = GuiScroller.scrollOffsetFromTrackClick(
+                    mouseY, scrollbarY, SCROLLBAR_HEIGHT, max);
             
             if (newScrollOffset != scrollOffset) {
                 scrollOffset = newScrollOffset;

@@ -189,7 +189,7 @@ public class ModCreativeModeTabs {
                                 // 6. General utility items
                                 pOutput.accept(ModItems.MOB_REAPER.get());
                                 pOutput.accept(ModItems.COLLECTING_CRATE.get());
-                                pOutput.accept(ModFluids.CONDENSED_KNOWLEDGE.getBucket());
+                                pOutput.accept(ModFluids.CONDENSED_KNOWLEDGE.bucketItem());
                                 pOutput.accept(ModItems.KNOWLEDGE_COMPRESSOR.get());
                                 pOutput.accept(ModItems.PATTERN_CRAFTER.get());
                                 pOutput.accept(ModItems.IMPROVED_PATTERN_CRAFTER.get());

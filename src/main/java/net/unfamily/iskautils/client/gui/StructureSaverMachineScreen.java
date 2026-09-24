@@ -816,11 +816,9 @@ public class StructureSaverMachineScreen extends AbstractContainerScreen<Structu
              mouseY >= scrollbarY && mouseY < scrollbarY + SCROLLBAR_HEIGHT) {
              
              // Calculate new scroll position based on click
-             float clickRatio = (float)(mouseY - scrollbarY) / SCROLLBAR_HEIGHT;
-             clickRatio = Math.max(0, Math.min(1, clickRatio)); // Clamp between 0 and 1
-             
-             int newScrollOffset = (int)(clickRatio * (clientStructures.size() - VISIBLE_ENTRIES));
-             newScrollOffset = Math.max(0, Math.min(clientStructures.size() - VISIBLE_ENTRIES, newScrollOffset));
+             int max = clientStructures.size() - VISIBLE_ENTRIES;
+             int newScrollOffset = GuiScroller.scrollOffsetFromTrackClick(
+                     mouseY, scrollbarY, SCROLLBAR_HEIGHT, max);
              
              if (newScrollOffset != scrollOffset) {
                  scrollOffset = newScrollOffset;

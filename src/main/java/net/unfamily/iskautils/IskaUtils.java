@@ -97,8 +97,7 @@ public class IskaUtils {
             modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerEntityRenderers);
             modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerParticleProviders);
             modEventBus.addListener(net.unfamily.iskautils.client.IskaUtilsClientModEvents::registerModelLoaders);
-            modEventBus.addListener(net.neoforged.neoforge.client.event.RegisterFluidModelsEvent.class,
-                    net.unfamily.iskautils.client.fluid.ModFluidClient::registerFluidModels);
+            // Fluid models: hooked by IskaLibLiquids via IskaLibConsumerClientHooks
 
         }
 
@@ -150,8 +149,7 @@ public class IskaUtils {
         // Register blocks and items
         ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
-        ModFluids.FLUID_TYPES.register(modEventBus);
-        ModFluids.FLUIDS.register(modEventBus);
+        ModFluids.register(modEventBus);
         net.unfamily.iskautils.crafting.ModFactoryRecipes.register(modEventBus);
         ModMobEffects.register(modEventBus);
         net.unfamily.iskautils.particle.ModParticles.register(modEventBus);

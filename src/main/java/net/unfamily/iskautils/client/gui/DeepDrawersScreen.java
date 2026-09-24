@@ -254,12 +254,9 @@ public class DeepDrawersScreen extends AbstractContainerScreen<DeepDrawersMenu> 
 
         if (mouseX >= guiX + SCROLLBAR_X && mouseX < guiX + SCROLLBAR_X + SCROLLBAR_WIDTH
                 && mouseY >= guiY + SCROLLBAR_Y && mouseY < guiY + SCROLLBAR_Y + SCROLLBAR_HEIGHT) {
-            float clickRatio = (float) (mouseY - (guiY + SCROLLBAR_Y)) / SCROLLBAR_HEIGHT;
-            clickRatio = Math.max(0, Math.min(1, clickRatio));
-
             int maxScrollOffset = menu.getMaxScrollOffset();
-            int newScrollOffset = (int) (clickRatio * maxScrollOffset);
-            newScrollOffset = Math.max(0, Math.min(maxScrollOffset, newScrollOffset));
+            int newScrollOffset = GuiScroller.scrollOffsetFromTrackClick(
+                    mouseY, guiY + SCROLLBAR_Y, SCROLLBAR_HEIGHT, maxScrollOffset);
 
             if (newScrollOffset != scrollOffset) {
                 setScrollOffset(newScrollOffset);

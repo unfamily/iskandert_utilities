@@ -592,11 +592,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         if (mouseX >= scrollbarX && mouseX < scrollbarX + SCROLLBAR_WIDTH &&
             mouseY >= scrollbarYPos && mouseY < scrollbarYPos + scrollbarHeight()) {
             
-            float clickRatio = (float)(mouseY - scrollbarYPos) / scrollbarHeight();
-            clickRatio = Math.max(0, Math.min(1, clickRatio));
-            
-            int newScrollOffset = (int)(clickRatio * maxScrollOffset());
-            newScrollOffset = Math.max(0, Math.min(maxScrollOffset(), newScrollOffset));
+            int newScrollOffset = GuiScroller.scrollOffsetFromTrackClick(
+                    mouseY, scrollbarYPos, scrollbarHeight(), maxScrollOffset());
             
             if (newScrollOffset != scrollOffset) {
                 scrollOffset = newScrollOffset;
