@@ -15,9 +15,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import net.unfamily.iskautils.block.MobReaperBlock;
 import net.unfamily.iskautils.block.entity.MobReaperBlockEntity;
+import net.unfamily.iskautils.client.renderer.SpecialRenderCulling;
 
 /**
- * Renders the Mob Reaper rotor with Y-axis rotation when powered.
+ * Renders the Mob Reaper rotor. Spins only when within special-render distance and looked at;
+ * otherwise draws frozen at the last angle (still within distance).
  */
 public class MobReaperRenderer implements BlockEntityRenderer<MobReaperBlockEntity> {
 
@@ -40,8 +42,15 @@ public class MobReaperRenderer implements BlockEntityRenderer<MobReaperBlockEnti
             return;
         }
 
+        // Beyond special distance: no rotor BER (blockstate is base-only when powered).
+        if (!SpecialRenderCulling.isWithinRenderDistance(blockEntity.getBlockPos())) {
+            return;
+        }
+
         MobReaperClientAnimation.poll(blockEntity, partialTick);
-        float angle = MobReaperClientAnimation.getAngleDegrees(blockEntity.getBlockPos(), partialTick);
+        boolean animate = SpecialRenderCulling.isLookingAt(blockEntity.getBlockPos());
+        float angle = MobReaperClientAnimation.getAngleDegrees(
+                blockEntity.getBlockPos(), animate ? partialTick : 0.0f);
         boolean vertical = state.getValue(MobReaperBlock.VERTICAL);
         Direction facing = state.getValue(HorizontalDirectionalBlock.FACING);
         int light = LevelRenderer.getLightColor(level, blockEntity.getBlockPos());
@@ -66,7 +75,7 @@ public class MobReaperRenderer implements BlockEntityRenderer<MobReaperBlockEnti
 
     @Override
     public int getViewDistance() {
-        return 64;
+        return SpecialRenderCulling.viewDistanceBlocks();
     }
 
     @Override

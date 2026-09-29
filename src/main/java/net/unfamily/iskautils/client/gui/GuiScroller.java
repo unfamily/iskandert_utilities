@@ -90,6 +90,9 @@ public final class GuiScroller {
 
     /** Track fill + thumb only. Arrows are separate {@link Button} widgets. */
     public static void drawTrackAndHandle(GuiGraphics graphics, int x, int trackY, int trackH, int scroll, int maxScroll) {
+        if (maxScroll <= 0) {
+            return;
+        }
         graphics.fill(x, trackY, x + SCROLLER_WIDTH, trackY + trackH, SCROLL_TRACK_COLOR);
         int hy = handleY(trackY, trackH, scroll, Math.max(0, maxScroll));
         graphics.blit(
@@ -143,11 +146,11 @@ public final class GuiScroller {
     public static void setArrowActive(Button up, Button down, boolean canScroll) {
         if (up != null) {
             up.active = canScroll;
-            up.visible = true;
+            up.visible = canScroll;
         }
         if (down != null) {
             down.active = canScroll;
-            down.visible = true;
+            down.visible = canScroll;
         }
     }
 

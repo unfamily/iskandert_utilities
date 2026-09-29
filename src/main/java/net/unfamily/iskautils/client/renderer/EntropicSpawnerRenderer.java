@@ -30,14 +30,16 @@ public class EntropicSpawnerRenderer implements BlockEntityRenderer<EntropicSpaw
     public void render(EntropicSpawnerBlockEntity blockEntity, float partialTick, PoseStack poseStack,
                        MultiBufferSource buffer, int packedLight, int packedOverlay) {
         ItemStack clock = blockEntity.getMachineItems().getStackInSlot(EntropicSpawnerBlockEntity.CLOCK_SLOT_INDEX);
-        EntropicClockItemRenderHelper.renderOrbitingClocks(
-                clock,
-                blockEntity.getBlockPos(),
-                partialTick,
-                poseStack,
-                buffer,
-                packedLight,
-                packedOverlay);
+        if (SpecialRenderCulling.shouldRenderDetailed(blockEntity.getBlockPos())) {
+            EntropicClockItemRenderHelper.renderOrbitingClocks(
+                    clock,
+                    blockEntity.getBlockPos(),
+                    partialTick,
+                    poseStack,
+                    buffer,
+                    packedLight,
+                    packedOverlay);
+        }
 
         Level level = blockEntity.getLevel();
         if (level == null || !blockEntity.getBlockState().getValue(EntropicSpawnerBlock.ACTIVE)) {
@@ -73,6 +75,6 @@ public class EntropicSpawnerRenderer implements BlockEntityRenderer<EntropicSpaw
 
     @Override
     public int getViewDistance() {
-        return 64;
+        return SpecialRenderCulling.viewDistanceBlocks();
     }
 }

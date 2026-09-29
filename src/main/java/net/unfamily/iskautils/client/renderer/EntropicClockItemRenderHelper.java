@@ -6,13 +6,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.item.ModItems;
 
@@ -32,25 +28,6 @@ public final class EntropicClockItemRenderHelper {
     private static final float SPAWNER_CENTER_Y = 0.5f;
 
     private EntropicClockItemRenderHelper() {}
-
-    /**
-     * Hide clocks only when the eye is above/below the block and that face has an occluding neighbor.
-     * Side approaches never hide, regardless of lateral blocks.
-     */
-    public static boolean shouldHideForVerticalNeighbor(Level level, BlockPos pos, Vec3 eye) {
-        if (eye.y > pos.getY() + 1.0D) {
-            return isOccludingNeighbor(level, pos.relative(Direction.UP));
-        }
-        if (eye.y < pos.getY()) {
-            return isOccludingNeighbor(level, pos.relative(Direction.DOWN));
-        }
-        return false;
-    }
-
-    private static boolean isOccludingNeighbor(Level level, BlockPos neighborPos) {
-        BlockState state = level.getBlockState(neighborPos);
-        return !state.isAir() && state.canOcclude();
-    }
 
     public static float orbitDegrees(Level level, float partialTick) {
         if (level == null) {
@@ -105,7 +82,7 @@ public final class EntropicClockItemRenderHelper {
 
     /**
      * N clocks orbiting inside the Entropic Spawner (N = stack count, capped by config).
-     * Skips entirely when vertically occluded by a solid neighbor above/below.
+     * Always visible (no vertical-occlusion hide).
      */
     public static void renderOrbitingClocks(
             ItemStack clockStack,
@@ -119,14 +96,8 @@ public final class EntropicClockItemRenderHelper {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        Player player = minecraft.player;
         Level level = minecraft.level;
-        if (player == null || level == null) {
-            return;
-        }
-
-        Vec3 eye = player.getEyePosition(partialTick);
-        if (shouldHideForVerticalNeighbor(level, pos, eye)) {
+        if (level == null) {
             return;
         }
 

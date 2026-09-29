@@ -421,9 +421,7 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     }
     
     private void renderEnergyBar(GuiGraphics guiGraphics) {
-        // Position energy bar on the left side, centered in the space between left edge and entries start
-        // ENTRIES_START_X is the space available (30px), center the bar in that space
-        int energyBarX = this.leftPos + (ENTRIES_START_X - ENERGY_BAR_WIDTH) / 2;
+        int energyBarX = this.leftPos + TemporalOverclockerMenu.energyBarX(ENTRIES_START_X, ENERGY_BAR_WIDTH);
         int energyBarY = energyBarScreenY();
         
         // Always draw empty energy bar background
@@ -841,7 +839,7 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
     }
     
     private void renderEnergyTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        int energyBarX = this.leftPos + (ENTRIES_START_X - ENERGY_BAR_WIDTH) / 2;
+        int energyBarX = this.leftPos + TemporalOverclockerMenu.energyBarX(ENTRIES_START_X, ENERGY_BAR_WIDTH);
         int energyBarY = energyBarScreenY();
         
         if (mouseX >= energyBarX && mouseX <= energyBarX + ENERGY_BAR_WIDTH &&

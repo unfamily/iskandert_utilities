@@ -19,6 +19,9 @@ public class TemporalOverclockerRenderer implements BlockEntityRenderer<Temporal
     @Override
     public void render(TemporalOverclockerBlockEntity blockEntity, float partialTick, PoseStack poseStack,
                        MultiBufferSource buffer, int packedLight, int packedOverlay) {
+        if (!SpecialRenderCulling.shouldRenderDetailed(blockEntity.getBlockPos())) {
+            return;
+        }
         ItemStack clock = blockEntity.getMachineItems().getItem(TemporalOverclockerBlockEntity.UPGRADE_SLOT_INDEX);
         EntropicClockItemRenderHelper.renderSingleSpinning(
                 clock,
@@ -39,6 +42,6 @@ public class TemporalOverclockerRenderer implements BlockEntityRenderer<Temporal
 
     @Override
     public int getViewDistance() {
-        return 64;
+        return SpecialRenderCulling.viewDistanceBlocks();
     }
 }

@@ -18,9 +18,10 @@ public class MiniatureTentItem extends ArcaneArtifactItem {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.iska_utils.miniature_tent.cursed"));
         ArtifactTooltipUtil.addLoreLine(tooltip::add, "tooltip.iska_utils.miniature_tent.desc0");
+        ArtifactTooltipUtil.addTechLine(tooltip::add, "tooltip.iska_utils.miniature_tent.desc1");
         ArtifactTooltipUtil.addTechLine(
                 tooltip::add,
-                "tooltip.iska_utils.miniature_tent.desc1",
+                "tooltip.iska_utils.miniature_tent.desc2",
                 ArtifactBalanceFormat.multiplier(Config.miniatureTentProcMultiplier));
     }
 }
