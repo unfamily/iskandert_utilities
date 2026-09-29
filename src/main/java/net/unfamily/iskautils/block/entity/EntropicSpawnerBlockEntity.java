@@ -52,6 +52,7 @@ public class EntropicSpawnerBlockEntity extends BlockEntity implements MenuProvi
         protected void onContentsChanged(int slot) {
             setChanged();
             if (level != null && !level.isClientSide) {
+                level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                 syncBlockState();
             }
         }
@@ -582,6 +583,16 @@ public class EntropicSpawnerBlockEntity extends BlockEntity implements MenuProvi
     @Override
     public ClientboundBlockEntityDataPacket getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public void onDataPacket(net.minecraft.network.Connection net,
+                             ClientboundBlockEntityDataPacket pkt,
+                             HolderLookup.Provider lookupProvider) {
+        super.onDataPacket(net, pkt, lookupProvider);
+        if (pkt.getTag() != null) {
+            loadAdditional(pkt.getTag(), lookupProvider);
+        }
     }
 
     @Override

@@ -910,6 +910,7 @@ public final class AutoShopItemPickerOverlay {
                     item.buy, getCurrencySymbol(currencyId)));
         }
         tooltip.add(ShopScreenHelper.amountLine(item));
+        appendLimitInfo(tooltip, item, ShopPurchaseLimitsData.TradeSide.BUY);
         return tooltip;
     }
 
@@ -919,7 +920,26 @@ public final class AutoShopItemPickerOverlay {
         tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.sell.price",
                 item.sell, getCurrencySymbol(currencyId)));
         tooltip.add(ShopScreenHelper.amountLine(item));
+        appendLimitInfo(tooltip, item, ShopPurchaseLimitsData.TradeSide.SELL);
         return tooltip;
+    }
+
+    private void appendLimitInfo(List<Component> tooltip, ShopEntry item, ShopPurchaseLimitsData.TradeSide side) {
+        if (!ShopClientPurchaseLimits.hasLimit(item.id, side)) {
+            return;
+        }
+        ShopClientPurchaseLimits.LimitEntry le = ShopClientPurchaseLimits.getLimitEntry(item.id, side);
+        if (le == null) {
+            return;
+        }
+        tooltip.add(Component.empty());
+        tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.limit_used", le.used(), le.max()));
+        if (le.resetEpochMs() > 0) {
+            String formatted = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+                    .withZone(java.time.ZoneId.systemDefault())
+                    .format(java.time.Instant.ofEpochMilli(le.resetEpochMs()));
+            tooltip.add(Component.translatable("gui.iska_utils.shop.tooltip.resets_at", formatted));
+        }
     }
 
     private String getCurrencySymbol(String valuteId) {

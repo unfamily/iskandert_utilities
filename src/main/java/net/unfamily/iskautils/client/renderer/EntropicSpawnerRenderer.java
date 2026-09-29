@@ -8,13 +8,15 @@ import net.minecraft.client.renderer.blockentity.SpawnerRenderer;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.unfamily.iskautils.block.EntropicSpawnerBlock;
 import net.unfamily.iskautils.block.entity.EntropicSpawnerBlockEntity;
 
 /**
- * Vanilla-style oblique mob preview when the Entropic Spawner is active.
+ * Vanilla-style oblique mob preview when the Entropic Spawner is active,
+ * plus N orbiting Entropic Clocks when present in the clock slot.
  */
 public class EntropicSpawnerRenderer implements BlockEntityRenderer<EntropicSpawnerBlockEntity> {
 
@@ -27,6 +29,16 @@ public class EntropicSpawnerRenderer implements BlockEntityRenderer<EntropicSpaw
     @Override
     public void render(EntropicSpawnerBlockEntity blockEntity, float partialTick, PoseStack poseStack,
                        MultiBufferSource buffer, int packedLight, int packedOverlay) {
+        ItemStack clock = blockEntity.getMachineItems().getStackInSlot(EntropicSpawnerBlockEntity.CLOCK_SLOT_INDEX);
+        EntropicClockItemRenderHelper.renderOrbitingClocks(
+                clock,
+                blockEntity.getBlockPos(),
+                partialTick,
+                poseStack,
+                buffer,
+                packedLight,
+                packedOverlay);
+
         Level level = blockEntity.getLevel();
         if (level == null || !blockEntity.getBlockState().getValue(EntropicSpawnerBlock.ACTIVE)) {
             return;

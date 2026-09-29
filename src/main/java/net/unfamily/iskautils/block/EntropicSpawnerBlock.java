@@ -38,9 +38,7 @@ public class EntropicSpawnerBlock extends BaseEntityBlock {
     public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
     public static final BooleanProperty SPAWNING = BooleanProperty.create("spawning");
 
-    private static final VoxelShape SHAPE = Shapes.or(
-            Block.box(0.0D, 0.0D, 0.0D, 16.0D, 12.0D, 16.0D),
-            Block.box(2.0D, 12.0D, 2.0D, 14.0D, 16.0D, 14.0D));
+    private static final VoxelShape SHAPE = Shapes.block();
 
     public EntropicSpawnerBlock(Properties properties) {
         super(properties);

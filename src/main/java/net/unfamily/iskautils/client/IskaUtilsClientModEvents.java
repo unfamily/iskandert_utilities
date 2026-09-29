@@ -29,6 +29,7 @@ import net.unfamily.iskautils.client.gui.EtherealFrameFilterScreen;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.renderer.DeceptionSeatRenderer;
 import net.unfamily.iskautils.client.renderer.EntropicSpawnerRenderer;
+import net.unfamily.iskautils.client.renderer.TemporalOverclockerRenderer;
 import net.unfamily.iskautils.client.model.ConnectedTextureFallbackModelLoader;
 import net.unfamily.iskautils.data.DynamicPotionPlateModelLoader;
 import net.unfamily.iskautils.entity.ModEntities;
@@ -49,6 +50,7 @@ public final class IskaUtilsClientModEvents {
     public static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.DECEPTION_SEAT.get(), DeceptionSeatRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ENTROPIC_SPAWNER_BE.get(), EntropicSpawnerRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.TEMPORAL_OVERCLOCKER_BE.get(), TemporalOverclockerRenderer::new);
     }
 
     @SubscribeEvent

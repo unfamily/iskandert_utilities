@@ -445,6 +445,10 @@ public final class ShopBrowsePanel {
     }
 
     private boolean matchesCategoryFilters(ShopCategory category) {
+        // Always honor hide_when_locked for stage-gated categories
+        if (category.hideWhenLocked && ShopClientStages.isCategoryBlocked(category)) {
+            return false;
+        }
         // A6: hide stage-locked categories in HIDE_UNTRADEABLE mode
         if (tradeVisibility == TradeVisibility.HIDE_UNTRADEABLE
                 && ShopClientStages.isCategoryBlocked(category)) {
@@ -491,6 +495,9 @@ public final class ShopBrowsePanel {
             if (!entryBelongsUnderCategory(entry, categoryId) || !isBrowsable(entry)) {
                 continue;
             }
+            if (entry.hideWhenLocked && ShopClientStages.isEntryBlocked(entry)) {
+                continue;
+            }
             if (!passesTradeVisibility(entry)) {
                 continue;
             }
@@ -526,6 +533,9 @@ public final class ShopBrowsePanel {
 
     private boolean matchesItemFilters(ShopEntry entry) {
         if (!isBrowsable(entry)) {
+            return false;
+        }
+        if (entry.hideWhenLocked && ShopClientStages.isEntryBlocked(entry)) {
             return false;
         }
         if (!passesTradeVisibility(entry)) {

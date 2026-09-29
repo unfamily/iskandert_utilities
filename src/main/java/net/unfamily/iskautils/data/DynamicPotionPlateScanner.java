@@ -205,7 +205,8 @@ public class DynamicPotionPlateScanner {
                 "- `hide_particles`: Whether to hide the effect particles [optional, default: false]\n\n" +
                 "### Damage Plate Fields\n" +
                 "- `damage_type`: The damage type to apply, e.g., `minecraft:generic` [required]\n" +
-                "- `damage`: The amount of damage to apply [required]\n\n" +
+                "- `damage`: The amount of damage to apply [required]\n" +
+                "- `ignore_entity_damage_cap`: If true, this plate ignores Config `entity_damage_caps` [optional, default: false]\n\n" +
                 "### Special Plate Fields\n" +
                 "- `apply`: Special effect type (`fire`, `freeze`) [required]\n" +
                 "- `duration`: Duration in ticks (20 ticks = 1 second) [required]\n\n" +
@@ -514,8 +515,11 @@ public class DynamicPotionPlateScanner {
             // Optional tooltip_lines field (default 0)
             int tooltipLines = json.has("tooltip_lines") ? json.get("tooltip_lines").getAsInt() : 0;
             config.setTooltipLines(tooltipLines);
+            // Optional: skip Config entity_damage_caps for this plate (default false)
+            boolean ignoreCap = json.has("ignore_entity_damage_cap") && json.get("ignore_entity_damage_cap").getAsBoolean();
+            config.setIgnoreEntityDamageCap(ignoreCap);
             return config;
-            
+
         } catch (Exception e) {
             LOGGER.error("Error parsing damage plate: {}", e.getMessage());
             return null;

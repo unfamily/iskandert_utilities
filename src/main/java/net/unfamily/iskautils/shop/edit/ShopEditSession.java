@@ -122,6 +122,7 @@ public final class ShopEditSession {
         c.item = src.item;
         c.inCategory = src.inCategory;
         c.priority = src.priority;
+        c.hideWhenLocked = src.hideWhenLocked;
         if (src.stages != null) {
             c.stages = new net.unfamily.iskautils.shop.ShopStage[src.stages.length];
             for (int i = 0; i < src.stages.length; i++) {
@@ -171,6 +172,7 @@ public final class ShopEditSession {
         e.sell = src.sell;
         e.priority = src.priority;
         e.free = src.free;
+        e.hideWhenLocked = src.hideWhenLocked;
         if (src.stages != null) {
             e.stages = new net.unfamily.iskautils.shop.ShopStage[src.stages.length];
             for (int i = 0; i < src.stages.length; i++) {

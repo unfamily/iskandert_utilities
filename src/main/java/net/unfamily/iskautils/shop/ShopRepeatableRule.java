@@ -152,7 +152,7 @@ public class ShopRepeatableRule {
         if (!WHEN_ALWAYS.equalsIgnoreCase(wh)) {
             o.addProperty("when", wh.toLowerCase());
         }
-        if (!WHEN_ALWAYS.equalsIgnoreCase(wh) && !WHEN_ONLY.equalsIgnoreCase(wh)) {
+        if (!WHEN_ALWAYS.equalsIgnoreCase(wh) && !WHEN_ONLY.equalsIgnoreCase(wh) && !WHEN_TIMED.equalsIgnoreCase(wh)) {
             String time = normalizeTime(resetTime);
             if (!"00:00".equals(time)) {
                 o.addProperty("reset_time", time);
@@ -170,9 +170,7 @@ public class ShopRepeatableRule {
             o.addProperty("count", count);
         }
         if (WHEN_TIMED.equalsIgnoreCase(wh)) {
-            if (durationTicks != 0) {
-                o.addProperty("duration_ticks", durationTicks);
-            }
+            o.addProperty("duration_ticks", Math.max(0L, durationTicks));
             if (resetOnSaturate) {
                 o.addProperty("reset_on_saturate", true);
             }
@@ -199,6 +197,29 @@ public class ShopRepeatableRule {
             return String.format("%02d:%02d", h, m);
         }
         return "00:00";
+    }
+
+    public static final long TICKS_PER_SECOND = 20L;
+    public static final long TICKS_PER_MINUTE = TICKS_PER_SECOND * 60L;
+    public static final long TICKS_PER_HOUR = TICKS_PER_MINUTE * 60L;
+
+    /** Split {@code durationTicks} into hours, minutes, seconds, leftover ticks. */
+    public static long[] splitDurationTicks(long total) {
+        long t = Math.max(0L, total);
+        long hours = t / TICKS_PER_HOUR;
+        t %= TICKS_PER_HOUR;
+        long minutes = t / TICKS_PER_MINUTE;
+        t %= TICKS_PER_MINUTE;
+        long seconds = t / TICKS_PER_SECOND;
+        long ticks = t % TICKS_PER_SECOND;
+        return new long[]{hours, minutes, seconds, ticks};
+    }
+
+    public static long combineDurationTicks(long hours, long minutes, long seconds, long ticks) {
+        return Math.max(0L, hours) * TICKS_PER_HOUR
+                + Math.max(0L, minutes) * TICKS_PER_MINUTE
+                + Math.max(0L, seconds) * TICKS_PER_SECOND
+                + Math.max(0L, ticks);
     }
 
     private static String nullTo(@Nullable String v, String def) {

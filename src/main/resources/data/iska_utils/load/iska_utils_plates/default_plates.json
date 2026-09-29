@@ -51,7 +51,7 @@
       "affects_mobs": true,
       "creative_tab": true,
       "player_shift_disable": true,
-      "tooltip_lines": 1
+      "tooltip_lines": 2
     },
     {
       "plate_type": "damage",
@@ -63,7 +63,7 @@
       "affects_mobs": true,
       "creative_tab": true,
       "player_shift_disable": true,
-      "tooltip_lines": 1
+      "tooltip_lines": 2
     },
     {
       "plate_type": "damage",
@@ -75,7 +75,7 @@
       "affects_mobs": true,
       "creative_tab": true,
       "player_shift_disable": true,
-      "tooltip_lines": 1
+      "tooltip_lines": 2
     },
     {
       "plate_type": "special",

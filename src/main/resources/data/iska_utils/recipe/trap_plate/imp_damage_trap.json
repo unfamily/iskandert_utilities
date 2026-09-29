@@ -7,13 +7,13 @@
   ],
   "key": {
     "A": {
-      "item": "minecraft:netherite_upgrade_smithing_template"
+      "item": "minecraft:flint"
     },
     "B": {
       "item": "iska_utils:iska_utils_damage"
     },
     "C": {
-      "item": "minecraft:flint"
+      "item": "minecraft:iron_ingot"
     }
   },
   "result": {

@@ -56,42 +56,68 @@ public class EntropicSpawnerMenu extends AbstractContainerMenu {
     private final ContainerData containerData;
 
     public EntropicSpawnerMenu(int containerId, Inventory playerInventory, EntropicSpawnerBlockEntity blockEntity) {
+        this(containerId, playerInventory, blockEntity, false);
+    }
+
+    /**
+     * Client factory: bind slots to the client BlockEntity so BER and GUI share inventory
+     * (fixes stale clock orbit while shift-clicking).
+     */
+    public static EntropicSpawnerMenu createClient(int containerId, Inventory playerInventory,
+                                                    net.minecraft.network.FriendlyByteBuf extraData) {
+        BlockPos pos = extraData.readBlockPos();
+        var level = playerInventory.player.level();
+        var be = level.getBlockEntity(pos);
+        if (be instanceof EntropicSpawnerBlockEntity spawner) {
+            return new EntropicSpawnerMenu(containerId, playerInventory, spawner, true);
+        }
+        return new EntropicSpawnerMenu(containerId, playerInventory);
+    }
+
+    private EntropicSpawnerMenu(int containerId, Inventory playerInventory,
+                                 EntropicSpawnerBlockEntity blockEntity, boolean clientSide) {
         super(ModMenuTypes.ENTROPIC_SPAWNER_MENU.get(), containerId);
         this.blockEntity = blockEntity;
         this.blockPos = blockEntity.getBlockPos();
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
-        this.containerData = new ContainerData() {
-            @Override
-            public int get(int index) {
-                return switch (index) {
-                    case DATA_SPAWN_DELAY -> blockEntity.getSpawnDelayTicks();
-                    case DATA_REDSTONE_MODE -> blockEntity.getRedstoneMode();
-                    case DATA_ENTITY_TYPE_ID -> blockEntity.getSpawnEntityTypeSyncId();
-                    case DATA_POS_X -> blockPos.getX();
-                    case DATA_POS_Y -> blockPos.getY();
-                    case DATA_POS_Z -> blockPos.getZ();
-                    case DATA_STORED_ENTROPY -> blockEntity.getStoredEntropy();
-                    case DATA_STORED_ENTROPY_MAX -> blockEntity.getMaxStoredEntropy();
-                    case DATA_LIFETIME_SPAWN_COUNT -> blockEntity.getLifetimeSpawnCount();
-                    case DATA_LIFETIME_SPAWN_MAX -> blockEntity.getLifetimeSpawnMax();
-                    default -> 0;
-                };
-            }
+        // Client must use SimpleContainerData so synced data-slot packets apply via set()
+        if (clientSide) {
+            this.containerData = new SimpleContainerData(DATA_COUNT);
+        } else {
+            this.containerData = new ContainerData() {
+                @Override
+                public int get(int index) {
+                    return switch (index) {
+                        case DATA_SPAWN_DELAY -> blockEntity.getSpawnDelayTicks();
+                        case DATA_REDSTONE_MODE -> blockEntity.getRedstoneMode();
+                        case DATA_ENTITY_TYPE_ID -> blockEntity.getSpawnEntityTypeSyncId();
+                        case DATA_POS_X -> blockPos.getX();
+                        case DATA_POS_Y -> blockPos.getY();
+                        case DATA_POS_Z -> blockPos.getZ();
+                        case DATA_STORED_ENTROPY -> blockEntity.getStoredEntropy();
+                        case DATA_STORED_ENTROPY_MAX -> blockEntity.getMaxStoredEntropy();
+                        case DATA_LIFETIME_SPAWN_COUNT -> blockEntity.getLifetimeSpawnCount();
+                        case DATA_LIFETIME_SPAWN_MAX -> blockEntity.getLifetimeSpawnMax();
+                        default -> 0;
+                    };
+                }
 
-            @Override
-            public void set(int index, int value) {}
+                @Override
+                public void set(int index, int value) {}
 
-            @Override
-            public int getCount() {
-                return DATA_COUNT;
-            }
-        };
+                @Override
+                public int getCount() {
+                    return DATA_COUNT;
+                }
+            };
+        }
         addDataSlots(containerData);
         addMachineSlots(blockEntity);
         addPlayerInventory(playerInventory);
         addPlayerHotbar(playerInventory);
     }
 
+    /** Fallback when client BlockEntity is missing. */
     public EntropicSpawnerMenu(int containerId, Inventory playerInventory) {
         super(ModMenuTypes.ENTROPIC_SPAWNER_MENU.get(), containerId);
         this.blockEntity = null;

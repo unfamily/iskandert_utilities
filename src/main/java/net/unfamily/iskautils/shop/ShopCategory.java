@@ -20,4 +20,9 @@ public class ShopCategory {
      * Same semantics as {@link ShopEntry#stages}.
      */
     public ShopStage[] stages;
+    /**
+     * When true, stage-locked categories are hidden from browse (not only red overlay).
+     * JSON key: {@code hide_when_locked}. Default false.
+     */
+    public boolean hideWhenLocked = false;
 } 
