@@ -16,6 +16,7 @@ import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.MobReaperBlock;
 import net.unfamily.iskautils.block.entity.MobReaperBlockEntity;
+import net.unfamily.iskautils.client.renderer.SpecialRenderCulling;
 
 /** Client-side blade angle tracking for powered mob reapers. */
 @EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT)
@@ -41,19 +42,12 @@ public final class MobReaperClientAnimation {
 
     public static float getAngleDegrees(BlockPos pos, float partialTick) {
         float angle = ANGLES.getOrDefault(pos.asLong(), 0.0f);
-        if (partialTick > 0.0f && ACTIVE.contains(pos.asLong())) {
+        if (partialTick > 0.0f
+                && ACTIVE.contains(pos.asLong())
+                && SpecialRenderCulling.shouldRenderDetailed(pos)) {
             angle += (float) Config.reaperBladeMaxDegPerTick * partialTick;
         }
         return angle % 360.0f;
-    }
-
-    public static boolean shouldHideStaticRotor(BlockPos pos) {
-        Level level = Minecraft.getInstance().level;
-        if (level == null) {
-            return false;
-        }
-        BlockState state = level.getBlockState(pos);
-        return state.is(ModBlocks.MOB_REAPER.get()) && state.getValue(MobReaperBlock.POWERED);
     }
 
     @SubscribeEvent
@@ -73,6 +67,10 @@ public final class MobReaperClientAnimation {
             BlockState state = level.getBlockState(pos);
             if (!state.is(ModBlocks.MOB_REAPER.get()) || !state.getValue(MobReaperBlock.POWERED)) {
                 stale.add(key);
+                continue;
+            }
+            // Freeze while far / not looked at; keep last angle for a stationary rotor draw.
+            if (!SpecialRenderCulling.shouldRenderDetailed(pos)) {
                 continue;
             }
             float angle = ANGLES.getOrDefault(key, 0.0f) + step;

@@ -80,9 +80,9 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
                     return;
                 }
                 String oldId = payload.has("old_id") ? payload.get("old_id").getAsString() : c.id;
-                boolean isNew = !oldId.equals(c.id) || !data.currencies.containsKey(c.id);
-                // A3: deduplicate
-                if (isNew && !oldId.equals(c.id) && data.currencies.containsKey(c.id)) {
+                boolean isNew = payload.has("is_new") && payload.get("is_new").getAsBoolean();
+                // Deduplicate: rename onto existing id, or create with colliding id
+                if (data.currencies.containsKey(c.id) && (isNew || !oldId.equals(c.id))) {
                     c.id = allocateUniqueId(c.id, data.currencies);
                 }
                 if (!oldId.equals(c.id) && data.currencies.containsKey(oldId)) {
@@ -110,9 +110,8 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
                     c.inCategory = parent;
                 }
                 String oldId = payload.has("old_id") ? payload.get("old_id").getAsString() : c.id;
-                boolean catIsNew = !oldId.equals(c.id) || !data.categories.containsKey(c.id);
-                // A3: deduplicate
-                if (catIsNew && !oldId.equals(c.id) && data.categories.containsKey(c.id)) {
+                boolean isNew = payload.has("is_new") && payload.get("is_new").getAsBoolean();
+                if (data.categories.containsKey(c.id) && (isNew || !oldId.equals(c.id))) {
                     c.id = allocateUniqueId(c.id, data.categories);
                 }
                 if (!oldId.equals(c.id) && data.categories.containsKey(oldId)) {
@@ -133,9 +132,8 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
                     return;
                 }
                 String oldId = payload.has("old_id") ? payload.get("old_id").getAsString() : e.id;
-                boolean entryIsNew = !oldId.equals(e.id) || !data.entries.containsKey(e.id);
-                // A3: deduplicate
-                if (entryIsNew && !oldId.equals(e.id) && data.entries.containsKey(e.id)) {
+                boolean isNew = payload.has("is_new") && payload.get("is_new").getAsBoolean();
+                if (data.entries.containsKey(e.id) && (isNew || !oldId.equals(e.id))) {
                     e.id = allocateUniqueId(e.id, data.entries);
                 }
                 if (!oldId.equals(e.id) && data.entries.containsKey(oldId)) {

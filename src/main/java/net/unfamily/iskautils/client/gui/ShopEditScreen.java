@@ -184,6 +184,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private boolean draftCurrencyIsNew;
     private ShopEntry draftEntry;
     private String draftEntryOldId;
+    private boolean draftEntryIsNew;
     private final List<ShopStage> draftStages = new ArrayList<>();
     private final List<ShopStage> draftStageRewards = new ArrayList<>();
     private final List<String> draftCommands = new ArrayList<>();
@@ -1007,6 +1008,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             draftEntry.priority = 0;
             draftEntry.free = false;
             draftEntryOldId = draftEntry.id;
+            draftEntryIsNew = true;
             draftStages.clear();
         }
         addLabel(formColX(0, 2), 20, "gui.iska_utils.shop_edit.field.id");
@@ -1729,10 +1731,12 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             draftEntry.buy = 0;
             draftEntry.sell = 0;
             draftEntryOldId = draftEntry.id;
+            draftEntryIsNew = true;
         } else {
             ShopEntry src = menu.getData().entries.get(id);
             draftEntry = src != null ? ShopEditSession.copyEntry(src) : new ShopEntry();
             draftEntryOldId = draftEntry.id;
+            draftEntryIsNew = false;
             if (draftEntry.commands != null) {
                 draftCommands.addAll(draftEntry.commands);
             }
@@ -1969,6 +1973,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         sendAction("upsert_category", o -> {
             o.addProperty("old_id", draftCategoryOldId);
             o.addProperty("id", renameMode != null ? draftCategory.id : saveId);
+            o.addProperty("is_new", draftCategoryIsNew);
             o.addProperty("name", nullSafe(draftCategory.name));
             o.addProperty("description", nullSafe(draftCategory.description));
             o.addProperty("item", nullSafe(draftCategory.item));
@@ -2013,6 +2018,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         sendAction("upsert_currency", o -> {
             o.addProperty("old_id", draftCurrencyOldId);
             o.addProperty("id", renameMode != null ? draftCurrency.id : saveId);
+            o.addProperty("is_new", draftCurrencyIsNew);
             o.addProperty("name", nullSafe(draftCurrency.name));
             o.addProperty("char_symbol", nullSafe(draftCurrency.charSymbol));
             o.addProperty("priority", draftCurrency.priority);
@@ -2032,6 +2038,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         sendAction("upsert_entry", o -> {
             o.addProperty("old_id", draftEntryOldId);
             o.addProperty("id", draftEntry.id);
+            o.addProperty("is_new", draftEntryIsNew);
             ShopHierarchy.writeInCategory(o, draftEntry.inCategory);
             o.addProperty("type", draftEntry.typeId != null
                     ? draftEntry.typeId.toString() : ShopEntryTypes.ITEM.toString());
@@ -2062,6 +2069,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             o.add("stages", stages);
         });
         draftEntryOldId = draftEntry.id;
+        draftEntryIsNew = false;
     }
 
     private void sendAction(String action, java.util.function.Consumer<JsonObject> filler) {
@@ -2552,15 +2560,21 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private String uniqueId(String prefix) {
-        String base = prefix + "_" + System.currentTimeMillis() % 100000;
-        int n = 0;
-        String id = base;
-        while (menu.getData().categories.containsKey(id)
-                || menu.getData().currencies.containsKey(id)
-                || menu.getData().entries.containsKey(id)) {
-            id = base + "_" + (++n);
+        String chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+        java.util.concurrent.ThreadLocalRandom rng = java.util.concurrent.ThreadLocalRandom.current();
+        for (int attempt = 0; attempt < 100; attempt++) {
+            StringBuilder suffix = new StringBuilder(4);
+            for (int i = 0; i < 4; i++) {
+                suffix.append(chars.charAt(rng.nextInt(chars.length())));
+            }
+            String id = prefix + "_" + suffix;
+            if (!menu.getData().categories.containsKey(id)
+                    && !menu.getData().currencies.containsKey(id)
+                    && !menu.getData().entries.containsKey(id)) {
+                return id;
+            }
         }
-        return id;
+        return prefix + "_" + Long.toString(System.nanoTime(), 36);
     }
 
     /** Turns {@code category_6545} into {@code Category 6545} for default display names. */

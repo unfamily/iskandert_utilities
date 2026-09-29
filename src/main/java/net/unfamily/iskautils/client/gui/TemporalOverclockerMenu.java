@@ -94,7 +94,7 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
         return slotY + SLOT_SIZE + 2;
     }
 
-    /** Side widgets align with the bottom rows of the visible entry list (scrollbar at the top). */
+    /** Left column: energy + redstone/persistent as one block, centered on entry rows. */
     public static final int LINKED_ENTRIES_SIDEBAR_ALIGN_COUNT = 3;
 
     public static int linkedEntriesSidebarAlignStartY() {
@@ -112,18 +112,31 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
                 + (linkedEntriesSidebarAlignBlockHeight() - elementHeight) / 2;
     }
 
+    /** Gap between energy bar and the redstone/persistent stack below it. */
+    public static final int ENERGY_TO_SIDE_BUTTONS_GAP = 4;
+
+    /** Full left sidebar stack: energy + gap + redstone + gap + persistent. */
+    public static final int LEFT_SIDEBAR_STACK_HEIGHT =
+            ENERGY_BAR_HEIGHT + ENERGY_TO_SIDE_BUTTONS_GAP + SIDE_BUTTONS_STACK_HEIGHT;
+
+    /** Top of the combined left sidebar block (energy first). */
     public static int energyBarY() {
-        return linkedEntriesSidebarAlignElementY(ENERGY_BAR_HEIGHT);
+        return linkedEntriesSidebarAlignElementY(LEFT_SIDEBAR_STACK_HEIGHT);
     }
 
+    /** Redstone/persistent stack directly under the energy bar. */
     public static int sideButtonsStartY() {
-        return linkedEntriesSidebarAlignElementY(SIDE_BUTTONS_STACK_HEIGHT);
+        return energyBarY() + ENERGY_BAR_HEIGHT + ENERGY_TO_SIDE_BUTTONS_GAP;
     }
 
+    /** Center side buttons in the left gutter before the entry list. */
     public static int sideButtonsX(int entriesStartX, int entryWidth) {
-        int entriesEndX = entriesStartX + entryWidth;
-        int rightSpace = GUI_WIDTH - entriesEndX;
-        return entriesEndX + (rightSpace - SIDE_BUTTON_SIZE) / 2;
+        return Math.max(0, (entriesStartX - SIDE_BUTTON_SIZE) / 2);
+    }
+
+    /** Center energy bar in the left gutter before the entry list. */
+    public static int energyBarX(int entriesStartX, int energyBarWidth) {
+        return Math.max(0, (entriesStartX - energyBarWidth) / 2);
     }
 
     private static final int PLAYER_INV_X = 20;

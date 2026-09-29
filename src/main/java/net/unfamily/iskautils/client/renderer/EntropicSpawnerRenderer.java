@@ -54,8 +54,8 @@ public class EntropicSpawnerRenderer
 
         ItemStack clock = blockEntity.getMachineItems().getStackInSlot(EntropicSpawnerBlockEntity.CLOCK_SLOT_INDEX);
         int count = EntropicClockItemRenderHelper.orbitCount(clock);
-        boolean hide = EntropicClockItemRenderHelper.shouldHideSpawnerClocks(blockEntity.getBlockPos(), partialTicks);
-        state.renderClocks = count > 0 && !hide;
+        state.renderClocks = count > 0
+                && SpecialRenderCulling.shouldRenderDetailed(blockEntity.getBlockPos(), cameraPosition);
         state.clockCount = count;
         state.orbitDegrees = EntropicClockItemRenderHelper.orbitDegrees(blockEntity.getLevel(), partialTicks);
         if (state.renderClocks) {
@@ -124,6 +124,6 @@ public class EntropicSpawnerRenderer
 
     @Override
     public int getViewDistance() {
-        return 64;
+        return SpecialRenderCulling.viewDistanceBlocks();
     }
 }

@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.unfamily.iskautils.block.MobReaperBlock;
 import net.unfamily.iskautils.block.entity.MobReaperBlockEntity;
+import net.unfamily.iskautils.client.renderer.SpecialRenderCulling;
 import org.joml.Matrix4f;
 
 import java.util.List;
@@ -55,12 +56,18 @@ public class MobReaperBlockEntityRenderer
         BlockState blockState = blockEntity.getBlockState();
         state.vertical = blockState.getValue(MobReaperBlock.VERTICAL);
         state.facing = blockState.getValue(HorizontalDirectionalBlock.FACING);
-        state.renderRotor = blockState.getValue(MobReaperBlock.POWERED);
+
+        boolean powered = blockState.getValue(MobReaperBlock.POWERED);
+        // Beyond special distance: no rotor BER (blockstate is base-only when powered).
+        state.renderRotor = powered
+                && SpecialRenderCulling.isWithinRenderDistance(blockEntity.getBlockPos(), cameraPosition);
         if (!state.renderRotor) {
             return;
         }
         MobReaperClientAnimation.poll(blockEntity, partialTicks);
-        state.angleDegrees = MobReaperClientAnimation.getAngleDegrees(blockEntity.getBlockPos(), partialTicks);
+        boolean animate = SpecialRenderCulling.shouldRenderDetailed(blockEntity.getBlockPos(), cameraPosition);
+        state.angleDegrees = MobReaperClientAnimation.getAngleDegrees(
+                blockEntity.getBlockPos(), animate ? partialTicks : 0.0f);
     }
 
     @Override
@@ -97,5 +104,10 @@ public class MobReaperBlockEntityRenderer
             return;
         }
         rotorRenderState.submitMultiLayer(poseStack, submitNodeCollector, light, overlay, 0);
+    }
+
+    @Override
+    public int getViewDistance() {
+        return SpecialRenderCulling.viewDistanceBlocks();
     }
 }

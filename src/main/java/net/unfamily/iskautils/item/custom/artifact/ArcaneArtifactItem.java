@@ -75,12 +75,13 @@ public class ArcaneArtifactItem extends Item {
                 String prefix = "tooltip.iska_utils.necrotic_crystal_heart.";
                 ArtifactTooltipUtil.addLoreLine(tooltip, prefix + "desc0");
                 ArtifactTooltipUtil.addLoreLine(tooltip, prefix + "desc1");
-                ArtifactTooltipUtil.addTechLine(tooltip, prefix + "desc2");
-                ArtifactTooltipUtil.addTechLine(tooltip, prefix + "desc3",
-                        ArtifactBalanceFormat.flatBonus(Config.necroticCrystalHeartHpCostPerSave));
+                ArtifactTooltipUtil.addLoreLine(tooltip, prefix + "desc2");
+                ArtifactTooltipUtil.addLoreLine(tooltip, prefix + "desc3");
                 ArtifactTooltipUtil.addTechLine(tooltip, prefix + "desc4",
+                        ArtifactBalanceFormat.flatBonus(Config.necroticCrystalHeartHpCostPerSave));
+                ArtifactTooltipUtil.addTechLine(tooltip, prefix + "desc5",
                         ArtifactBalanceFormat.flatBonus(Config.necroticCrystalHeartMinMaxHealth));
-                ArtifactTooltipUtil.addTechLine(tooltip, prefix + "desc5");
+                ArtifactTooltipUtil.addTechLine(tooltip, prefix + "desc6");
             }
             case "arcane_dictionary" -> ArtifactTooltipUtil.appendDescLines(
                     tooltip, path, 1, 1, Config.arcaneDictionaryMaxRollLevels);

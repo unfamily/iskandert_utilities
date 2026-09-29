@@ -14,6 +14,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.ChestType;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.unfamily.iskautils.block.VectorBlock;
 import net.unfamily.iskautils.events.SetWrenchDirectionBlock;
 
@@ -27,7 +29,41 @@ public final class SwissWrenchRotationApplier {
     }
 
     public static boolean isExcluded(BlockState state) {
-        return state.is(WRENCH_NOT_ROTATE) || state.getBlock() instanceof VectorBlock;
+        return state.is(WRENCH_NOT_ROTATE)
+                || state.getBlock() instanceof VectorBlock
+                || isJoinedDoubleChest(state);
+    }
+
+    /**
+     * Double chests (vanilla {@link ChestType} or modded {@code type}/{@code chest_type} != single)
+     * must not be rotated — halves would desync.
+     */
+    public static boolean isJoinedDoubleChest(BlockState state) {
+        if (state.hasProperty(BlockStateProperties.CHEST_TYPE)) {
+            return state.getValue(BlockStateProperties.CHEST_TYPE) != ChestType.SINGLE;
+        }
+        Property<?> typeProp = findChestTypeProperty(state);
+        if (typeProp == null) {
+            return false;
+        }
+        Comparable<?> value = state.getValue(typeProp);
+        String name = value instanceof Enum<?> e ? e.name() : String.valueOf(value);
+        return !"SINGLE".equalsIgnoreCase(name);
+    }
+
+    private static Property<?> findChestTypeProperty(BlockState state) {
+        for (Property<?> property : state.getProperties()) {
+            String name = property.getName();
+            if ("type".equals(name) || "chest_type".equals(name)) {
+                for (Comparable<?> possible : property.getPossibleValues()) {
+                    String n = possible instanceof Enum<?> e ? e.name() : String.valueOf(possible);
+                    if ("LEFT".equalsIgnoreCase(n) || "RIGHT".equalsIgnoreCase(n)) {
+                        return property;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private static Direction rotateClockwise(Direction current) {

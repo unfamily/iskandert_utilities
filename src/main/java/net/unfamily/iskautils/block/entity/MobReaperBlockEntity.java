@@ -11,6 +11,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -476,7 +477,7 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
 
-        DamageSource damageSource = level.damageSources().source(ModDamageTypes.MOB_REAPER, fakePlayer);
+        DamageSource damageSource = level.damageSources().source(ModDamageTypes.MOB_REAPER);
         if (!weapon.isEmpty() && EnchantmentHelper.hasAnyEnchantments(weapon)) {
             damage = EnchantmentHelper.modifyDamage(level, weapon, target, damageSource, damage);
         }
@@ -488,6 +489,9 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
         boolean wasAlive = target.isAlive();
         target.hurtServer(level, damageSource, damage);
         fakePlayer.setLastHurtMob(target);
+        if (target instanceof Mob mob && mob.getTarget() == fakePlayer) {
+            mob.setTarget(null);
+        }
         if (!weapon.isEmpty()) {
             EnchantmentHelper.doPostAttackEffectsWithItemSource(level, target, damageSource, weapon);
         }

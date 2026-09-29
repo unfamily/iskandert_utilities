@@ -43,7 +43,8 @@ public class TemporalOverclockerRenderer
         BlockEntityRenderState.extractBase(blockEntity, state, breakProgress);
 
         ItemStack clock = blockEntity.getMachineItems().getItem(TemporalOverclockerBlockEntity.UPGRADE_SLOT_INDEX);
-        state.renderClock = !clock.isEmpty();
+        state.renderClock = !clock.isEmpty()
+                && SpecialRenderCulling.shouldRenderDetailed(blockEntity.getBlockPos(), cameraPosition);
         state.spinDegrees = EntropicClockItemRenderHelper.orbitDegrees(blockEntity.getLevel(), partialTicks);
         if (state.renderClock) {
             // BER light is sampled inside the solid cube; use light above for the floating item
@@ -80,6 +81,6 @@ public class TemporalOverclockerRenderer
 
     @Override
     public int getViewDistance() {
-        return 64;
+        return SpecialRenderCulling.viewDistanceBlocks();
     }
 }

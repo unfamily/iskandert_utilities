@@ -1298,6 +1298,19 @@ public class Config {
     static {
         BUILDER.pop(); // End of reaper category
 
+        BUILDER.comment("Client special block-entity effects (clocks, reaper blades, …)").push("client_render");
+    }
+
+    private static final ModConfigSpec.IntValue SPECIAL_RENDER_DISTANCE = BUILDER
+            .comment("Client max view distance (blocks) for special BER effects:",
+                    "Entropic Spawner clocks, Temporal Overclocker clock, Mob Reaper blade spin.",
+                    "Effective distance is min(this, Minecraft render distance in blocks).",
+                    "Default: 38 (same idea as Another Dynamics transit ghosts).")
+            .defineInRange("000_specialRenderDistance", 38, 16, 256);
+
+    static {
+        BUILDER.pop(); // End of client_render category
+
         BUILDER.comment("Collecting Crate").push("collecting_crate");
     }
 
@@ -2300,6 +2313,7 @@ public class Config {
     public static int reaperExperienceUpgradeMax;
     public static double reaperExperienceBonusPerLevel;
     public static double reaperBladeMaxDegPerTick;
+    public static int specialRenderDistance;
     public static java.util.List<String> entityDamageCaps;
 
     public static int collectingCrateXpCapacityLevels;
@@ -2545,6 +2559,7 @@ public class Config {
         reaperExperienceUpgradeMax = REAPER_EXPERIENCE_UPGRADE_MAX.get();
         reaperExperienceBonusPerLevel = REAPER_EXPERIENCE_BONUS_PER_LEVEL.get();
         reaperBladeMaxDegPerTick = REAPER_BLADE_MAX_DEG_PER_TICK.get();
+        specialRenderDistance = SPECIAL_RENDER_DISTANCE.get();
         entityDamageCaps = new java.util.ArrayList<>(ENTITY_DAMAGE_CAPS.get());
 
         collectingCrateXpCapacityLevels = COLLECTING_CRATE_XP_CAPACITY_LEVELS.get();

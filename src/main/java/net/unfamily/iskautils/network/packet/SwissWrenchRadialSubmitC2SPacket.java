@@ -9,17 +9,14 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.block.VectorBlock;
 import net.unfamily.iskautils.events.SetWrenchDirectionBlock;
 import net.unfamily.iskautils.item.custom.SwissWrenchItem;
+import net.unfamily.iskautils.util.SwissWrenchRotationApplier;
 import net.unfamily.iskautils.util.SwissWrenchRotationProperties;
 
 import java.util.ArrayList;
@@ -28,9 +25,6 @@ import java.util.List;
 /** C2S: apply one or more BlockState property values chosen in the Swiss Wrench radial UI. */
 public record SwissWrenchRadialSubmitC2SPacket(BlockPos pos, List<String> propertyNames, List<String> valueNames)
         implements CustomPacketPayload {
-
-    private static final TagKey<Block> WRENCH_NOT_ROTATE =
-            BlockTags.create(Identifier.tryParse("c:wrench_not_rotate"));
 
     public static final Type<SwissWrenchRadialSubmitC2SPacket> TYPE =
             new Type<>(Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "swiss_wrench_radial_submit"));
@@ -98,7 +92,7 @@ public record SwissWrenchRadialSubmitC2SPacket(BlockPos pos, List<String> proper
             }
 
             BlockState current = level.getBlockState(pos);
-            if (current.is(WRENCH_NOT_ROTATE) || current.getBlock() instanceof VectorBlock) {
+            if (SwissWrenchRotationApplier.isExcluded(current)) {
                 player.sendOverlayMessage(
                         Component.translatable("item.iska_utils.swiss_wrench.message.cannot_rotate"));
                 return;
