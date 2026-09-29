@@ -149,43 +149,64 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
 
     // Constructor for server-side (with block entity)
     public TemporalOverclockerMenu(int containerId, Inventory playerInventory, TemporalOverclockerBlockEntity blockEntity) {
+        this(containerId, playerInventory, blockEntity, false);
+    }
+
+    /**
+     * Client factory: bind slots to the client BlockEntity so BER and GUI share inventory.
+     */
+    public static TemporalOverclockerMenu createClient(int containerId, Inventory playerInventory,
+                                                       net.minecraft.network.FriendlyByteBuf extraData) {
+        BlockPos pos = extraData.readBlockPos();
+        BlockEntity be = playerInventory.player.level().getBlockEntity(pos);
+        if (be instanceof TemporalOverclockerBlockEntity overclocker) {
+            return new TemporalOverclockerMenu(containerId, playerInventory, overclocker, true);
+        }
+        return new TemporalOverclockerMenu(containerId, playerInventory, pos);
+    }
+
+    private TemporalOverclockerMenu(int containerId, Inventory playerInventory,
+                                    TemporalOverclockerBlockEntity blockEntity, boolean clientSide) {
         super(ModMenuTypes.TEMPORAL_OVERCLOCKER_MENU.get(), containerId);
 
         this.blockEntity = blockEntity;
         this.blockPos = blockEntity.getBlockPos();
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
 
-        this.containerData = new ContainerData() {
-            @Override
-            public int get(int index) {
-                return switch (index) {
-                    case ENERGY_INDEX -> blockEntity.getEnergyStorage().getEnergyStored();
-                    case MAX_ENERGY_INDEX -> blockEntity.getEnergyStorage().getMaxEnergyStored();
-                    case LINKED_BLOCKS_COUNT_INDEX -> blockEntity.getLinkedBlocks().size();
-                    case REDSTONE_MODE_INDEX -> blockEntity.getRedstoneMode();
-                    case ACCELERATION_FACTOR_INDEX -> blockEntity.getAccelerationFactor();
-                    case BLOCK_POS_X_INDEX -> blockPos.getX();
-                    case BLOCK_POS_Y_INDEX -> blockPos.getY();
-                    case BLOCK_POS_Z_INDEX -> blockPos.getZ();
-                    case LINKED_BLOCKS_HASH_INDEX -> calculateLinkedBlocksHash(blockEntity.getLinkedBlocks());
-                    case PERSISTENT_MODE_INDEX -> blockEntity.isPersistentMode() ? 1 : 0;
-                    case STORED_ENTROPY_INDEX -> blockEntity.getStoredEntropy();
-                    case MAX_STORED_ENTROPY_INDEX -> blockEntity.getMaxStoredEntropy();
-                    case SHOW_AREA_INDEX -> blockEntity.isShowAreaEnabled() ? 1 : 0;
-                    default -> 0;
-                };
-            }
+        if (clientSide) {
+            this.containerData = new SimpleContainerData(DATA_COUNT);
+        } else {
+            this.containerData = new ContainerData() {
+                @Override
+                public int get(int index) {
+                    return switch (index) {
+                        case ENERGY_INDEX -> blockEntity.getEnergyStorage().getEnergyStored();
+                        case MAX_ENERGY_INDEX -> blockEntity.getEnergyStorage().getMaxEnergyStored();
+                        case LINKED_BLOCKS_COUNT_INDEX -> blockEntity.getLinkedBlocks().size();
+                        case REDSTONE_MODE_INDEX -> blockEntity.getRedstoneMode();
+                        case ACCELERATION_FACTOR_INDEX -> blockEntity.getAccelerationFactor();
+                        case BLOCK_POS_X_INDEX -> blockPos.getX();
+                        case BLOCK_POS_Y_INDEX -> blockPos.getY();
+                        case BLOCK_POS_Z_INDEX -> blockPos.getZ();
+                        case LINKED_BLOCKS_HASH_INDEX -> calculateLinkedBlocksHash(blockEntity.getLinkedBlocks());
+                        case PERSISTENT_MODE_INDEX -> blockEntity.isPersistentMode() ? 1 : 0;
+                        case STORED_ENTROPY_INDEX -> blockEntity.getStoredEntropy();
+                        case MAX_STORED_ENTROPY_INDEX -> blockEntity.getMaxStoredEntropy();
+                        case SHOW_AREA_INDEX -> blockEntity.isShowAreaEnabled() ? 1 : 0;
+                        default -> 0;
+                    };
+                }
 
-            @Override
-            public void set(int index, int value) {
-                // Values are read-only from client side
-            }
+                @Override
+                public void set(int index, int value) {
+                }
 
-            @Override
-            public int getCount() {
-                return DATA_COUNT;
-            }
-        };
+                @Override
+                public int getCount() {
+                    return DATA_COUNT;
+                }
+            };
+        }
 
         this.addDataSlots(this.containerData);
 
@@ -231,12 +252,11 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
         addPlayerInventory(playerInventory);
     }
 
-    // Constructor for client-side
     public TemporalOverclockerMenu(int containerId, Inventory playerInventory) {
         this(containerId, playerInventory, BlockPos.ZERO);
     }
 
-    // Constructor for client-side with position
+    /** Fallback when client BlockEntity is missing. */
     public TemporalOverclockerMenu(int containerId, Inventory playerInventory, BlockPos pos) {
         super(ModMenuTypes.TEMPORAL_OVERCLOCKER_MENU.get(), containerId);
 
@@ -248,18 +268,8 @@ public class TemporalOverclockerMenu extends AbstractContainerMenu {
         this.addDataSlots(this.containerData);
 
         var dummy = new net.minecraft.world.SimpleContainer(2);
-        addSlot(new Slot(dummy, UPGRADE_SLOT_INDEX, UPGRADE_SLOT_X, ENTROPY_ROW_Y) {
-            @Override
-            public boolean isHighlightable() {
-                return false;
-            }
-        });
-        addSlot(new Slot(dummy, FUEL_SLOT_INDEX, FUEL_SLOT_X, ENTROPY_ROW_Y) {
-            @Override
-            public boolean isHighlightable() {
-                return false;
-            }
-        });
+        addSlot(new Slot(dummy, UPGRADE_SLOT_INDEX, UPGRADE_SLOT_X, ENTROPY_ROW_Y));
+        addSlot(new Slot(dummy, FUEL_SLOT_INDEX, FUEL_SLOT_X, ENTROPY_ROW_Y));
         addPlayerInventory(playerInventory);
     }
 

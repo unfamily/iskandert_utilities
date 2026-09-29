@@ -17,6 +17,7 @@ import net.unfamily.iskautils.particle.ModParticles;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.renderer.DeceptionSeatRenderer;
 import net.unfamily.iskautils.client.renderer.EntropicSpawnerRenderer;
+import net.unfamily.iskautils.client.renderer.TemporalOverclockerRenderer;
 import net.unfamily.iskautils.entity.ModEntities;
 
 /** Registered on the MOD bus from {@link IskaUtils} (client-only). */
@@ -40,6 +41,7 @@ public final class IskaUtilsClientModEvents {
     public static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.DECEPTION_SEAT.get(), DeceptionSeatRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ENTROPIC_SPAWNER_BE.get(), EntropicSpawnerRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.TEMPORAL_OVERCLOCKER_BE.get(), TemporalOverclockerRenderer::new);
     }
 
     @SubscribeEvent

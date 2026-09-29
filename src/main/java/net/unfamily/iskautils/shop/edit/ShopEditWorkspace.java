@@ -318,6 +318,7 @@ public final class ShopEditWorkspace {
             c.item = stringOr(o, "item", "minecraft:stone");
             c.inCategory = ShopHierarchy.readInCategory(o);
             c.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
+            c.hideWhenLocked = o.has("hide_when_locked") && o.get("hide_when_locked").getAsBoolean();
             if (o.has("stages") && o.get("stages").isJsonArray()) {
                 List<ShopStage> stages = new ArrayList<>();
                 for (JsonElement se : o.getAsJsonArray("stages")) {
@@ -374,6 +375,7 @@ public final class ShopEditWorkspace {
             e.sell = o.has("sell") ? o.get("sell").getAsDouble() : 0;
             e.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
             e.free = o.has("free") && o.get("free").getAsBoolean();
+            e.hideWhenLocked = o.has("hide_when_locked") && o.get("hide_when_locked").getAsBoolean();
             ShopRepeatableRule.readEntryRules(o, e);
             if (o.has("stages") && o.get("stages").isJsonArray()) {
                 List<ShopStage> stages = new ArrayList<>();
@@ -423,6 +425,9 @@ public final class ShopEditWorkspace {
             o.addProperty("item", c.item != null ? c.item : "minecraft:stone");
             ShopHierarchy.writeInCategory(o, c.inCategory);
             o.addProperty("priority", c.priority);
+            if (c.hideWhenLocked) {
+                o.addProperty("hide_when_locked", true);
+            }
             if (c.stages != null && c.stages.length > 0) {
                 JsonArray stages = new JsonArray();
                 for (ShopStage st : c.stages) {
@@ -465,6 +470,9 @@ public final class ShopEditWorkspace {
             }
             o.addProperty("priority", e.priority);
             o.addProperty("free", e.free);
+            if (e.hideWhenLocked) {
+                o.addProperty("hide_when_locked", true);
+            }
             ShopRepeatableRule.writeEntryRules(o, e);
             if (e.stages != null && e.stages.length > 0) {
                 JsonArray stages = new JsonArray();

@@ -73,6 +73,9 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
             o.addProperty("item", c.item);
             ShopHierarchy.writeInCategory(o, c.inCategory);
             o.addProperty("priority", c.priority);
+            if (c.hideWhenLocked) {
+                o.addProperty("hide_when_locked", true);
+            }
             if (c.stages != null && c.stages.length > 0) {
                 JsonArray stages = new JsonArray();
                 for (ShopStage st : c.stages) {
@@ -105,6 +108,9 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
             o.addProperty("sell", e.sell);
             o.addProperty("priority", e.priority);
             o.addProperty("free", e.free);
+            if (e.hideWhenLocked) {
+                o.addProperty("hide_when_locked", true);
+            }
             ShopRepeatableRule.writeEntryRules(o, e);
             if (e.stages != null && e.stages.length > 0) {
                 JsonArray stages = new JsonArray();
@@ -150,6 +156,7 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
                 c.item = o.has("item") ? o.get("item").getAsString() : "minecraft:stone";
                 c.inCategory = ShopHierarchy.readInCategory(o);
                 c.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
+                c.hideWhenLocked = o.has("hide_when_locked") && o.get("hide_when_locked").getAsBoolean();
                 if (o.has("stages") && o.get("stages").isJsonArray()) {
                     List<ShopStage> stages = new ArrayList<>();
                     for (var se : o.getAsJsonArray("stages")) {
@@ -186,6 +193,7 @@ public record ShopEditSyncS2CPacket(String json) implements CustomPacketPayload 
                 e.sell = o.has("sell") ? o.get("sell").getAsDouble() : 0;
                 e.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
                 e.free = o.has("free") && o.get("free").getAsBoolean();
+                e.hideWhenLocked = o.has("hide_when_locked") && o.get("hide_when_locked").getAsBoolean();
                 ShopRepeatableRule.readEntryRules(o, e);
                 if (o.has("stages") && o.get("stages").isJsonArray()) {
                     List<ShopStage> stages = new ArrayList<>();

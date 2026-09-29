@@ -255,6 +255,7 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
         c.item = o.has("item") ? o.get("item").getAsString() : "minecraft:stone";
         c.inCategory = ShopHierarchy.readInCategory(o);
         c.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
+        c.hideWhenLocked = o.has("hide_when_locked") && o.get("hide_when_locked").getAsBoolean();
         if (o.has("stages") && o.get("stages").isJsonArray()) {
             List<ShopStage> stages = new ArrayList<>();
             for (var el : o.getAsJsonArray("stages")) {
@@ -307,6 +308,7 @@ public record ShopEditActionC2SPacket(String action, String payloadJson) impleme
         e.sell = o.has("sell") ? o.get("sell").getAsDouble() : 0;
         e.priority = o.has("priority") ? o.get("priority").getAsInt() : 0;
         e.free = o.has("free") && o.get("free").getAsBoolean();
+        e.hideWhenLocked = o.has("hide_when_locked") && o.get("hide_when_locked").getAsBoolean();
         ShopRepeatableRule.readEntryRules(o, e);
         if (o.has("stages") && o.get("stages").isJsonArray()) {
             List<ShopStage> stages = new ArrayList<>();

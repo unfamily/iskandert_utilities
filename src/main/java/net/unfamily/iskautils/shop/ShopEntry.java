@@ -59,6 +59,11 @@ public class ShopEntry {
     public boolean free = false;
     /** Gate requirements (JSON {@code stages}). */
     public ShopStage[] stages;
+    /**
+     * When true, stage-locked entries are hidden from browse (not only red overlay).
+     * JSON key: {@code hide_when_locked}. Default false.
+     */
+    public boolean hideWhenLocked = false;
     /** Buy-side trade limits; null means defaults (team + always). */
     public ShopRepeatableRule repeatableBuy;
     /** Sell-side trade limits; null means defaults (team + always). */

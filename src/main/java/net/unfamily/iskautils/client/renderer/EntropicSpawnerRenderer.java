@@ -8,19 +8,22 @@ import net.minecraft.client.renderer.blockentity.SpawnerRenderer;
 import net.minecraft.client.renderer.blockentity.state.SpawnerRenderState;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.unfamily.iskautils.block.EntropicSpawnerBlock;
 import net.unfamily.iskautils.block.entity.EntropicSpawnerBlockEntity;
 
 /**
- * Vanilla-style oblique mob preview when the Entropic Spawner is active.
+ * Vanilla-style oblique mob preview when the Entropic Spawner is active,
+ * plus N orbiting Entropic Clocks when present in the clock slot.
  */
 public class EntropicSpawnerRenderer
-        implements BlockEntityRenderer<EntropicSpawnerBlockEntity, SpawnerRenderState> {
+        implements BlockEntityRenderer<EntropicSpawnerBlockEntity, EntropicSpawnerRenderer.State> {
 
     private final EntityRenderDispatcher entityRenderer;
 
@@ -28,19 +31,40 @@ public class EntropicSpawnerRenderer
         this.entityRenderer = context.entityRenderer();
     }
 
+    public static final class State extends SpawnerRenderState {
+        boolean renderClocks;
+        int clockCount;
+        float orbitDegrees;
+        final ItemStackRenderState clockItem = new ItemStackRenderState();
+    }
+
     @Override
-    public SpawnerRenderState createRenderState() {
-        return new SpawnerRenderState();
+    public State createRenderState() {
+        return new State();
     }
 
     @Override
     public void extractRenderState(
             EntropicSpawnerBlockEntity blockEntity,
-            SpawnerRenderState state,
+            State state,
             float partialTicks,
             Vec3 cameraPosition,
             ModelFeatureRenderer.CrumblingOverlay breakProgress) {
         BlockEntityRenderer.super.extractRenderState(blockEntity, state, partialTicks, cameraPosition, breakProgress);
+
+        ItemStack clock = blockEntity.getMachineItems().getStackInSlot(EntropicSpawnerBlockEntity.CLOCK_SLOT_INDEX);
+        int count = EntropicClockItemRenderHelper.orbitCount(clock);
+        boolean hide = EntropicClockItemRenderHelper.shouldHideSpawnerClocks(blockEntity.getBlockPos(), partialTicks);
+        state.renderClocks = count > 0 && !hide;
+        state.clockCount = count;
+        state.orbitDegrees = EntropicClockItemRenderHelper.orbitDegrees(blockEntity.getLevel(), partialTicks);
+        if (state.renderClocks) {
+            EntropicClockItemRenderHelper.updateItemState(state.clockItem, clock, blockEntity.getLevel());
+        } else {
+            state.clockItem.clear();
+        }
+
+        state.displayEntity = null;
         if (!blockEntity.getBlockState().getValue(EntropicSpawnerBlock.ACTIVE)) {
             return;
         }
@@ -64,10 +88,20 @@ public class EntropicSpawnerRenderer
 
     @Override
     public void submit(
-            SpawnerRenderState state,
+            State state,
             PoseStack poseStack,
             SubmitNodeCollector submitNodeCollector,
             CameraRenderState camera) {
+        if (state.renderClocks) {
+            EntropicClockItemRenderHelper.submitOrbitingClocks(
+                    state.clockItem,
+                    state.clockCount,
+                    state.orbitDegrees,
+                    poseStack,
+                    submitNodeCollector,
+                    state.lightCoords);
+        }
+
         if (state.displayEntity == null) {
             return;
         }

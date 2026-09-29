@@ -34,6 +34,7 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.MobReaperBlock;
 import net.unfamily.iskautils.damage.ModDamageTypes;
 import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.util.EntityDamageCapHelper;
 import net.unfamily.iskautils.util.MachineTargetType;
 import net.minecraft.world.ItemStackWithSlot;
 import net.minecraft.world.InteractionHand;
@@ -479,6 +480,7 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
         if (!weapon.isEmpty() && EnchantmentHelper.hasAnyEnchantments(weapon)) {
             damage = EnchantmentHelper.modifyDamage(level, weapon, target, damageSource, damage);
         }
+        damage = EntityDamageCapHelper.cap(target, damage);
         if (damage <= 0.0F) {
             return;
         }

@@ -6,9 +6,9 @@
     " B "
   ],
   "key": {
-    "A": "minecraft:netherite_upgrade_smithing_template",
+    "A": "minecraft:flint",
     "B": "iska_utils:iska_utils_damage",
-    "C": "minecraft:flint"
+    "C": "minecraft:iron_ingot"
   },
   "result": {
     "id": "iska_utils:iska_utils_improved_damage",

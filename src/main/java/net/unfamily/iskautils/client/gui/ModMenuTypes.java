@@ -50,7 +50,7 @@ public class ModMenuTypes {
         MENUS.register("deep_drawer_extractor_menu", () -> new MenuType<>(DeepDrawerExtractorMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
     
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<TemporalOverclockerMenu>> TEMPORAL_OVERCLOCKER_MENU =
-        MENUS.register("temporal_overclocker_menu", () -> new MenuType<>(TemporalOverclockerMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+        MENUS.register("temporal_overclocker_menu", () -> IMenuTypeExtension.create(TemporalOverclockerMenu::createClient));
     
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<FanMenu>> FAN_MENU =
         MENUS.register("fan_menu", () -> new MenuType<>(FanMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
@@ -77,7 +77,7 @@ public class ModMenuTypes {
         MENUS.register("blazing_altar_menu", () -> new MenuType<>(BlazingAltarMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
 
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<EntropicSpawnerMenu>> ENTROPIC_SPAWNER_MENU =
-        MENUS.register("entropic_spawner_menu", () -> new MenuType<>(EntropicSpawnerMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+        MENUS.register("entropic_spawner_menu", () -> IMenuTypeExtension.create(EntropicSpawnerMenu::createClient));
 
     public static final net.neoforged.neoforge.registries.DeferredHolder<MenuType<?>, MenuType<EtherealFrameFilterMenu>> ETHEREAL_FRAME_FILTER_MENU =
         MENUS.register("ethereal_frame_filter_menu", () -> IMenuTypeExtension.create(

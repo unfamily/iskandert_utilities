@@ -707,9 +707,8 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
      * Overlay for an entry row:
      * <ul>
      *   <li>Red — stage locked, or every trade side the entry supports is blocked by rules</li>
-     *   <li>Yellow — entry supports both buy and sell, but rules block exactly one side</li>
+     *   <li>Yellow — buy-only or sell-only by definition, or both sides exist but rules block exactly one</li>
      * </ul>
-     * Sell-only / buy-only by entry definition is never yellow.
      */
     private int entryOverlayColor(ShopEntry item) {
         if (ShopClientStages.isEntryBlocked(item)) {
@@ -720,23 +719,17 @@ public class ShopScreen extends AbstractContainerScreen<AbstractContainerMenu> {
         if (!supportsBuy && !supportsSell) {
             return 0;
         }
-        boolean buyBlocked = supportsBuy
-                && ShopClientPurchaseLimits.isBlocked(item.id, ShopPurchaseLimitsData.TradeSide.BUY);
-        boolean sellBlocked = supportsSell
-                && ShopClientPurchaseLimits.isBlocked(item.id, ShopPurchaseLimitsData.TradeSide.SELL);
-
-        if (supportsBuy && supportsSell) {
-            if (buyBlocked && sellBlocked) {
-                return 0x80FF0000;
-            }
-            if (buyBlocked || sellBlocked) {
-                return 0x80FFFF00;
-            }
-            return 0;
+        // Buy-only or sell-only by entry definition → yellow (partial availability)
+        if (supportsBuy != supportsSell) {
+            return 0x80FFFF00;
         }
-        // Entry only supports one side: red if that side is rule-blocked
-        if ((supportsBuy && buyBlocked) || (supportsSell && sellBlocked)) {
+        boolean buyBlocked = ShopClientPurchaseLimits.isBlocked(item.id, ShopPurchaseLimitsData.TradeSide.BUY);
+        boolean sellBlocked = ShopClientPurchaseLimits.isBlocked(item.id, ShopPurchaseLimitsData.TradeSide.SELL);
+        if (buyBlocked && sellBlocked) {
             return 0x80FF0000;
+        }
+        if (buyBlocked || sellBlocked) {
+            return 0x80FFFF00;
         }
         return 0;
     }

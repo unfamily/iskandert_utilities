@@ -53,7 +53,7 @@ import java.util.Set;
 public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implements IIskaUtilsGhostTarget {
 
     private enum SubView {
-        BROWSE, CATEGORY_EDIT, ENTRY_EDIT, ENTRY_RULES,
+        BROWSE, CATEGORY_EDIT, CATEGORY_STAGES, ENTRY_EDIT, ENTRY_RULES,
         ENTRY_REPEATABLE_BUY, ENTRY_REPEATABLE_SELL,
         ENTRY_STAGES, ENTRY_STAGE_REWARDS, ENTRY_STRING_LIST,
         CURRENCIES, CURRENCY_EDIT, MOVE
@@ -222,7 +222,13 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     private EditBox repeatDayBox;
     private EditBox repeatMonthBox;
     private EditBox repeatCountBox;
+    private EditBox repeatHoursBox;
+    private EditBox repeatMinutesBox;
+    private EditBox repeatSecondsBox;
+    private EditBox repeatTicksBox;
     private Button freeButton;
+    private Button hideWhenLockedButton;
+    private Button resetOnSaturateButton;
     private Button typeButton;
     private Button currencyButton;
     private Button targetCurrencyButton;
@@ -286,7 +292,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         idBox = nameBox = descBox = resourceBox = symbolBox = null;
         amountBox = buyBox = sellBox = priorityBox = stageNameBox = displayBox = stringValueBox = null;
         repeatTimeBox = repeatDayBox = repeatMonthBox = repeatCountBox = null;
-        freeButton = typeButton = currencyButton = targetCurrencyButton = stageTypeButton = stageIsButton = stageAddButton = null;
+        repeatHoursBox = repeatMinutesBox = repeatSecondsBox = repeatTicksBox = null;
+        freeButton = hideWhenLockedButton = resetOnSaturateButton = typeButton = currencyButton = targetCurrencyButton = stageTypeButton = stageIsButton = stageAddButton = null;
         repeatScopeButton = repeatWhenButton = iconCycleButton = null;
         if (subView != SubView.CATEGORY_EDIT && subView != SubView.ENTRY_EDIT) {
             menu.clearGhostStack();
@@ -445,6 +452,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         switch (subView) {
             case BROWSE -> buildBrowse();
             case CATEGORY_EDIT -> buildCategoryEdit();
+            case CATEGORY_STAGES -> buildEntryStages();
             case ENTRY_EDIT -> buildEntryEdit();
             case ENTRY_RULES -> buildEntryRules();
             case ENTRY_REPEATABLE_BUY, ENTRY_REPEATABLE_SELL -> buildEntryRepeatable();
@@ -455,9 +463,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             case CURRENCY_EDIT -> buildCurrencyEdit();
             case MOVE -> buildMove();
         }
-    
         addScrollArrowButtons();
-}
+    }
 
     private void addScrollArrowButtons() {
         if (isListView() && maxListScroll() > 0) {
@@ -470,6 +477,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             listScrollDownButton = null;
         }
         boolean stageView = subView == SubView.ENTRY_STAGES
+                || subView == SubView.CATEGORY_STAGES
                 || subView == SubView.ENTRY_STAGE_REWARDS
                 || subView == SubView.ENTRY_STRING_LIST;
         if (stageView && maxStageScroll() > 0) {
@@ -650,6 +658,13 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 }
             }
             case CATEGORY_EDIT -> tryLeaveCategoryEdit();
+            case CATEGORY_STAGES -> {
+                flushFormToDraft();
+                autosaveCurrentForm(true);
+                editingStageIndex = -1;
+                subView = SubView.CATEGORY_EDIT;
+                rebuild();
+            }
             case CURRENCY_EDIT -> tryLeaveCurrencyEdit();
             case ENTRY_EDIT -> {
                 flushFormToDraft();
@@ -725,9 +740,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private void buildBrowse() {
-        List<ShopCategory> categories = childCategoriesSorted(currentParentId);
-        List<ShopEntry> entries = entriesInCategory(currentParentId);
-        int itemCount = categories.size() + entries.size();
+        List<Object> rows = browseMixedRows(currentParentId);
+        int itemCount = rows.size();
         ensureScroll(itemCount);
         int visible = Math.min(MAX_VISIBLE, itemCount);
         int kindX = listContentX();
@@ -739,8 +753,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         for (int i = 0; i < visible; i++) {
             int idx = scrollOffset + i;
             int y = ENTRY_START_Y + i * ENTRY_HEIGHT;
-            if (idx < categories.size()) {
-                ShopCategory cat = categories.get(idx);
+            Object row = rows.get(idx);
+            if (row instanceof ShopCategory cat) {
                 final String catId = cat.id;
                 boolean selected = isMoveSelected("category", catId);
                 listRowVisuals.add(new ListRowVisual(i, ListRowKind.ITEM_SLOT, null, cat.item, null, null,
@@ -769,8 +783,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                         .bounds(leftPos + deleteX, topPos + y, LIST_ACTION_W, ENTRY_HEIGHT - 2)
                         .tooltip(deleteButtonTooltip())
                         .build());
-            } else {
-                ShopEntry e = entries.get(idx - categories.size());
+            } else if (row instanceof ShopEntry e) {
                 final String entryId = e.id;
                 boolean selected = isMoveSelected("entry", entryId);
                 listRowVisuals.add(new ListRowVisual(i, ListRowKind.ENTRY_SLOT, null, null, null, e,
@@ -806,6 +819,26 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             }
         }
         addBrowseAddButtons();
+    }
+
+    /** Categories and entries interleaved by priority DESC then id (same as player shop A1). */
+    private List<Object> browseMixedRows(@Nullable String parentId) {
+        List<Object> rows = new ArrayList<>();
+        rows.addAll(ShopHierarchy.childCategories(menu.getData().categories.values(), parentId));
+        rows.addAll(menu.getData().entries.values().stream()
+                .filter(e -> ShopHierarchy.sameParent(e.inCategory, parentId))
+                .toList());
+        rows.sort((a, b) -> {
+            int pa = a instanceof ShopCategory c ? c.priority : ((ShopEntry) a).priority;
+            int pb = b instanceof ShopCategory c ? c.priority : ((ShopEntry) b).priority;
+            if (pb != pa) {
+                return Integer.compare(pb, pa);
+            }
+            String ia = a instanceof ShopCategory c ? c.id : ((ShopEntry) a).id;
+            String ib = b instanceof ShopCategory c ? c.id : ((ShopEntry) b).id;
+            return ia.compareToIgnoreCase(ib);
+        });
+        return rows;
     }
 
     private void addBrowseAddButtons() {
@@ -907,6 +940,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             draftCategory.description = "";
             draftCategory.item = "minecraft:stone";
             draftCategory.priority = 0;
+            draftCategory.hideWhenLocked = false;
             draftCategory.inCategory = currentParentId;
             draftCategoryOldId = draftCategory.id;
             draftCategoryIsNew = true;
@@ -914,10 +948,31 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         idBox = addLabeledField(FORM_LEFT, 22, 32, FORM_WIDTH, 12, "gui.iska_utils.shop_edit.field.id", draftCategory.id, 128);
         nameBox = addLabeledField(FORM_LEFT, 48, 58, FORM_WIDTH, 12, "gui.iska_utils.shop_edit.field.name", draftCategory.name, 256);
         descBox = addLabeledField(FORM_LEFT, 74, 84, FORM_WIDTH, 12, "gui.iska_utils.shop_edit.field.description", draftCategory.description, 512);
-        priorityBox = addLabeledField(FORM_LEFT, 100, 110, formColW(0, 4), 12, "gui.iska_utils.shop_edit.field.priority",
+        priorityBox = addLabeledField(FORM_LEFT, 100, 110, formColW(0, 3), 12, "gui.iska_utils.shop_edit.field.priority",
                 String.valueOf(draftCategory.priority), 16);
+        hideWhenLockedButton = addDyn(Button.builder(hideWhenLockedLabel(draftCategory.hideWhenLocked), b -> {
+            flushFormToDraft();
+            draftCategory.hideWhenLocked = !draftCategory.hideWhenLocked;
+            hideWhenLockedButton.setMessage(hideWhenLockedLabel(draftCategory.hideWhenLocked));
+            autosaveCurrentForm(true);
+        }).bounds(leftPos + formColX(1, 3), topPos + 110, formColW(1, 3), 12)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.field.hide_when_locked.tooltip")))
+                .build());
+        addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.stages_button", draftStages.size()), b -> {
+            flushFormToDraft();
+            editingStageIndex = -1;
+            stageScrollOffset = 0;
+            subView = SubView.CATEGORY_STAGES;
+            rebuild();
+        }).bounds(leftPos + formColX(2, 3), topPos + 110, formColW(2, 3), 12).build());
         addLabel(FORM_LEFT, 124, "gui.iska_utils.shop_edit.field.icon");
         addResourceSelectorRow(134, draftCategory.item, false);
+    }
+
+    private Component hideWhenLockedLabel(boolean on) {
+        return Component.translatable(on
+                ? "gui.iska_utils.shop_edit.field.hide_when_locked_on"
+                : "gui.iska_utils.shop_edit.field.hide_when_locked_off");
     }
 
     private void buildCurrencyEdit() {
@@ -1190,6 +1245,15 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private void buildEntryRules() {
+        if (draftEntry != null) {
+            hideWhenLockedButton = addDyn(Button.builder(hideWhenLockedLabel(draftEntry.hideWhenLocked), b -> {
+                draftEntry.hideWhenLocked = !draftEntry.hideWhenLocked;
+                hideWhenLockedButton.setMessage(hideWhenLockedLabel(draftEntry.hideWhenLocked));
+                autosaveCurrentForm(true);
+            }).bounds(leftPos + FORM_LEFT, topPos + 30, FORM_WIDTH, 20)
+                    .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.shop_edit.field.hide_when_locked.tooltip")))
+                    .build());
+        }
         addDyn(Button.builder(Component.translatable("gui.iska_utils.shop_edit.stages_rules"), b -> {
             editingStageIndex = -1;
             stageScrollOffset = 0;
@@ -1220,21 +1284,58 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             flushFormToDraft();
             rule.when = nextValue(rule.when, ShopRepeatableRule.WHEN_ALWAYS, ShopRepeatableRule.WHEN_DAILY,
                     ShopRepeatableRule.WHEN_WEEKLY, ShopRepeatableRule.WHEN_MONTHLY,
-                    ShopRepeatableRule.WHEN_YEARLY, ShopRepeatableRule.WHEN_ONLY);
+                    ShopRepeatableRule.WHEN_YEARLY, ShopRepeatableRule.WHEN_ONLY,
+                    ShopRepeatableRule.WHEN_TIMED);
             setActiveRepeatableRule(rule);
             autosaveCurrentForm(true);
             rebuild();
         }).bounds(leftPos + formColX(1, 2), topPos + 38, formColW(1, 2), 12).build());
 
         String when = rule.when != null ? rule.when.toLowerCase() : ShopRepeatableRule.WHEN_ALWAYS;
-        boolean time = !ShopRepeatableRule.WHEN_ALWAYS.equals(when) && !ShopRepeatableRule.WHEN_ONLY.equals(when);
+        boolean timed = ShopRepeatableRule.WHEN_TIMED.equals(when);
+        boolean calendar = !ShopRepeatableRule.WHEN_ALWAYS.equals(when)
+                && !ShopRepeatableRule.WHEN_ONLY.equals(when)
+                && !timed;
         boolean day = ShopRepeatableRule.WHEN_WEEKLY.equals(when)
                 || ShopRepeatableRule.WHEN_MONTHLY.equals(when) || ShopRepeatableRule.WHEN_YEARLY.equals(when);
         boolean month = ShopRepeatableRule.WHEN_YEARLY.equals(when);
         boolean count = !ShopRepeatableRule.WHEN_ALWAYS.equals(when);
-        int columns = (time ? 1 : 0) + (day ? 1 : 0) + (month ? 1 : 0) + (count ? 1 : 0);
+
+        if (timed) {
+            long[] parts = ShopRepeatableRule.splitDurationTicks(rule.durationTicks);
+            addLabel(formColX(0, 4), 60, "gui.iska_utils.shop_edit.repeatable.hours");
+            repeatHoursBox = addBox(formColX(0, 4), 70, formColW(0, 4), 12, String.valueOf(parts[0]), 6);
+            addLabel(formColX(1, 4), 60, "gui.iska_utils.shop_edit.repeatable.minutes");
+            repeatMinutesBox = addBox(formColX(1, 4), 70, formColW(1, 4), 12, String.valueOf(parts[1]), 4);
+            addLabel(formColX(2, 4), 60, "gui.iska_utils.shop_edit.repeatable.seconds");
+            repeatSecondsBox = addBox(formColX(2, 4), 70, formColW(2, 4), 12, String.valueOf(parts[2]), 4);
+            addLabel(formColX(3, 4), 60, "gui.iska_utils.shop_edit.repeatable.ticks");
+            repeatTicksBox = addBox(formColX(3, 4), 70, formColW(3, 4), 12, String.valueOf(parts[3]), 4);
+            wireDurationBoxes(rule);
+            addLabel(formColX(0, 2), 90, "gui.iska_utils.shop_edit.repeatable.count");
+            repeatCountBox = addBox(formColX(0, 2), 100, formColW(0, 2), 12, String.valueOf(rule.count), 9);
+            resetOnSaturateButton = addDyn(Button.builder(Component.translatable(
+                    rule.resetOnSaturate
+                            ? "gui.iska_utils.shop_edit.repeatable.reset_on_saturate_on"
+                            : "gui.iska_utils.shop_edit.repeatable.reset_on_saturate_off"), b -> {
+                flushFormToDraft();
+                rule.resetOnSaturate = !rule.resetOnSaturate;
+                setActiveRepeatableRule(rule);
+                resetOnSaturateButton.setMessage(Component.translatable(
+                        rule.resetOnSaturate
+                                ? "gui.iska_utils.shop_edit.repeatable.reset_on_saturate_on"
+                                : "gui.iska_utils.shop_edit.repeatable.reset_on_saturate_off"));
+                autosaveCurrentForm(true);
+            }).bounds(leftPos + formColX(1, 2), topPos + 100, formColW(1, 2), 12)
+                    .tooltip(Tooltip.create(Component.translatable(
+                            "gui.iska_utils.shop_edit.repeatable.reset_on_saturate.tooltip")))
+                    .build());
+            return;
+        }
+
+        int columns = (calendar ? 1 : 0) + (day ? 1 : 0) + (month ? 1 : 0) + (count ? 1 : 0);
         int column = 0;
-        if (time) {
+        if (calendar) {
             addLabel(formColX(column, columns), 60, "gui.iska_utils.shop_edit.repeatable.time");
             repeatTimeBox = addBox(formColX(column, columns), 70, formColW(column, columns), 12,
                     ShopRepeatableRule.normalizeTime(rule.resetTime), 5);
@@ -1256,6 +1357,38 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             addLabel(formColX(column, columns), 60, "gui.iska_utils.shop_edit.repeatable.count");
             repeatCountBox = addBox(formColX(column, columns), 70, formColW(column, columns), 12,
                     String.valueOf(rule.count), 9);
+        }
+    }
+
+    private void wireDurationBoxes(ShopRepeatableRule rule) {
+        Runnable sync = () -> {
+            long hours = parseLong(repeatHoursBox != null ? repeatHoursBox.getValue() : "0", 0);
+            long minutes = parseLong(repeatMinutesBox != null ? repeatMinutesBox.getValue() : "0", 0);
+            long seconds = parseLong(repeatSecondsBox != null ? repeatSecondsBox.getValue() : "0", 0);
+            long ticks = parseLong(repeatTicksBox != null ? repeatTicksBox.getValue() : "0", 0);
+            rule.durationTicks = ShopRepeatableRule.combineDurationTicks(hours, minutes, seconds, ticks);
+            setActiveRepeatableRule(rule);
+            markFormDirty();
+        };
+        if (repeatHoursBox != null) {
+            repeatHoursBox.setResponder(s -> sync.run());
+        }
+        if (repeatMinutesBox != null) {
+            repeatMinutesBox.setResponder(s -> sync.run());
+        }
+        if (repeatSecondsBox != null) {
+            repeatSecondsBox.setResponder(s -> sync.run());
+        }
+        if (repeatTicksBox != null) {
+            repeatTicksBox.setResponder(s -> sync.run());
+        }
+    }
+
+    private static long parseLong(String raw, long def) {
+        try {
+            return Long.parseLong(raw.trim());
+        } catch (Exception e) {
+            return def;
         }
     }
 
@@ -1516,6 +1649,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
 
     private void openCategoryEdit(@Nullable String id) {
         clearMoveSelection();
+        draftStages.clear();
         if (id == null) {
             draftCategory = new ShopCategory();
             draftCategory.id = uniqueId("category");
@@ -1523,6 +1657,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             draftCategory.description = "";
             draftCategory.item = "minecraft:stone";
             draftCategory.priority = 0;
+            draftCategory.hideWhenLocked = false;
             draftCategory.inCategory = currentParentId;
             draftCategoryOldId = draftCategory.id;
             draftCategoryIsNew = true;
@@ -1531,7 +1666,20 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             draftCategory = src != null ? ShopEditSession.copyCategory(src) : new ShopCategory();
             draftCategoryOldId = draftCategory.id;
             draftCategoryIsNew = false;
+            if (draftCategory.stages != null) {
+                for (ShopStage st : draftCategory.stages) {
+                    if (st != null) {
+                        ShopStage copy = new ShopStage();
+                        copy.stage = st.stage;
+                        copy.stageType = st.stageType;
+                        copy.is = st.is;
+                        draftStages.add(copy);
+                    }
+                }
+            }
         }
+        editingStageIndex = -1;
+        stageScrollOffset = 0;
         subView = SubView.CATEGORY_EDIT;
         scrollOffset = 0;
         rebuild();
@@ -1719,12 +1867,15 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
     }
 
     private void flushFormToDraft() {
-        if (subView == SubView.CATEGORY_EDIT && draftCategory != null) {
-            if (idBox != null) draftCategory.id = idBox.getValue().trim();
-            if (nameBox != null) draftCategory.name = nameBox.getValue();
-            if (descBox != null) draftCategory.description = descBox.getValue();
-            if (priorityBox != null) draftCategory.priority = parseInt(priorityBox.getValue(), 0);
-            if (resourceBox != null) draftCategory.item = resourceBox.getValue().trim();
+        if ((subView == SubView.CATEGORY_EDIT || subView == SubView.CATEGORY_STAGES) && draftCategory != null) {
+            if (subView == SubView.CATEGORY_EDIT) {
+                if (idBox != null) draftCategory.id = idBox.getValue().trim();
+                if (nameBox != null) draftCategory.name = nameBox.getValue();
+                if (descBox != null) draftCategory.description = descBox.getValue();
+                if (priorityBox != null) draftCategory.priority = parseInt(priorityBox.getValue(), 0);
+                if (resourceBox != null) draftCategory.item = resourceBox.getValue().trim();
+            }
+            draftCategory.stages = draftStages.toArray(new ShopStage[0]);
         } else if (subView == SubView.CURRENCY_EDIT && draftCurrency != null) {
             if (idBox != null) draftCurrency.id = idBox.getValue().trim();
             if (nameBox != null) draftCurrency.name = nameBox.getValue();
@@ -1764,6 +1915,13 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             if (repeatDayBox != null) rule.resetDay = Math.max(1, parseInt(repeatDayBox.getValue(), 1));
             if (repeatMonthBox != null) rule.resetMonth = Math.max(1, parseInt(repeatMonthBox.getValue(), 1));
             if (repeatCountBox != null) rule.count = Math.max(1, parseInt(repeatCountBox.getValue(), 1));
+            if (repeatHoursBox != null || repeatMinutesBox != null || repeatSecondsBox != null || repeatTicksBox != null) {
+                rule.durationTicks = ShopRepeatableRule.combineDurationTicks(
+                        parseLong(repeatHoursBox != null ? repeatHoursBox.getValue() : "0", 0),
+                        parseLong(repeatMinutesBox != null ? repeatMinutesBox.getValue() : "0", 0),
+                        parseLong(repeatSecondsBox != null ? repeatSecondsBox.getValue() : "0", 0),
+                        parseLong(repeatTicksBox != null ? repeatTicksBox.getValue() : "0", 0));
+            }
             if (buy) {
                 draftEntry.repeatableBuy = rule.isDefault() ? null : rule;
             } else {
@@ -1778,7 +1936,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         if (!immediate && formDirty) {
             return;
         }
-        if (subView == SubView.CATEGORY_EDIT) {
+        if (subView == SubView.CATEGORY_EDIT || subView == SubView.CATEGORY_STAGES) {
             if (isCategoryDraftValid()) {
                 sendUpsertCategory(null);
             }
@@ -1786,6 +1944,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             sendUpsertCurrency(null);
         } else if (subView == SubView.ENTRY_EDIT || subView == SubView.ENTRY_STAGES
                 || subView == SubView.ENTRY_STAGE_REWARDS
+                || subView == SubView.ENTRY_RULES
                 || subView == SubView.ENTRY_REPEATABLE_BUY || subView == SubView.ENTRY_REPEATABLE_SELL
                 || subView == SubView.ENTRY_STRING_LIST) {
             sendUpsertEntry();
@@ -1815,6 +1974,18 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             o.addProperty("item", nullSafe(draftCategory.item));
             ShopHierarchy.writeInCategory(o, draftCategory.inCategory);
             o.addProperty("priority", draftCategory.priority);
+            if (draftCategory.hideWhenLocked) {
+                o.addProperty("hide_when_locked", true);
+            }
+            JsonArray stages = new JsonArray();
+            for (ShopStage st : draftStages) {
+                JsonObject so = new JsonObject();
+                so.addProperty("stage", nullSafe(st.stage));
+                so.addProperty("stage_type", nullSafe(st.stageType));
+                so.addProperty("is", st.is);
+                stages.add(so);
+            }
+            o.add("stages", stages);
             if (renameMode != null) {
                 o.addProperty("rename_mode", renameMode);
             }
@@ -1876,6 +2047,9 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             }
             o.addProperty("priority", draftEntry.priority);
             o.addProperty("free", draftEntry.free);
+            if (draftEntry.hideWhenLocked) {
+                o.addProperty("hide_when_locked", true);
+            }
             ShopRepeatableRule.writeEntryRules(o, draftEntry);
             JsonArray stages = new JsonArray();
             for (ShopStage st : draftStages) {
@@ -2455,7 +2629,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 }
             }
         }
-        if ((subView == SubView.ENTRY_STAGES || subView == SubView.ENTRY_STAGE_REWARDS
+        if ((subView == SubView.ENTRY_STAGES || subView == SubView.CATEGORY_STAGES
+                || subView == SubView.ENTRY_STAGE_REWARDS
                 || subView == SubView.ENTRY_STRING_LIST)
                 && dialog == Dialog.NONE) {
             renderStageScrollbar(graphics, mouseX, mouseY);
@@ -2580,8 +2755,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
 
     private int listTotalCount() {
         return switch (subView) {
-            case BROWSE -> childCategoriesSorted(currentParentId).size()
-                    + entriesInCategory(currentParentId).size();
+            case BROWSE -> browseMixedRows(currentParentId).size();
             case CURRENCIES -> sortedCurrencies().size() + 1;
             case MOVE -> moveTargetCategories().size() + 1;
             default -> 0;
@@ -2599,6 +2773,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
             default -> switch (subView) {
                 case BROWSE -> browseTitle();
                 case CATEGORY_EDIT -> Component.translatable("gui.iska_utils.shop_edit.category_edit");
+                case CATEGORY_STAGES -> Component.translatable("gui.iska_utils.shop_edit.stages_edit");
                 case ENTRY_EDIT -> Component.translatable("gui.iska_utils.shop_edit.entry_edit");
                 case ENTRY_RULES -> Component.translatable("gui.iska_utils.shop_edit.rules");
                 case ENTRY_REPEATABLE_BUY -> Component.translatable("gui.iska_utils.shop_edit.repeatable_buy");
@@ -2643,7 +2818,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         }
         Component categoryWarning = categoryEditWarning();
         if (categoryWarning != null) {
-            int warnX = FORM_LEFT + formColW(0, 4) + FORM_GAP;
+            int warnX = FORM_LEFT + formColW(0, 3) + FORM_GAP;
             int warnW = FORM_RIGHT - warnX;
             int warnY = 110;
             for (var line : font.split(categoryWarning, Math.max(20, warnW))) {
@@ -2746,7 +2921,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 rebuild();
                 return true;
             }
-            if ((subView == SubView.ENTRY_STAGES || subView == SubView.ENTRY_STAGE_REWARDS
+            if ((subView == SubView.ENTRY_STAGES || subView == SubView.CATEGORY_STAGES
+                    || subView == SubView.ENTRY_STAGE_REWARDS
                     || subView == SubView.ENTRY_STRING_LIST)
                     && mouseX >= leftPos + STAGE_LIST_X
                     && mouseX < leftPos + STAGE_SCROLLBAR_X + SCROLLBAR_WIDTH
@@ -2783,7 +2959,8 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
                 MachineGuiInput.markScrollbarPressed();
                 return true;
             }
-            if ((subView == SubView.ENTRY_STAGES || subView == SubView.ENTRY_STAGE_REWARDS
+            if ((subView == SubView.ENTRY_STAGES || subView == SubView.CATEGORY_STAGES
+                    || subView == SubView.ENTRY_STAGE_REWARDS
                     || subView == SubView.ENTRY_STRING_LIST)
                     && handleStageScrollbarClick(mouseX, mouseY)) {
                 MachineGuiInput.markScrollbarPressed();

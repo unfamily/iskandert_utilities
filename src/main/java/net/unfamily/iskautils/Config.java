@@ -1286,6 +1286,15 @@ public class Config {
             .comment("Client blade rotation speed in degrees per tick (used by BER)")
             .defineInRange("003_reaperBladeMaxDegPerTick", 12.0D, 0.0D, 360.0D);
 
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> ENTITY_DAMAGE_CAPS = BUILDER
+            .comment("Max damage that damage trap plates and Mob Reaper may deal to matching entities.",
+                    "Format: entityOrTag;maxDamage  (e.g. #c:bosses;10 or minecraft:warden;5).",
+                    "Entries starting with # are entity type tags. Multiple matches use the lowest max.",
+                    "Damage plates may set ignore_entity_damage_cap: true in JSON to bypass this list.")
+            .defineList("110_entityDamageCaps",
+                    java.util.List.of("#c:bosses;10"),
+                    obj -> obj instanceof String);
+
     static {
         BUILDER.pop(); // End of reaper category
 
@@ -2291,6 +2300,7 @@ public class Config {
     public static int reaperExperienceUpgradeMax;
     public static double reaperExperienceBonusPerLevel;
     public static double reaperBladeMaxDegPerTick;
+    public static java.util.List<String> entityDamageCaps;
 
     public static int collectingCrateXpCapacityLevels;
     public static int collectingCrateXpMbPerPoint;
@@ -2535,6 +2545,7 @@ public class Config {
         reaperExperienceUpgradeMax = REAPER_EXPERIENCE_UPGRADE_MAX.get();
         reaperExperienceBonusPerLevel = REAPER_EXPERIENCE_BONUS_PER_LEVEL.get();
         reaperBladeMaxDegPerTick = REAPER_BLADE_MAX_DEG_PER_TICK.get();
+        entityDamageCaps = new java.util.ArrayList<>(ENTITY_DAMAGE_CAPS.get());
 
         collectingCrateXpCapacityLevels = COLLECTING_CRATE_XP_CAPACITY_LEVELS.get();
         collectingCrateXpMbPerPoint = COLLECTING_CRATE_XP_MB_PER_POINT.get();

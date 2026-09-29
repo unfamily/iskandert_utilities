@@ -278,6 +278,9 @@ public class DynamicPotionPlateScanner {
             // Optional tooltip_lines field (default 0)
             int tooltipLines = json.has("tooltip_lines") ? json.get("tooltip_lines").getAsInt() : 0;
             config.setTooltipLines(tooltipLines);
+            // Optional: skip Config entity_damage_caps for this plate (default false)
+            boolean ignoreCap = json.has("ignore_entity_damage_cap") && json.get("ignore_entity_damage_cap").getAsBoolean();
+            config.setIgnoreEntityDamageCap(ignoreCap);
             return config;
             
         } catch (Exception e) {

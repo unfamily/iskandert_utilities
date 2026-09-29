@@ -220,6 +220,8 @@ public class ShopLoader {
             category.item = categoryObj.has("item") ? categoryObj.get("item").getAsString() : "minecraft:stone";
             category.inCategory = ShopHierarchy.readInCategory(categoryObj);
             category.priority = categoryObj.has("priority") ? categoryObj.get("priority").getAsInt() : 0;
+            category.hideWhenLocked = categoryObj.has("hide_when_locked")
+                    && categoryObj.get("hide_when_locked").getAsBoolean();
             if (categoryObj.has("stages") && categoryObj.get("stages").isJsonArray()) {
                 JsonArray stagesArray = categoryObj.getAsJsonArray("stages");
                 category.stages = new ShopStage[stagesArray.size()];
@@ -316,6 +318,7 @@ public class ShopLoader {
             entry.sell = entryObj.has("sell") ? entryObj.get("sell").getAsDouble() : 0.0;
             entry.priority = entryObj.has("priority") ? entryObj.get("priority").getAsInt() : 0;
             entry.free = entryObj.has("free") && entryObj.get("free").getAsBoolean();
+            entry.hideWhenLocked = entryObj.has("hide_when_locked") && entryObj.get("hide_when_locked").getAsBoolean();
             ShopRepeatableRule.readEntryRules(entryObj, entry);
 
             if (entryObj.has("stages") && entryObj.get("stages").isJsonArray()) {

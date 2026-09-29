@@ -44,6 +44,9 @@ public class PotionPlateConfig {
     
     // Tooltip configuration
     private int tooltipLines; // Number of tooltip description lines (default 0)
+
+    /** When true, damage plates skip Config entity_damage_caps (default false). */
+    private boolean ignoreEntityDamageCap;
     
     // Cached effect holder for performance
     private Holder<MobEffect> cachedEffect;
@@ -76,6 +79,7 @@ public class PotionPlateConfig {
         this.creativeTabVisible = true;
         this.playerShiftDisable = true;
         this.tooltipLines = 0;
+        this.ignoreEntityDamageCap = false;
     }
     
     /**
@@ -106,6 +110,7 @@ public class PotionPlateConfig {
         this.creativeTabVisible = true;
         this.playerShiftDisable = true;
         this.tooltipLines = 0;
+        this.ignoreEntityDamageCap = false;
     }
     
     /**
@@ -136,6 +141,7 @@ public class PotionPlateConfig {
         this.creativeTabVisible = true;
         this.playerShiftDisable = true;
         this.tooltipLines = 0;
+        this.ignoreEntityDamageCap = false;
     }
     
     /**
@@ -171,6 +177,7 @@ public class PotionPlateConfig {
         this.creativeTabVisible = true;
         this.playerShiftDisable = true;
         this.tooltipLines = 0;
+        this.ignoreEntityDamageCap = false;
     }
     
     // Backward compatibility constructors
@@ -367,6 +374,20 @@ public class PotionPlateConfig {
     public void setTooltipLines(int lines) {
         this.tooltipLines = Math.max(0, lines);
     }
+
+    /**
+     * Whether this damage plate ignores Config {@code entity_damage_caps}.
+     */
+    public boolean ignoresEntityDamageCap() {
+        return ignoreEntityDamageCap;
+    }
+
+    /**
+     * Sets whether this damage plate ignores Config {@code entity_damage_caps}.
+     */
+    public void setIgnoreEntityDamageCap(boolean ignore) {
+        this.ignoreEntityDamageCap = ignore;
+    }
     
     /**
      * Gets the effect for this configuration
@@ -502,6 +523,7 @@ public class PotionPlateConfig {
                 mergedDamageConfig.setCreativeTabVisible(other.isCreativeTabVisible());
                 mergedDamageConfig.setPlayerShiftDisable(other.isPlayerShiftDisable());
                 mergedDamageConfig.setTooltipLines(other.getTooltipLines());
+                mergedDamageConfig.setIgnoreEntityDamageCap(other.ignoresEntityDamageCap());
                 
                 return mergedDamageConfig;
                 

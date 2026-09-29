@@ -22,6 +22,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.data.PotionPlateConfig;
 import net.unfamily.iskautils.data.PotionPlateType;
+import net.unfamily.iskautils.util.EntityDamageCapHelper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -193,8 +194,12 @@ public class PotionPlateBlock extends VectorBlock {
                 }
             }
             
-            // Apply damage
-            livingEntity.hurt(damageSource, config.getDamageAmount());
+            // Apply damage (capped for configured boss/tag entries unless plate opts out)
+            float amount = config.getDamageAmount();
+            if (!config.ignoresEntityDamageCap()) {
+                amount = EntityDamageCapHelper.cap(livingEntity, amount);
+            }
+            livingEntity.hurt(damageSource, amount);
             boolean success = true;
             
             return success;
