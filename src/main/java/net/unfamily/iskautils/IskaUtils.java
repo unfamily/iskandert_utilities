@@ -71,7 +71,6 @@ public class IskaUtils {
     // The constructor for the mod class is the first code that is run when your mod is loaded.
     // FML will recognize some parameter types like IEventBus or ModContainer and pass them in automatically.
     public IskaUtils(IEventBus modEventBus, ModContainer modContainer) {
-        net.unfamily.iskautils.migration.UtilsWorldBackupGate.register(modEventBus);
         net.unfamily.iskautils.migration.PatternCrafterLegacySuppress.register(modEventBus);
 
         // Register the commonSetup method for modloading
@@ -182,6 +181,10 @@ public class IskaUtils {
                 net.unfamily.iskautils.command.StageActionsManager.onTeamStageChanged(server, teamName, stage, value);
             }
         });
+
+        net.unfamily.iskautils.stage.UtilsStageBridge.install();
+        net.unfamily.iskautils.config.UtilsCsvRules.register();
+        net.unfamily.iskautils.config.UtilsColorRules.register();
 
         net.unfamily.iskalib.shop.ShopCurrencyHooks.setListener(new net.unfamily.iskalib.shop.ShopCurrencyHooks.Listener() {
             @Override

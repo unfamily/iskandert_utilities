@@ -195,13 +195,26 @@ dependencies {
     }
 
     // Iskandert Library 1.21.1 — local JAR in libs/ when present, else CurseForge
-    def iskaLibLocalJar = file('libs/iska_lib-1.11.0.0.0-neoforge-1.21.1.jar')
+    def iskaLibLocalJar = file('libs/iska_lib-1.12.0.0.0-neoforge-1.21.1.jar')
+    if (!iskaLibLocalJar.exists()) {
+        iskaLibLocalJar = file('libs/iska_lib-1.11.0.0.0-neoforge-1.21.1.jar')
+    }
     def iskaLibForceRemote = project.findProperty('iskaLibUseLocal')?.toString()?.toBoolean() == false
     if (iskaLibLocalJar.exists() && !iskaLibForceRemote) {
         implementation files(iskaLibLocalJar)
         localRuntime files(iskaLibLocalJar)
     } else {
         implementation "curse.maven:iskanderts-library-1516512:8612291"
+    }
+
+    
+    def acmLocalJar = file('../AnotherConfigManager/build/libs/another_config_manager-1.0.0.0.0.jar')
+    if (!acmLocalJar.exists()) {
+        acmLocalJar = file('libs/another_config_manager-1.0.0.0.0.jar')
+    }
+    if (acmLocalJar.exists()) {
+        implementation files(acmLocalJar)
+        localRuntime files(acmLocalJar)
     }
 
     tasks.register('syncIskaLibToRunMods', Copy) {

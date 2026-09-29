@@ -336,62 +336,20 @@ public final class LabelingNameStyle {
         }
     }
 
+
     public static String toHexString(int rgb) {
-        return String.format("#%06X", rgb & 0xFFFFFF);
+        return net.unfamily.iskalib.client.gui.color.ColorMath.toHexString(rgb);
     }
 
     public static Hsv rgbToHsv(int rgb) {
-        float r = ((rgb >> 16) & 0xFF) / 255f;
-        float g = ((rgb >> 8) & 0xFF) / 255f;
-        float b = (rgb & 0xFF) / 255f;
-        float max = Math.max(r, Math.max(g, b));
-        float min = Math.min(r, Math.min(g, b));
-        float delta = max - min;
-        float h;
-        if (delta == 0f) {
-            h = 0f;
-        } else if (max == r) {
-            h = 60f * (((g - b) / delta) % 6f);
-        } else if (max == g) {
-            h = 60f * (((b - r) / delta) + 2f);
-        } else {
-            h = 60f * (((r - g) / delta) + 4f);
-        }
-        if (h < 0f) {
-            h += 360f;
-        }
-        float s = max == 0f ? 0f : delta / max;
-        return new Hsv(h, s, max);
+        var h = net.unfamily.iskalib.client.gui.color.ColorMath.rgbToHsv(rgb);
+        return new Hsv(h.h(), h.s(), h.v());
     }
 
     public static int hsvToRgb(float h, float s, float v) {
-        h = ((h % 360f) + 360f) % 360f;
-        s = clamp01(s);
-        v = clamp01(v);
-        float c = v * s;
-        float x = c * (1f - Math.abs((h / 60f) % 2f - 1f));
-        float m = v - c;
-        float r1;
-        float g1;
-        float b1;
-        if (h < 60f) {
-            r1 = c; g1 = x; b1 = 0f;
-        } else if (h < 120f) {
-            r1 = x; g1 = c; b1 = 0f;
-        } else if (h < 180f) {
-            r1 = 0f; g1 = c; b1 = x;
-        } else if (h < 240f) {
-            r1 = 0f; g1 = x; b1 = c;
-        } else if (h < 300f) {
-            r1 = x; g1 = 0f; b1 = c;
-        } else {
-            r1 = c; g1 = 0f; b1 = x;
-        }
-        int r = Math.round((r1 + m) * 255f);
-        int g = Math.round((g1 + m) * 255f);
-        int b = Math.round((b1 + m) * 255f);
-        return ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
+        return net.unfamily.iskalib.client.gui.color.ColorMath.hsvToRgb(h, s, v);
     }
+
 
     private static float clamp01(float v) {
         return Math.max(0f, Math.min(1f, v));

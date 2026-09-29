@@ -228,7 +228,7 @@ public class CommandItemLoader {
                 "- Default items are registered internally and always available even without configuration files.\n" +
                 "- To see the internal defaults as JSON files, run: `/iska_utils_debug dump_default`\n" +
                 "- Configuration files in this directory override the internal defaults.\n" +
-                "- Reload: `/iska_lib_debug reload` (quick) or `/reload` (full) to apply changes without restart.\n" +
+                "- Reload: `/iska_lib_dev reload` (quick) or `/reload` (full) to apply changes without restart.\n" +
                 "- You can create as many command item configurations as needed.\n";
             
             Files.write(readmePath, readmeContent.getBytes());

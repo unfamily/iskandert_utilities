@@ -70,6 +70,29 @@ public class StageItemHandler {
             LOGGER.error("Error loading item restrictions: {}", e.getMessage());
         }
     }
+
+    /**
+     * Collects all stage ids referenced by loaded item restrictions (for command suggestions).
+     */
+    public static java.util.Set<String> collectReferencedStages() {
+        java.util.LinkedHashSet<String> stages = new java.util.LinkedHashSet<>();
+        for (StageItemRestriction restriction : ITEM_RESTRICTIONS.values()) {
+            if (restriction == null || restriction.restrictions == null) {
+                continue;
+            }
+            for (StageItemRule rule : restriction.restrictions) {
+                if (rule == null || rule.stages == null) {
+                    continue;
+                }
+                for (StageCondition condition : rule.stages) {
+                    if (condition != null && condition.stage != null && !condition.stage.isBlank()) {
+                        stages.add(condition.stage.trim());
+                    }
+                }
+            }
+        }
+        return stages;
+    }
     
     /**
      * Loads all item restrictions from JSON files

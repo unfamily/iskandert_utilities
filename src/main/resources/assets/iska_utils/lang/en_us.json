@@ -331,7 +331,7 @@
   "gui.iska_utils.shop_edit.title": "Shop Editor",
   "gui.iska_utils.shop_edit.opened": "Shop editor opened",
   "gui.iska_utils.shop_edit.occupied": "Shop editor is already in use by %s",
-  "gui.iska_utils.shop_edit.close_reload_hint": "Shop saved. Run §e/reload§r for a full reload (loads new files too). Or §e/iska_utils_shop reload§r / §e/iska_lib_debug reload§r to refresh files already loaded by the datapack loader.",
+  "gui.iska_utils.shop_edit.close_reload_hint": "Shop saved. Run §e/reload§r for a full reload (loads new files too). Or §e/iska_utils_shop reload§r / §e/iska_lib_dev reload§r to refresh files already loaded by the datapack loader.",
   "gui.iska_utils.shop_edit.close_hint_title": "Apply changes",
   "gui.iska_utils.shop_edit.close": "Close",
   "gui.iska_utils.shop_edit.done": "Done",
@@ -626,9 +626,6 @@
   "block.iska_utils.graveyard_soil": "Graveyard Soil",
   "block.iska_utils.druidic_podzol": "Druidic Podzol",
   "effect.iska_utils.entropic_empowerment": "Entropic Empowerment",
-  "message.iska_utils.lib_split_backup.title": "Back up this world?",
-  "message.iska_utils.lib_split_backup.warning": "This world was last played with Iskandert's Utilities before version %s. The mod now requires Iskandert's Library and stores data differently.\n\nCreate a backup before loading, or continue without one.",
-  "message.iska_utils.lib_split_backup.skipped": "Iskandert's Utilities: pre-%s world detected; load continued without backup dialog. Back up the save manually if needed.",
   "message.iska_utils.ender_nullifier.enabled": "Ender Nullifier enabled",
   "message.iska_utils.ender_nullifier.disabled": "Ender Nullifier disabled",
   "message.iska_utils.wander_nullifier.enabled": "Wander Nullifier enabled",
@@ -1643,5 +1640,7 @@
   "gui.iska_utils.variable_shift_clear_filter": "Shift+Click to clear filter content",
   "gui.iska_utils.variable_shift_clear_only": "Shift+Click to clear filter content only (cannot add or edit)",
   "gui.iska_utils.variable_locked_hint": "Variable inactive — set a letter first to add or edit",
-  "gui.iska_utils.module_slot_locked": "Module not supported"
+  "gui.iska_utils.module_slot_locked": "Module not supported",
+  "iska_utils.config.csv.key": "Key",
+  "iska_utils.config.csv.color": "Color (RRGGBB)"
 }
