@@ -264,7 +264,9 @@ public class ModCreativeModeTabs {
                                 }
                                 pOutput.accept(ModItems.DROP_OF_ENTROPY.get());
                                 pOutput.accept(ModItems.ENTROPIC_AGGLOMERATION.get());
+                                pOutput.accept(ModItems.ENTROPIC_CREEPER_SPAWN_EGG.get());
                                 pOutput.accept(ModItems.ENTROPIC_EGG.get());
+
                                 pOutput.accept(ModItems.DRUIDIC_AGGLOMERATION.get());
                                 pOutput.accept(new ItemStack(ModItems.ANCIENT_TABLET.get()));
                                 pOutput.accept(ModItems.ANCIENT_TABLE.get());

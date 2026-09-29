@@ -112,13 +112,40 @@ public class SoundMufflerBlockEntity extends BlockEntity {
      * Empty list: all sounds (except music, handled by caller).
      * Allow list: only sounds not in the list.
      * Deny list: only sounds in the list.
+     * Filter entries may be full sound ids ({@code minecraft:block.stone.break}) or
+     * mod namespaces ({@code minecraft}) matching any id under that namespace.
      */
     public boolean shouldMuffleSound(String soundId) {
         if (filterSoundIds.isEmpty()) {
             return true;
         }
-        boolean inList = filterSoundIds.contains(soundId);
+        boolean inList = false;
+        for (String entry : filterSoundIds) {
+            if (matchesFilterEntry(soundId, entry)) {
+                inList = true;
+                break;
+            }
+        }
         return allowList ? !inList : inList;
+    }
+
+    /** Exact id match, or namespace-only entry matching {@code namespace:*} sound ids. */
+    public static boolean matchesFilterEntry(String soundId, String entry) {
+        if (entry == null || entry.isEmpty() || soundId == null) {
+            return false;
+        }
+        if (entry.equals(soundId)) {
+            return true;
+        }
+        if (!entry.contains(":")) {
+            return soundId.startsWith(entry + ":");
+        }
+        return false;
+    }
+
+    /** True when {@code entry} is a namespace filter (no {@code :}). */
+    public static boolean isNamespaceFilter(String entry) {
+        return entry != null && !entry.isEmpty() && !entry.contains(":");
     }
 
     public static final int RANGE_MIN = 8;

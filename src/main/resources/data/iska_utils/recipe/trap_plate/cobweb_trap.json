@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SSS",
+    "CAC"
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:slime_ball"
+    },
+    "C": {
+      "item": "minecraft:cobweb"
+    },
+    "A": {
+      "item": "iska_utils:iska_utils_slowness"
+    }
+  },
+  "result": {
+    "id": "iska_utils:iska_utils_cobweb",
+    "count": 1
+  },
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "iska_utils:iska_utils_cobweb"
+    }
+  ]
+}

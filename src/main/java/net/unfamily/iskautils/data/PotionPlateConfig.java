@@ -37,6 +37,9 @@ public class PotionPlateConfig {
     
     // Freeze-specific fields
     private final int freezeDuration;
+
+    // No-move (cobweb) special plate
+    private final boolean noMove;
     
     // Visibility and behavior configuration
     private boolean creativeTabVisible;
@@ -74,6 +77,7 @@ public class PotionPlateConfig {
         this.damageAmount = 0.0f;
         this.fireDuration = 0;
         this.freezeDuration = 0;
+        this.noMove = false;
         
         // Default values for visibility and behavior
         this.creativeTabVisible = true;
@@ -105,6 +109,7 @@ public class PotionPlateConfig {
         this.hideParticles = false;
         this.fireDuration = 0;
         this.freezeDuration = 0;
+        this.noMove = false;
         
         // Default values for visibility and behavior
         this.creativeTabVisible = true;
@@ -136,6 +141,7 @@ public class PotionPlateConfig {
         this.damageType = "";
         this.damageAmount = 0.0f;
         this.freezeDuration = 0;
+        this.noMove = false;
         
         // Default values for visibility and behavior
         this.creativeTabVisible = true;
@@ -150,6 +156,15 @@ public class PotionPlateConfig {
     public static PotionPlateConfig createFreezePlate(String plateId, int freezeDuration, int delay,
                                                      boolean affectsPlayers, boolean affectsMobs, boolean overwritable) {
         return new PotionPlateConfig(plateId, PotionPlateType.SPECIAL, freezeDuration, delay, affectsPlayers, affectsMobs, overwritable);
+    }
+
+    /**
+     * Creates a new PotionPlateConfig for a no-move (cobweb) plate (special).
+     * Delay minimum is 1 tick so the immobilize effect can run continuously.
+     */
+    public static PotionPlateConfig createNoMovePlate(String plateId, int delay,
+                                                     boolean affectsPlayers, boolean affectsMobs, boolean overwritable) {
+        return new PotionPlateConfig(plateId, true, delay, affectsPlayers, affectsMobs, overwritable);
     }
     
     private PotionPlateConfig(String plateId, PotionPlateType plateType, int freezeDuration, int delay,
@@ -172,8 +187,35 @@ public class PotionPlateConfig {
         this.damageType = null;
         this.damageAmount = 0.0f;
         this.fireDuration = 0;
+        this.noMove = false;
         
         // Default values for visibility and behavior
+        this.creativeTabVisible = true;
+        this.playerShiftDisable = true;
+        this.tooltipLines = 0;
+        this.ignoreEntityDamageCap = false;
+    }
+
+    private PotionPlateConfig(String plateId, boolean noMove, int delay,
+                            boolean affectsPlayers, boolean affectsMobs, boolean overwritable) {
+        this.plateId = plateId;
+        this.plateType = PotionPlateType.SPECIAL;
+        this.overwritable = overwritable;
+        this.affectsPlayers = affectsPlayers;
+        this.affectsMobs = affectsMobs;
+
+        this.noMove = noMove;
+        this.delay = Math.max(1, delay); // Continuous immobilize: allow delay=1
+
+        this.effectId = null;
+        this.amplifier = 0;
+        this.duration = 0;
+        this.hideParticles = false;
+        this.damageType = null;
+        this.damageAmount = 0.0f;
+        this.fireDuration = 0;
+        this.freezeDuration = 0;
+
         this.creativeTabVisible = true;
         this.playerShiftDisable = true;
         this.tooltipLines = 0;
@@ -332,6 +374,13 @@ public class PotionPlateConfig {
     public int getFreezeDuration() {
         return freezeDuration;
     }
+
+    /**
+     * Whether this special plate immobilizes entities (no movement / no jump).
+     */
+    public boolean isNoMove() {
+        return noMove;
+    }
     
     /**
      * Whether this plate should be visible in the creative tab
@@ -463,7 +512,7 @@ public class PotionPlateConfig {
                 return damageType != null && !damageType.isEmpty() && damageAmount > 0.0f;
                 
             case SPECIAL:
-                return fireDuration > 0 || freezeDuration > 0;
+                return fireDuration > 0 || freezeDuration > 0 || noMove;
                 
             default:
                 return false;
@@ -527,14 +576,34 @@ public class PotionPlateConfig {
                 return mergedDamageConfig;
                 
             case SPECIAL:
-                PotionPlateConfig mergedSpecialConfig = new PotionPlateConfig(
-                    plateId,
-                    Math.max(other.fireDuration, fireDuration),
-                    other.delay,
-                    other.affectsPlayers,
-                    other.affectsMobs,
-                    other.overwritable
-                );
+                PotionPlateConfig mergedSpecialConfig;
+                if (other.noMove || noMove) {
+                    mergedSpecialConfig = createNoMovePlate(
+                        plateId,
+                        other.delay,
+                        other.affectsPlayers,
+                        other.affectsMobs,
+                        other.overwritable
+                    );
+                } else if (other.freezeDuration > 0 || freezeDuration > 0) {
+                    mergedSpecialConfig = createFreezePlate(
+                        plateId,
+                        Math.max(other.freezeDuration, freezeDuration),
+                        other.delay,
+                        other.affectsPlayers,
+                        other.affectsMobs,
+                        other.overwritable
+                    );
+                } else {
+                    mergedSpecialConfig = new PotionPlateConfig(
+                        plateId,
+                        Math.max(other.fireDuration, fireDuration),
+                        other.delay,
+                        other.affectsPlayers,
+                        other.affectsMobs,
+                        other.overwritable
+                    );
+                }
                 
                 // Copy visibility and behavior settings
                 mergedSpecialConfig.setCreativeTabVisible(other.isCreativeTabVisible());
@@ -566,6 +635,9 @@ public class PotionPlateConfig {
                 sb.append(", amount=").append(damageAmount);
                 break;
             case SPECIAL:
+                if (noMove) {
+                    sb.append(", apply=no_move");
+                }
                 if (fireDuration > 0) {
                     sb.append(", fire=").append(fireDuration).append(" ticks");
                 }

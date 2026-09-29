@@ -211,6 +211,11 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(BlazingAltarBlockEntity::new, ModBlocks.BLAZING_ALTAR.get())
                             .build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EntropyTntBlockEntity>> ENTROPY_TNT_BE =
+            BLOCK_ENTITIES.register("entropy_tnt",
+                    () -> BlockEntityType.Builder.of(EntropyTntBlockEntity::new, ModBlocks.ENTROPY_TNT.get())
+                            .build(null));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EntropicSpawnerBlockEntity>> ENTROPIC_SPAWNER_BE =
             BLOCK_ENTITIES.register("entropic_spawner",
                     () -> BlockEntityType.Builder.of(EntropicSpawnerBlockEntity::new, ModBlocks.ENTROPIC_SPAWNER.get())

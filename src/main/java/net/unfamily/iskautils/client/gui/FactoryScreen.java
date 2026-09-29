@@ -76,6 +76,12 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
     private static final int REDSTONE_BUTTON_Y =
             FactoryMenu.yCenteredInSlotRow(FactoryMenu.SLOT_OUTPUT_Y, REDSTONE_BUTTON_SIZE);
 
+    /** Clickable recipe-arrow region between input and output slots (opens JEI/REI/EMI). */
+    private static final int RECIPE_ARROW_X = 72;
+    private static final int RECIPE_ARROW_Y = 26;
+    private static final int RECIPE_ARROW_W = 36;
+    private static final int RECIPE_ARROW_H = 16;
+
     private final List<AbstractButton> colorGridButtons = new ArrayList<>();
     private ItemIconButton redstoneModeButton;
     private Button scrollUpButton;
@@ -314,6 +320,11 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && isOverRecipeArrow(mouseX, mouseY)) {
+            RecipeViewerClientBridge.openFactoryRecipes();
+            playClick();
+            return true;
+        }
         if (button == 1 && redstoneModeButton != null && redstoneModeButton.isHovered()) {
             onRedstoneModePressed(true);
             return true;
@@ -329,6 +340,13 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private boolean isOverRecipeArrow(double mouseX, double mouseY) {
+        int ax = leftPos + RECIPE_ARROW_X;
+        int ay = topPos + RECIPE_ARROW_Y;
+        return mouseX >= ax && mouseX < ax + RECIPE_ARROW_W
+                && mouseY >= ay && mouseY < ay + RECIPE_ARROW_H;
     }
 
     private void updateScrollArrowState() {

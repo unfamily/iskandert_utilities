@@ -102,4 +102,32 @@ public final class IskaUtilsJeiDynamicRefresh {
             recipeManager.addRecipes(type, rebuilt);
         }
     }
+
+    /**
+     * Opens JEI recipes for the Factory category, or stonecutting when Factory has no recipes
+     * (and stonecutter fallback is enabled in config).
+     */
+    public static void showFactoryOrStonecutter() {
+        if (runtime == null || !net.unfamily.iskautils.Config.enableJeiIntegration) {
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        if (mc != null) {
+            FactoryJeiRecipes.reloadForClient(mc);
+        }
+        boolean hasFactory = !FactoryJeiRecipes.buildAll().isEmpty()
+                || !LAST_FACTORY.isEmpty()
+                || runtime.getRecipeManager()
+                        .createRecipeLookup(FactoryRecipeCategory.RECIPE_TYPE)
+                        .get()
+                        .findAny()
+                        .isPresent();
+        if (hasFactory) {
+            runtime.getRecipesGui().showTypes(List.of(FactoryRecipeCategory.RECIPE_TYPE));
+            return;
+        }
+        if (net.unfamily.iskautils.Config.factoryStonecutterEnabled) {
+            runtime.getRecipesGui().showTypes(List.of(mezz.jei.api.constants.RecipeTypes.STONECUTTING));
+        }
+    }
 }

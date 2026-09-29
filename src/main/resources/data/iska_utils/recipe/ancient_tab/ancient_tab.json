@@ -4,8 +4,8 @@
     {
       "fuel_cost": 10,
       "require": [
-        { "id": "#c:gems/amethyst", "count": 8 },
-        { "id": "iska_utils:unstable_entropy_catalyst", "count": 1 }
+        { "id": "#c:gems/amethyst", "count": 6 },
+        { "id": "iska_utils:entropic_agglomeration", "count": 1 }
       ],
       "produce": [ "iska_utils:entropy_crystal" ]
     },

@@ -14,6 +14,7 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.ArtifactActivationUtil;
+import net.unfamily.iskautils.util.ArtifactBalanceFormat;
 import net.unfamily.iskautils.util.ArtifactEquipStages;
 import net.unfamily.iskautils.util.ArtifactTooltipUtil;
 
@@ -51,7 +52,13 @@ public class ChosenCheeseItem extends Item {
         super.appendHoverText(stack, context, tooltip, flag);
         int y = getLevel(stack);
         int x = Config.chosenCheeseMax;
-        ArtifactTooltipUtil.appendDescLines(tooltip, "chosen_cheese", 2, 3, y, x);
+        ArtifactTooltipUtil.addLoreLine(tooltip::add, "tooltip.iska_utils.chosen_cheese.desc0");
+        ArtifactTooltipUtil.addLoreLine(tooltip::add, "tooltip.iska_utils.chosen_cheese.desc1");
+        ArtifactTooltipUtil.addTechLine(tooltip::add, "tooltip.iska_utils.chosen_cheese.desc2",
+                ArtifactBalanceFormat.flatBonus(Config.chosenCheeseHpPerLevel));
+        ArtifactTooltipUtil.addTechLine(tooltip::add, "tooltip.iska_utils.chosen_cheese.desc3", y, x);
+        ArtifactTooltipUtil.addTechLine(tooltip::add, "tooltip.iska_utils.chosen_cheese.desc4");
+        ArtifactTooltipUtil.addTechLine(tooltip::add, "tooltip.iska_utils.chosen_cheese.desc5");
     }
 
     @Override

@@ -33,6 +33,7 @@ public final class IskaUtilsClientGameEvents {
         }
         BlockPos soundPos = BlockPos.containing(sound.getX(), sound.getY(), sound.getZ());
         String soundId = sound.getLocation().toString();
+        RecentSoundsClient.record(soundId);
         int maxRadius = Config.soundMufflerRangeMax;
         int effectivePercent = 100;
         for (BlockPos pos : BlockPos.betweenClosed(
