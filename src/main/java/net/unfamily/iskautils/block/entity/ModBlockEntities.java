@@ -196,6 +196,10 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("blazing_altar",
                     () -> new BlockEntityType<>(BlazingAltarBlockEntity::new, ModBlocks.BLAZING_ALTAR.get()));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EntropyTntBlockEntity>> ENTROPY_TNT_BE =
+            BLOCK_ENTITIES.register("entropy_tnt",
+                    () -> new BlockEntityType<>(EntropyTntBlockEntity::new, ModBlocks.ENTROPY_TNT.get()));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EtherealFrameBlockEntity>> ETHEREAL_FRAME_BE =
             BLOCK_ENTITIES.register("ethereal_frame",
                     () -> new BlockEntityType<>(EtherealFrameBlockEntity::new, ModBlocks.ETHEREAL_FRAME.get()));

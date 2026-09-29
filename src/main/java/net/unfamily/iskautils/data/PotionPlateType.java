@@ -15,7 +15,7 @@ public enum PotionPlateType {
     DAMAGE("damage"),
     
     /**
-     * Special plates (fire, freeze, etc.)
+     * Special plates (fire, freeze, no_move, etc.)
      */
     SPECIAL("special");
     

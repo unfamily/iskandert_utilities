@@ -1,14 +1,6 @@
 package net.unfamily.iskautils.stage;
 
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.packs.resources.ResourceManager;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskalib.stage.StageCatalog;
-import net.unfamily.iskalib.stage.StageReloadHooks;
-import net.unfamily.iskautils.command.StageActionDefinition;
-import net.unfamily.iskautils.command.StageActionsLoader;
-import net.unfamily.iskautils.iska_utils_stages.StageItemHandler;
 import net.unfamily.iskautils.shop.ShopCategory;
 import net.unfamily.iskautils.shop.ShopEntry;
 import net.unfamily.iskautils.shop.ShopLoader;
@@ -21,7 +13,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * Wires Utils stage loaders into Library {@link StageCatalog} and {@link StageReloadHooks}.
+ * Thin Utils contributor for stages owned outside Library catalogs (shop + artifact equip gates).
+ * Stage actions/items loaders and reload live in IskaLib {@code StageBootstrap}.
  */
 public final class UtilsStageBridge {
     private static final ModLogger LOGGER = ModLogger.of(UtilsStageBridge.class);
@@ -30,8 +23,8 @@ public final class UtilsStageBridge {
 
     public static void install() {
         StageCatalog.addContributor(UtilsStageBridge::collectKnownStages);
-        StageReloadHooks.setListener(UtilsStageBridge::reloadStageBlock);
         StageCatalog.registerKnownStages(ArtifactEquipStages.allStages());
+        LOGGER.info("Utils stage catalog contributor installed");
     }
 
     private static Collection<String> collectKnownStages() {
@@ -45,16 +38,6 @@ public final class UtilsStageBridge {
             addShopStages(stages, entry.stages);
             addShopStages(stages, entry.stageRewards);
         }
-
-        for (StageActionDefinition def : StageActionsLoader.getLoadedActions()) {
-            for (StageActionDefinition.StageCondition condition : def.getStages()) {
-                if (condition != null && condition.stage != null && !condition.stage.isBlank()) {
-                    stages.add(condition.stage.trim());
-                }
-            }
-        }
-
-        stages.addAll(StageItemHandler.collectReferencedStages());
         return stages;
     }
 
@@ -67,14 +50,5 @@ public final class UtilsStageBridge {
                 out.add(stage.stage.trim());
             }
         }
-    }
-
-    private static int reloadStageBlock(CommandSourceStack source) {
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        ResourceManager rm = server != null ? server.getResourceManager() : null;
-        StageActionsLoader.loadAll(rm);
-        StageItemHandler.loadAll(rm);
-        LOGGER.info("Reloaded stage actions ({}) and stage items", StageActionsLoader.getActionIds().size());
-        return 1;
     }
 }

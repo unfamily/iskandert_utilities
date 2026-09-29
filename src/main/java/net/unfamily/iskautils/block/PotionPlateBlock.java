@@ -72,22 +72,35 @@ public class PotionPlateBlock extends VectorBlock {
             InsideBlockEffectApplier effectApplier,
             boolean isPrecise
     ) {
-        if (!level.isClientSide() && config != null && config.isValid()) {
-            // Only affect living entities
-            if (!(entity instanceof LivingEntity livingEntity)) {
-                return;
+        if (config == null || !config.isValid()) {
+            return;
+        }
+
+        // Only affect living entities
+        if (!(entity instanceof LivingEntity livingEntity)) {
+            return;
+        }
+
+        // Check if this plate should affect this type of entity
+        if (!config.shouldAffectEntity(livingEntity)) {
+            return;
+        }
+
+        // If player is sneaking (shift), check if shift disables this plate
+        if (entity instanceof Player player && config.shouldShiftPreventEffect(player)) {
+            return;
+        }
+
+        // no_move must run every tick on both sides so client prediction cannot walk/jump away
+        if (config.getPlateType() == PotionPlateType.SPECIAL && config.isNoMove()) {
+            applyNoMove(livingEntity);
+            if (!level.isClientSide()) {
+                EFFECT_COOLDOWNS.put(entity.getUUID(), level.getGameTime());
             }
-            
-            // Check if this plate should affect this type of entity
-            if (!config.shouldAffectEntity(livingEntity)) {
-                return;
-            }
-            
-            // If player is sneaking (shift), check if shift disables this plate
-            if (entity instanceof Player player && config.shouldShiftPreventEffect(player)) {
-                return;
-            }
-            
+            return;
+        }
+
+        if (!level.isClientSide()) {
             // Check cooldown for effects - only apply every x seconds per entity
             UUID entityId = entity.getUUID();
             long currentTime = level.getGameTime();
@@ -210,10 +223,14 @@ public class PotionPlateBlock extends VectorBlock {
     }
     
     /**
-     * Applies special effects for SPECIAL plates (fire, freeze, etc.)
+     * Applies special effects for SPECIAL plates (fire, freeze, no_move, etc.)
      */
     private boolean applySpecialEffect(LivingEntity livingEntity, long currentTime) {
         try {
+            if (config.isNoMove()) {
+                return applyNoMove(livingEntity);
+            }
+
             if (config.getFireDuration() > 0) {
                 // Apply fire effect, always refresh the duration
                 int fireTicks = config.getFireDuration();
@@ -246,6 +263,18 @@ public class PotionPlateBlock extends VectorBlock {
             LOGGER.error("Failed to apply special effect from plate {}: {}", config.getPlateId(), e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Immobilizes the entity: zero velocity and block jumping via setDeltaMovement.
+     * Does not use cobweb / makeStuckInBlock physics.
+     */
+    private boolean applyNoMove(LivingEntity livingEntity) {
+        livingEntity.setDeltaMovement(Vec3.ZERO);
+        livingEntity.setJumping(false);
+        livingEntity.fallDistance = 0.0f;
+        livingEntity.hurtMarked = true;
+        return true;
     }
     
     /**

@@ -263,6 +263,11 @@ public class ModItems {
     public static final DeferredItem<Item> ENTROPIC_AGGLOMERATION = ITEMS.registerItem(
             "entropic_agglomeration", net.unfamily.iskautils.item.custom.EntropicAgglomerationItem::new, UnaryOperator.identity());
 
+    public static final DeferredItem<Item> ENTROPIC_CREEPER_SPAWN_EGG = ITEMS.registerItem(
+            "entropic_creeper_spawn_egg",
+            net.minecraft.world.item.SpawnEggItem::new,
+            props -> props.spawnEgg(net.unfamily.iskautils.entity.ModEntities.ENTROPIC_CREEPER.get()));
+
     public static final DeferredItem<Item> ENTROPIC_EGG = ITEMS.registerItem(
             "entropic_egg", net.unfamily.iskautils.item.custom.EntropicEggItem::new, UnaryOperator.identity());
 

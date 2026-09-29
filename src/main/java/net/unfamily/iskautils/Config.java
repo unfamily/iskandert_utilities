@@ -1931,6 +1931,23 @@ public class Config {
             .define("022_labeling_force_italic_non_ops", false);
 
     static {
+        BUILDER.comment("Mod logging (off by default in production)").push("logging");
+    }
+
+    private static final ModConfigSpec.BooleanValue ENABLE_DEV_LOGGING = BUILDER
+            .comment("If true, enables debug, info, and warn log output from IskaUtils.")
+            .define("000_enable_dev_logging", false);
+
+    private static final ModConfigSpec.BooleanValue ENABLE_ERROR_LOGGING = BUILDER
+            .comment("If true, enables error-level log output from IskaUtils.")
+            .define("001_enable_error_logging", true);
+
+    private static final ModConfigSpec.BooleanValue ENABLE_PATTERN_CRAFTER_PERF_LOGGING = BUILDER
+            .comment("If true, logs aggressive Pattern Crafter timing (serverTick / attemptCraft phases). Off by default.")
+            .define("002_enable_pattern_crafter_perf_logging", false);
+
+    static {
+        BUILDER.pop(); // End of logging (nested under dev)
         BUILDER.pop(); // End of dev category
 
         // Category for Evil Things (fun but fiery!)
@@ -1960,7 +1977,100 @@ public class Config {
             .comment("If true, a successful Entropic Egg use applies Entropic Empowerment to the mob.")
             .define("201_apply_entropic_buff", true);
 
+    private static final ModConfigSpec.BooleanValue BLAZING_ALTAR_CONSUME_BRAZIER = BUILDER
+            .comment("If true, Blazing Altar damages Burning Brazier durability when consuming flames from it.",
+                    "Default: false")
+            .define("210_blazing_altar_consume_brazier", false);
+
     static {
+        BUILDER.comment("Entropic Creeper explosion and loot").push("entropic_creeper");
+        BUILDER.comment("Normal (uncharged) explosion").push("normal");
+    }
+
+    private static final ModConfigSpec.IntValue ENTROPIC_CREEPER_OR = BUILDER
+            .comment("Horizontal radius (blocks).")
+            .defineInRange("000_or", 7, 0, 256);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_CREEPER_VR = BUILDER
+            .comment("Vertical radius (blocks).")
+            .defineInRange("001_vr", 6, 0, 256);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_CREEPER_TICK_INTERVAL = BUILDER
+            .comment("Tick interval (0 = instant).")
+            .defineInRange("002_tick_interval", 2, 0, 200);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_CREEPER_DAMAGE = BUILDER
+            .comment("Entity damage.")
+            .defineInRange("003_damage", 40.0D, 0.0D, 10000.0D);
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_CREEPER_BREAK_UNBREAKABLE = BUILDER
+            .comment("Break unbreakable blocks.")
+            .define("004_break_unbreakable", false);
+
+    static {
+        BUILDER.pop(); // normal
+        BUILDER.comment("Charged / overloaded explosion (e.g. after lightning)").push("charged");
+    }
+
+    private static final ModConfigSpec.IntValue ENTROPIC_CREEPER_CHARGED_OR = BUILDER
+            .comment("Horizontal radius (blocks).")
+            .defineInRange("000_or", 15, 0, 256);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_CREEPER_CHARGED_VR = BUILDER
+            .comment("Vertical radius (blocks).")
+            .defineInRange("001_vr", 12, 0, 256);
+
+    private static final ModConfigSpec.IntValue ENTROPIC_CREEPER_CHARGED_TICK_INTERVAL = BUILDER
+            .comment("Tick interval (0 = instant).")
+            .defineInRange("002_tick_interval", 2, 0, 200);
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_CREEPER_CHARGED_DAMAGE = BUILDER
+            .comment("Entity damage.")
+            .defineInRange("003_damage", 500.0D, 0.0D, 10000.0D);
+
+    private static final ModConfigSpec.BooleanValue ENTROPIC_CREEPER_CHARGED_BREAK_UNBREAKABLE = BUILDER
+            .comment("Break unbreakable blocks.")
+            .define("004_break_unbreakable", true);
+
+    static {
+        BUILDER.pop(); // charged
+    }
+
+    private static final ModConfigSpec.DoubleValue ENTROPIC_CREEPER_CRYSTAL_CHANCE = BUILDER
+            .comment("Chance (0-1) to drop an Entropy Crystal on death.")
+            .defineInRange("010_crystal_chance", 0.05D, 0.0D, 1.0D);
+
+    static {
+        BUILDER.pop(); // entropic_creeper
+        BUILDER.comment("Entropy TNT defaults (overridable via NBT)").push("entropy_tnt");
+    }
+
+    private static final ModConfigSpec.IntValue ENTROPY_TNT_OR = BUILDER
+            .comment("Default horizontal radius (0 with VR 0 = no block break).")
+            .defineInRange("000_or", 250, 0, 512);
+
+    private static final ModConfigSpec.IntValue ENTROPY_TNT_VR = BUILDER
+            .comment("Default vertical radius (0 with OR 0 = no block break).")
+            .defineInRange("001_vr", 50, 0, 512);
+
+    private static final ModConfigSpec.IntValue ENTROPY_TNT_TICK_INTERVAL = BUILDER
+            .comment("Default tick interval (0 = instant).")
+            .defineInRange("002_tick_interval", 1, 0, 200);
+
+    private static final ModConfigSpec.DoubleValue ENTROPY_TNT_DAMAGE = BUILDER
+            .comment("Default entity damage.")
+            .defineInRange("003_damage", 1000.0D, 0.0D, 10000.0D);
+
+    private static final ModConfigSpec.BooleanValue ENTROPY_TNT_BREAK_UNBREAKABLE = BUILDER
+            .comment("Default break-unbreakable flag.")
+            .define("004_break_unbreakable", true);
+
+    private static final ModConfigSpec.IntValue ENTROPY_TNT_FUSE_TICKS = BUILDER
+            .comment("Primed fuse ticks (vanilla TNT is 80).")
+            .defineInRange("005_fuse_ticks", 80, 1, 600);
+
+    static {
+        BUILDER.pop(); // entropy_tnt
         BUILDER.pop(); // End of evil_things category
 
         BUILDER.comment("Optional recipe-viewer integrations (JEI / EMI / REI)").push("integrations");
@@ -1976,24 +2086,6 @@ public class Config {
 
     static {
         BUILDER.pop(); // End of integrations category
-
-        BUILDER.comment("Mod logging (off by default in production)").push("logging");
-    }
-
-    private static final ModConfigSpec.BooleanValue ENABLE_DEV_LOGGING = BUILDER
-            .comment("If true, enables debug, info, and warn log output from IskaUtils.")
-            .define("000_enable_dev_logging", false);
-
-    private static final ModConfigSpec.BooleanValue ENABLE_ERROR_LOGGING = BUILDER
-            .comment("If true, enables error-level log output from IskaUtils.")
-            .define("001_enable_error_logging", true);
-
-    private static final ModConfigSpec.BooleanValue ENABLE_PATTERN_CRAFTER_PERF_LOGGING = BUILDER
-            .comment("If true, logs aggressive Pattern Crafter timing (serverTick / attemptCraft phases). Off by default.")
-            .define("002_enable_pattern_crafter_perf_logging", false);
-
-    static {
-        BUILDER.pop(); // End of logging category
     }
 
     static final ModConfigSpec SPEC = BUILDER.build();
@@ -2159,6 +2251,24 @@ public class Config {
     public static int blazingAltarRangeUpgradeMax;
     public static int blazingAltarExtinguishColumnsPerTick;
     public static boolean burningBrazierSuperHot;
+    public static boolean blazingAltarConsumeBrazier;
+    public static int entropicCreeperOr;
+    public static int entropicCreeperVr;
+    public static int entropicCreeperTickInterval;
+    public static float entropicCreeperDamage;
+    public static boolean entropicCreeperBreakUnbreakable;
+    public static int entropicCreeperChargedOr;
+    public static int entropicCreeperChargedVr;
+    public static int entropicCreeperChargedTickInterval;
+    public static float entropicCreeperChargedDamage;
+    public static boolean entropicCreeperChargedBreakUnbreakable;
+    public static double entropicCreeperCrystalChance;
+    public static int entropyTntOr;
+    public static int entropyTntVr;
+    public static int entropyTntTickInterval;
+    public static float entropyTntDamage;
+    public static boolean entropyTntBreakUnbreakable;
+    public static int entropyTntFuseTicks;
     public static double greedyShieldBlockChance;
     public static double greedyShieldReduceChance;
     public static double greedyShieldReduceAmount;
@@ -2513,6 +2623,24 @@ public class Config {
 
         // Evil Things configuration
         burningBrazierSuperHot = BURNING_BRAZIER_SUPER_HOT.get();
+        blazingAltarConsumeBrazier = BLAZING_ALTAR_CONSUME_BRAZIER.get();
+        entropicCreeperOr = ENTROPIC_CREEPER_OR.get();
+        entropicCreeperVr = ENTROPIC_CREEPER_VR.get();
+        entropicCreeperTickInterval = ENTROPIC_CREEPER_TICK_INTERVAL.get();
+        entropicCreeperDamage = ENTROPIC_CREEPER_DAMAGE.get().floatValue();
+        entropicCreeperBreakUnbreakable = ENTROPIC_CREEPER_BREAK_UNBREAKABLE.get();
+        entropicCreeperChargedOr = ENTROPIC_CREEPER_CHARGED_OR.get();
+        entropicCreeperChargedVr = ENTROPIC_CREEPER_CHARGED_VR.get();
+        entropicCreeperChargedTickInterval = ENTROPIC_CREEPER_CHARGED_TICK_INTERVAL.get();
+        entropicCreeperChargedDamage = ENTROPIC_CREEPER_CHARGED_DAMAGE.get().floatValue();
+        entropicCreeperChargedBreakUnbreakable = ENTROPIC_CREEPER_CHARGED_BREAK_UNBREAKABLE.get();
+        entropicCreeperCrystalChance = ENTROPIC_CREEPER_CRYSTAL_CHANCE.get();
+        entropyTntOr = ENTROPY_TNT_OR.get();
+        entropyTntVr = ENTROPY_TNT_VR.get();
+        entropyTntTickInterval = ENTROPY_TNT_TICK_INTERVAL.get();
+        entropyTntDamage = ENTROPY_TNT_DAMAGE.get().floatValue();
+        entropyTntBreakUnbreakable = ENTROPY_TNT_BREAK_UNBREAKABLE.get();
+        entropyTntFuseTicks = ENTROPY_TNT_FUSE_TICKS.get();
         greedyShieldBlockChance = GREEDY_SHIELD_BLOCK_CHANCE.get();
         greedyShieldReduceChance = GREEDY_SHIELD_REDUCE_CHANCE.get();
         greedyShieldReduceAmount = GREEDY_SHIELD_REDUCE_AMOUNT.get();

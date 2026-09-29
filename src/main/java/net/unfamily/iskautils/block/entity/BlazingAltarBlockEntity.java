@@ -391,7 +391,8 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
         }
         Block flameBlock = BlazingAltarFlamePlacement.flameBlockForPlacer(placer.getItem());
         boolean isBrazier = placer.is(ModItems.BURNING_BRAZIER.get());
-        if (isBrazier && placer.getDamageValue() >= BurningBrazierItem.MAX_DURABILITY - 1) {
+        if (isBrazier && Config.blazingAltarConsumeBrazier
+                && placer.getDamageValue() >= BurningBrazierItem.MAX_DURABILITY - 1) {
             return;
         }
 
@@ -413,7 +414,7 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
                 continue;
             }
             level.setBlock(candidate, flameState, 3);
-            if (isBrazier) {
+            if (isBrazier && Config.blazingAltarConsumeBrazier) {
                 int nextDamage = placer.getDamageValue() + 1;
                 if (nextDamage >= BurningBrazierItem.MAX_DURABILITY) {
                     placer.setDamageValue(BurningBrazierItem.MAX_DURABILITY - 1);

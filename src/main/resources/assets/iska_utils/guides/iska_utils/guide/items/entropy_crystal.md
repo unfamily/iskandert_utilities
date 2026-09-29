@@ -15,11 +15,11 @@ categories:
 
 ## What it is
 
-A crystallized entropy resource forged on the <ItemImage id="iska_utils:ancient_tablet" /> **Ancient Tablet**. More stable than <ItemImage id="iska_utils:unstable_entropy_catalyst" /> **Unstable Entropy Catalyst** — it does **not** decay in your inventory.
+A crystallized entropy resource forged on the <ItemImage id="iska_utils:ancient_tablet" /> **Ancient Tablet** (**6 amethyst** + <ItemImage id="iska_utils:entropic_agglomeration" /> **Entropic Agglomeration**). More stable than <ItemImage id="iska_utils:unstable_entropy_catalyst" /> **Unstable Entropy Catalyst** — it does **not** decay in your inventory.
 
 ## How to make
 
-Load the tablet with the ingredients listed on the **Ancient Tablet** page (typically amethyst and <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy**). **Left-click** with the filled tablet in your main hand.
+Load the tablet with **6× amethyst gems** and **1× Entropic Agglomeration** (or craft at a crafting table with amethyst + agglomerations). **Left-click** with the filled tablet in your main hand.
 
 ## Uses
 

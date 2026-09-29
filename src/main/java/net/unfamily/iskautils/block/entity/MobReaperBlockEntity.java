@@ -539,12 +539,10 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
         }
 
         float xpMultiplier = getExperienceMultiplier();
-        if (xpMultiplier > 1.0f) {
-            int xp = target.getExperienceReward(level, fakePlayer);
-            int bonus = Math.round(xp * (xpMultiplier - 1.0f));
-            if (bonus > 0) {
-                ExperienceOrb.award(level, target.position(), bonus);
-            }
+        int xp = target.getExperienceReward(level, fakePlayer);
+        int total = Math.round(xp * xpMultiplier);
+        if (total > 0) {
+            ExperienceOrb.award(level, target.position(), total);
         }
     }
 

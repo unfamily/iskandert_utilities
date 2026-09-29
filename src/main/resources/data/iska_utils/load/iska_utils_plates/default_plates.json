@@ -98,6 +98,18 @@
       "affects_mobs": true,
       "creative_tab": true,
       "player_shift_disable": true
+    },
+    {
+      "plate_type": "special",
+      "id": "iska_utils-cobweb",
+      "apply": "no_move",
+      "duration": 1,
+      "delay": 1,
+      "affects_players": true,
+      "affects_mobs": true,
+      "creative_tab": true,
+      "player_shift_disable": true,
+      "tooltip_lines": 1
     }
   ]
 }

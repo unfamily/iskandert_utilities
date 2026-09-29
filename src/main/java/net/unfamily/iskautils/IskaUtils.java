@@ -191,22 +191,6 @@ public class IskaUtils {
         ModMessages.register();
 
         // Wire stage side-effects (actions) into the library stage system
-        StageHooks.addListener(new StageHooks.Listener() {
-            @Override
-            public void onPlayerStageChanged(ServerPlayer player, String stage, boolean value) {
-                net.unfamily.iskautils.command.StageActionsManager.onPlayerStageChanged(player, stage, value);
-            }
-
-            @Override
-            public void onWorldStageChanged(MinecraftServer server, String stage, boolean value) {
-                net.unfamily.iskautils.command.StageActionsManager.onWorldStageChanged(server, stage, value);
-            }
-
-            @Override
-            public void onTeamStageChanged(MinecraftServer server, String teamName, String stage, boolean value) {
-                net.unfamily.iskautils.command.StageActionsManager.onTeamStageChanged(server, teamName, stage, value);
-            }
-        });
 
         net.unfamily.iskautils.stage.UtilsStageBridge.install();
         net.unfamily.iskautils.config.UtilsCsvRules.register();
@@ -238,17 +222,6 @@ public class IskaUtils {
         });
 
         // Wire stage "action" command callbacks into mod implementation
-        net.unfamily.iskalib.stage.StageActionHooks.setListener(new net.unfamily.iskalib.stage.StageActionHooks.Listener() {
-            @Override
-            public java.util.List<String> listActionIds() {
-                return net.unfamily.iskautils.command.StageActionsManager.listActionIds();
-            }
-
-            @Override
-            public int executeActionById(String actionId, java.util.List<ServerPlayer> players, boolean force) {
-                return net.unfamily.iskautils.command.StageActionsManager.executeActionById(actionId, players, force);
-            }
-        });
 
         StructureIOHooks.setListener(new StructureIOHooks.Listener() {
             @Override
@@ -288,13 +261,11 @@ public class IskaUtils {
         MacroLoader.scanConfigDirectory();
 
         // Scan and load stage actions (run when stages are added/removed)
-        net.unfamily.iskautils.command.StageActionsLoader.scanConfigDirectory();
-
+        
         // Gli item di comando sono già stati inizializzati nel costruttore
         // Non chiamare più CommandItemRegistry.initializeItems() qui
         
         // Inizializza il sistema di stage degli item
-        net.unfamily.iskautils.iska_utils_stages.StageItemManager.initialize(event);
         
         // Registro l'handler degli eventi dei loot table
         LOGGER.info("Registrando l'handler degli eventi dei loot table...");

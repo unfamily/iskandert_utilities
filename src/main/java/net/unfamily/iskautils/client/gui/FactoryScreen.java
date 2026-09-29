@@ -17,6 +17,7 @@ import net.minecraft.world.item.ItemStack;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.FactoryBlockEntity;
 import net.unfamily.iskautils.client.FactoryClientSourcesBootstrap;
+import net.unfamily.iskautils.client.RecipeViewerClientBridge;
 import net.unfamily.iskautils.data.load.FactoryLoader;
 import net.unfamily.iskautils.integration.jei.FactoryJeiRecipes;
 import net.unfamily.iskautils.network.ModMessages;
@@ -78,6 +79,12 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
             SCROLLBAR_X + (SCROLLBAR_WIDTH - REDSTONE_BUTTON_SIZE) / 2;
     private static final int REDSTONE_BUTTON_Y =
             FactoryMenu.yCenteredInSlotRow(FactoryMenu.SLOT_OUTPUT_Y, REDSTONE_BUTTON_SIZE);
+
+    /** Clickable recipe-arrow region between input and output slots (opens JEI/REI/EMI). */
+    private static final int RECIPE_ARROW_X = 72;
+    private static final int RECIPE_ARROW_Y = 26;
+    private static final int RECIPE_ARROW_W = 36;
+    private static final int RECIPE_ARROW_H = 16;
 
     private final List<AbstractButton> colorGridButtons = new ArrayList<>();
     private ItemIconButton redstoneModeButton;
@@ -365,6 +372,11 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
     }
 
     private boolean handleMouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && isOverRecipeArrow(mouseX, mouseY)) {
+            RecipeViewerClientBridge.openFactoryRecipes();
+            playClick();
+            return true;
+        }
         if (button == 1 && redstoneModeButton != null && redstoneModeButton.isMouseOver(mouseX, mouseY)) {
             onRedstoneModePressed(true);
             return true;
@@ -380,6 +392,13 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
             }
         }
         return false;
+    }
+
+    private boolean isOverRecipeArrow(double mouseX, double mouseY) {
+        int ax = leftPos + RECIPE_ARROW_X;
+        int ay = topPos + RECIPE_ARROW_Y;
+        return mouseX >= ax && mouseX < ax + RECIPE_ARROW_W
+                && mouseY >= ay && mouseY < ay + RECIPE_ARROW_H;
     }
 
     private void setSelectedIndex(int idx) {
