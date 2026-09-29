@@ -208,6 +208,10 @@ public class IskaUtils {
             }
         });
 
+        net.unfamily.iskautils.stage.UtilsStageBridge.install();
+        net.unfamily.iskautils.config.UtilsCsvRules.register();
+        net.unfamily.iskautils.config.UtilsColorRules.register();
+
         net.unfamily.iskalib.shop.ShopCurrencyHooks.setListener(new net.unfamily.iskalib.shop.ShopCurrencyHooks.Listener() {
             @Override
             public java.util.List<String> listCurrencyIds() {

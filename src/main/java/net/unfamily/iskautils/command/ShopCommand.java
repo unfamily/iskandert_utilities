@@ -125,7 +125,7 @@ public class ShopCommand {
     
     /**
      * Notifies client GUIs of reload (executed on client).
-     * Public for use by iska_lib_debug reload.
+     * Public for use by iska_lib_dev reload.
      */
     public static void notifyClientGUIReload() {
         net.unfamily.iskautils.util.ClientRuntimeAccess.runOnClientThread(

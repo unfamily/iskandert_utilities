@@ -204,6 +204,16 @@ configurations {
 }
 
 dependencies {
+
+    def acmLocalJar = file('../AnotherConfigManager-26.1.2/build/libs/another_config_manager-1.0.0.0.0.jar')
+    if (!acmLocalJar.exists()) {
+        acmLocalJar = file('libs/another_config_manager-1.0.0.0.0.jar')
+    }
+    if (acmLocalJar.exists()) {
+        implementation files(acmLocalJar)
+        localRuntime files(acmLocalJar)
+    }
+
     annotationProcessor 'org.spongepowered:mixin:0.8.7:processor'
 
     // Optional local library: Pattern Crafter (NeoForge 1.21.1)
@@ -216,7 +226,10 @@ dependencies {
     // Do not add the 1.21.1 jar to localRuntime on 26.x (version mismatch crashes FML).
 
     // Iskandert Library 26.x — local JAR when present, else CurseForge
-    def iskaLibLocalJar = file('libs/iska_lib-1.11.0.0.0.jar')
+    def iskaLibLocalJar = file('libs/iska_lib-1.12.0.0.0.jar')
+    if (!iskaLibLocalJar.exists()) {
+        iskaLibLocalJar = file('libs/iska_lib-1.11.0.0.0.jar')
+    }
     def iskaLibForceRemote = project.findProperty('iskaLibUseLocal')?.toString()?.toBoolean() == false
     if (iskaLibLocalJar.exists() && !iskaLibForceRemote) {
         implementation files(iskaLibLocalJar)
