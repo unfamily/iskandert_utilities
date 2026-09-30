@@ -376,10 +376,24 @@ public class PotionPlateConfig {
     }
 
     /**
-     * Whether this special plate immobilizes entities (no movement / no jump).
+     * Whether this special plate slows entities (cobweb-like). Alias of historical no_move.
      */
-    public boolean isNoMove() {
+    public boolean isSlow() {
         return noMove;
+    }
+
+    /** @deprecated use {@link #isSlow()} */
+    @Deprecated
+    public boolean isNoMove() {
+        return isSlow();
+    }
+
+    /**
+     * Creates a slow plate (preferred name for cobweb-like plates).
+     */
+    public static PotionPlateConfig createSlowPlate(String plateId, int delay,
+                                                     boolean affectsPlayers, boolean affectsMobs, boolean overwritable) {
+        return createNoMovePlate(plateId, delay, affectsPlayers, affectsMobs, overwritable);
     }
     
     /**
@@ -636,7 +650,7 @@ public class PotionPlateConfig {
                 break;
             case SPECIAL:
                 if (noMove) {
-                    sb.append(", apply=no_move");
+                    sb.append(", apply=slow");
                 }
                 if (fireDuration > 0) {
                     sb.append(", fire=").append(fireDuration).append(" ticks");

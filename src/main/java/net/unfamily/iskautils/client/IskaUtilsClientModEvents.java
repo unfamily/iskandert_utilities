@@ -1,6 +1,7 @@
 package net.unfamily.iskautils.client;
 
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.nbt.CompoundTag;
@@ -38,6 +39,7 @@ import net.unfamily.iskautils.entity.ModEntities;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.item.custom.artifact.ChosenCheeseItem;
 import net.unfamily.iskautils.item.custom.artifact.TheRootsItem;
+import net.unfamily.iskautils.util.ModWoodTypes;
 
 @EventBusSubscriber(modid = IskaUtils.MOD_ID, value = Dist.CLIENT)
 public final class IskaUtilsClientModEvents {
@@ -60,6 +62,8 @@ public final class IskaUtilsClientModEvents {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
+            Sheets.addWoodType(ModWoodTypes.RUBBER);
+
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.SLOW_VECT.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.RUBBER_SAPLING.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.SACRED_RUBBER_SAPLING.get(), RenderType.cutout());

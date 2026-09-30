@@ -5,6 +5,9 @@ import net.unfamily.iskautils.util.ModLogger;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.core.Direction;
+import net.minecraft.world.item.SignItem;
+import net.minecraft.world.item.HangingSignItem;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.resources.ResourceLocation;
@@ -25,6 +28,7 @@ import net.unfamily.iskautils.item.custom.ScannerItem;
 import net.unfamily.iskautils.item.custom.ScannerChipItem;
 import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
 import net.unfamily.iskautils.item.custom.SwissWrenchItem;
+import net.unfamily.iskautils.item.custom.TntDefuserItem;
 import net.unfamily.iskautils.item.custom.AngelBlockItem;
 import net.unfamily.iskautils.item.custom.StructurePlacerItem;
 import net.unfamily.iskautils.item.custom.BurningBrazierItem;
@@ -34,6 +38,7 @@ import net.unfamily.iskautils.item.custom.GreedyShieldItem;
 import net.unfamily.iskautils.item.custom.BlueprintItem;
 import net.unfamily.iskautils.item.custom.AutoShopItem;
 import net.unfamily.iskautils.item.custom.EntropicChampagneItem;
+import net.unfamily.iskautils.item.custom.LastingCandyItem;
 import net.unfamily.iskautils.item.custom.GiftItem;
 import net.unfamily.iskautils.item.custom.TemporalOverclockerChipsetItem;
 import net.unfamily.iskautils.item.custom.TemporalOverclockerBlockItem;
@@ -524,6 +529,15 @@ public class ModItems {
     public static final DeferredItem<Item> RUBBER_TRAPDOOR = ITEMS.register("rubber_trapdoor",
             () -> new BlockItem(ModBlocks.RUBBER_TRAPDOOR.get(), ITEM_PROPERTIES));
 
+    public static final DeferredItem<Item> RUBBER_SIGN_ITEM = ITEMS.register("rubber_sign",
+            () -> new SignItem(ITEM_PROPERTIES, ModBlocks.RUBBER_SIGN.get(), ModBlocks.RUBBER_WALL_SIGN.get(), Direction.DOWN));
+
+    public static final DeferredItem<Item> RUBBER_HANGING_SIGN = ITEMS.register("rubber_hanging_sign",
+            () -> new HangingSignItem(ModBlocks.RUBBER_HANGING_SIGN.get(), ModBlocks.RUBBER_WALL_HANGING_SIGN.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> TNT_DEFUSER = ITEMS.register("tnt_defuser",
+            () -> new TntDefuserItem(new Item.Properties().stacksTo(1).durability(128)));
+
     // ===== STANDARD VECTOR PLATE ITEMS =====
     
     // Items for Vector Plates
@@ -574,6 +588,12 @@ public class ModItems {
 
     public static final DeferredItem<Item> SOUL_NULLIFIER = ITEMS.register("soul_nullifier",
             () -> new NullifierBlockItem(ModBlocks.SOUL_NULLIFIER.get(), ITEM_PROPERTIES, "soul_nullifier"));
+
+    public static final DeferredItem<Item> FLIGHT_NULLIFIER = ITEMS.register("flight_nullifier",
+            () -> new NullifierBlockItem(ModBlocks.FLIGHT_NULLIFIER.get(), ITEM_PROPERTIES, "flight_nullifier"));
+
+    public static final DeferredItem<Item> CLIMBING_NULLIFIER = ITEMS.register("climbing_nullifier",
+            () -> new NullifierBlockItem(ModBlocks.CLIMBING_NULLIFIER.get(), ITEM_PROPERTIES, "climbing_nullifier"));
     
     // Item for the Fan
     public static final DeferredItem<Item> FAN = ITEMS.register("fan",
@@ -585,6 +605,12 @@ public class ModItems {
     public static final DeferredItem<Item> COLLECTING_CRATE = ITEMS.register("collecting_crate",
             () -> new net.unfamily.iskautils.item.custom.CollectingCrateBlockItem(
                     ModBlocks.COLLECTING_CRATE.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> ESSENCE_OF_KNOLEDGE_GRATE = ITEMS.register("essence_of_knoledge_grate",
+            () -> new TranslatedTooltipBlockItem(
+                    ModBlocks.ESSENCE_OF_KNOLEDGE_GRATE.get(),
+                    ITEM_PROPERTIES,
+                    "tooltip.iska_utils.essence_of_knoledge_grate.desc0"));
 
     public static final DeferredItem<Item> CONDENSED_KNOWLEDGE_BUCKET = ITEMS.register("condensed_knowledge_bucket",
             () -> new BucketItem(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(),
@@ -814,6 +840,10 @@ public class ModItems {
     // ===== ENTROPIC CHAMPAGNE (seasonal curio, Jan 1–10, not in creative tab) =====
     public static final DeferredItem<Item> ENTROPIC_CHAMPAGNE = ITEMS.register("entropic_champagne",
             () -> new EntropicChampagneItem(new Item.Properties()));
+
+    // ===== LASTING CANDY (seasonal curio, Oct 26–Nov 5, not in creative tab) =====
+    public static final DeferredItem<Item> LASTING_CANDY = ITEMS.register("lasting_candy",
+            () -> new LastingCandyItem(new Item.Properties()));
 
     // ===== HARD ICE BLOCK =====
     // Hidden block (not in creative tab) - indestructible, placed by gift

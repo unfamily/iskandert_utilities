@@ -139,6 +139,8 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RUBBER_PRESSURE_PLATE.get());
                                 pOutput.accept(ModItems.RUBBER_DOOR.get());
                                 pOutput.accept(ModItems.RUBBER_TRAPDOOR.get());
+                                pOutput.accept(ModItems.RUBBER_SIGN_ITEM.get());
+                                pOutput.accept(ModItems.RUBBER_HANGING_SIGN.get());
                                 // Not including rubber_log_empty/filled (hidden)
                                 
                                 //dye things
@@ -150,6 +152,8 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RUBBER_SAP_EXTRACTOR.get());
                                 pOutput.accept(ModItems.HELLFIRE_IGNITER.get());
                                 pOutput.accept(ModItems.ENDER_NULLIFIER.get());
+                                pOutput.accept(ModItems.FLIGHT_NULLIFIER.get());
+                                pOutput.accept(ModItems.CLIMBING_NULLIFIER.get());
                                 pOutput.accept(ModItems.WANDER_NULLIFIER.get());
                                 if (net.neoforged.fml.ModList.get().isLoaded("forbidden_arcanus")) {
                                     pOutput.accept(ModItems.SOUL_NULLIFIER.get());
@@ -190,6 +194,7 @@ public class ModCreativeModeTabs {
                                 // 6. General utility items
                                 pOutput.accept(ModItems.MOB_REAPER.get());
                                 pOutput.accept(ModItems.COLLECTING_CRATE.get());
+                                pOutput.accept(ModItems.ESSENCE_OF_KNOLEDGE_GRATE.get());
                                 pOutput.accept(ModItems.CONDENSED_KNOWLEDGE_BUCKET.get());
                                 pOutput.accept(ModItems.KNOWLEDGE_COMPRESSOR.get());
                                 pOutput.accept(ModItems.JELLY_OF_KNOWLEDGE.get());
@@ -285,6 +290,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.ENTROPIC_BOOTS.get());
                                 pOutput.accept(ModItems.UNSTABLE_ENTROPY_CATALYST.get());
                                 pOutput.accept(ModItems.ENTROPY_TNT.get());
+                                pOutput.accept(ModItems.TNT_DEFUSER.get());
                                 pOutput.accept(ModItems.ENTROPIC_SOIL.get());
                                 pOutput.accept(ModItems.ENTROPIC_DIRT.get());
                                 pOutput.accept(ModItems.GRAVEYARD_SOIL.get());

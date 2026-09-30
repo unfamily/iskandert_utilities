@@ -15,6 +15,7 @@ import java.time.LocalDate;
  * Handler for date events.
  *  - Gives the Gift item on login during December 20-30.
  *  - Gives the Entropic Champagne item on login during January 1-10.
+ *  - Gives Lasting Candy on login during October 26–November 5.
  */
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
 public class DateEvents {
@@ -32,6 +33,7 @@ public class DateEvents {
 
         giveGift(player, month, day, year);
         giveChampagne(player, month, day, year);
+        giveLastingCandy(player, month, day, year);
     }
 
     private static void giveGift(ServerPlayer player, int month, int day, int year) {
@@ -64,5 +66,25 @@ public class DateEvents {
             player.drop(champagneStack, false);
         }
         registry.setPlayerStage(player, stageName, true);
+    }
+
+    private static void giveLastingCandy(ServerPlayer player, int month, int day, int year) {
+        if (!isLastingCandySeason(month, day)) {
+            return;
+        }
+        String stageName = "iska_utils_internal-lasting_candy:" + year;
+        StageRegistry registry = StageRegistry.getInstance(player.getServer());
+        if (registry.hasPlayerStage(player, stageName)) {
+            return;
+        }
+        ItemStack stack = new ItemStack(ModItems.LASTING_CANDY.get(), 1);
+        if (!player.getInventory().add(stack)) {
+            player.drop(stack, false);
+        }
+        registry.setPlayerStage(player, stageName, true);
+    }
+
+    private static boolean isLastingCandySeason(int month, int day) {
+        return (month == 10 && day >= 26) || (month == 11 && day <= 5);
     }
 }

@@ -106,7 +106,7 @@ public class DynamicPotionPlateScanner {
         freeze.setPlayerShiftDisable(true);
         DISCOVERED_CONFIGS.put("iska_utils-freeze", freeze);
 
-        PotionPlateConfig cobweb = PotionPlateConfig.createNoMovePlate("iska_utils-cobweb", 1, true, true, true);
+        PotionPlateConfig cobweb = PotionPlateConfig.createSlowPlate("iska_utils-cobweb", 1, true, true, true);
         cobweb.setCreativeTabVisible(true);
         cobweb.setPlayerShiftDisable(true);
         cobweb.setTooltipLines(1);
@@ -214,9 +214,9 @@ public class DynamicPotionPlateScanner {
                 "- `damage`: The amount of damage to apply [required]\n" +
                 "- `ignore_entity_damage_cap`: If true, this plate ignores Config `entity_damage_caps` [optional, default: false]\n\n" +
                 "### Special Plate Fields\n" +
-                "- `apply`: Special effect type (`fire`, `freeze`, `no_move`) [required]\n" +
-                "- `duration`: Duration in ticks (20 ticks = 1 second) [required for fire/freeze; optional for no_move]\n" +
-                "- `delay`: For `no_move`, minimum delay is 1 tick (continuous immobilize); other specials default to min 40\n\n" +
+                "- `apply`: Special effect type (`fire`, `freeze`, `slow`; deprecated alias `no_move`) [required]\n" +
+                "- `duration`: Duration in ticks (20 ticks = 1 second) [required for fire/freeze; optional for slow]\n" +
+                "- `delay`: For `slow`, minimum delay is 1 tick (continuous slow); other specials default to min 40\n\n" +
                 "## Notes\n\n" +
                 "- You can place potion plates like regular blocks. Entities standing on the plate will receive the configured effect.\n" +
                 "- If a plate configuration with the same ID is found in multiple files, the behavior depends on the `overwritable` flag:\n" +
@@ -541,27 +541,27 @@ public class DynamicPotionPlateScanner {
         try {
             // Required special fields
             String applyType = getRequiredString(json, "apply");
-            boolean isNoMove = "no_move".equalsIgnoreCase(applyType);
+            boolean isSlow = "slow".equalsIgnoreCase(applyType) || "no_move".equalsIgnoreCase(applyType);
             
-            // Duration is required for fire/freeze; optional for no_move (unused, default 1)
+            // Duration is required for fire/freeze; optional for slow (unused, default 1)
             int duration = 1;
             if (json.has("duration")) {
                 duration = json.get("duration").getAsInt();
-            } else if (!isNoMove) {
+            } else if (!isSlow) {
                 throw new RuntimeException("Missing required field: duration");
             }
             
-            // Optional delay field with default (1 for no_move continuous, 40 otherwise)
-            int delay = json.has("delay") ? json.get("delay").getAsInt() : (isNoMove ? 1 : 40);
+            // Optional delay field with default (1 for slow continuous, 40 otherwise)
+            int delay = json.has("delay") ? json.get("delay").getAsInt() : (isSlow ? 1 : 40);
             boolean creativeTabVisible = json.has("creative_tab") ? json.get("creative_tab").getAsBoolean() : true;
             boolean playerShiftDisable = json.has("player_shift_disable") ? json.get("player_shift_disable").getAsBoolean() : true;
             
-            // Ensure delay is at least 40 ticks for fire/freeze; no_move allows delay=1
-            if (!isNoMove && delay < 40) {
+            // Ensure delay is at least 40 ticks for fire/freeze; slow allows delay=1
+            if (!isSlow && delay < 40) {
                 LOGGER.warn("Delay {} ticks for special plate {} is below minimum of 40 ticks (2 seconds). Setting to 40.", delay, plateId);
                 delay = 40;
             }
-            if (isNoMove && delay < 1) {
+            if (isSlow && delay < 1) {
                 delay = 1;
             }
             
@@ -577,7 +577,7 @@ public class DynamicPotionPlateScanner {
             }
             
             // Validate duration for fire/freeze special types
-            if (!isNoMove && duration <= 0) {
+            if (!isSlow && duration <= 0) {
                 LOGGER.error("Duration must be positive for special plates, got: {}", duration);
                 return null;
             }
@@ -591,8 +591,9 @@ public class DynamicPotionPlateScanner {
                 case "freeze":
                     config = PotionPlateConfig.createFreezePlate(plateId, duration, delay, affectsPlayers, affectsMobs, arrayOverwritable);
                     break;
+                case "slow":
                 case "no_move":
-                    config = PotionPlateConfig.createNoMovePlate(plateId, delay, affectsPlayers, affectsMobs, arrayOverwritable);
+                    config = PotionPlateConfig.createSlowPlate(plateId, delay, affectsPlayers, affectsMobs, arrayOverwritable);
                     break;
                 default:
                     LOGGER.error("Unknown special apply type: {}", applyType);

@@ -14,7 +14,9 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.BlazingAltarBlockEntity;
 import net.unfamily.iskautils.block.entity.CollectingCrateBlockEntity;
+import net.unfamily.iskautils.block.entity.ClimbingNullifierBlockEntity;
 import net.unfamily.iskautils.block.entity.EnderNullifierBlockEntity;
+import net.unfamily.iskautils.block.entity.FlightNullifierBlockEntity;
 import net.unfamily.iskautils.block.entity.EntropicSpawnerBlockEntity;
 import net.unfamily.iskautils.block.entity.FanBlockEntity;
 import net.unfamily.iskautils.block.entity.ImprovedPatternCrafterBlockEntity;
@@ -103,6 +105,12 @@ public final class ModuleQuickInstall {
         }
         if (be instanceof EnderNullifierBlockEntity nullifier) {
             return nullifier.getModuleHandler();
+        }
+        if (be instanceof FlightNullifierBlockEntity flightNullifier) {
+            return flightNullifier.getModuleHandler();
+        }
+        if (be instanceof ClimbingNullifierBlockEntity climbingNullifier) {
+            return climbingNullifier.getModuleHandler();
         }
         if (be instanceof WanderNullifierBlockEntity nullifier) {
             return nullifier.getModuleHandler();

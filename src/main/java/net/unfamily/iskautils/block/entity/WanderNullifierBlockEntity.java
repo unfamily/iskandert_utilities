@@ -26,6 +26,7 @@ public class WanderNullifierBlockEntity extends BlockEntity implements MenuProvi
     private boolean previousRedstoneState = false;
     private int range = -1;
     private boolean showAreaEnabled = false;
+    private NullifierTargetMode targetMode = NullifierTargetMode.ONLY_MOBS;
 
     private final ItemStackHandler moduleHandler = new ItemStackHandler(1) {
         @Override
@@ -50,6 +51,20 @@ public class WanderNullifierBlockEntity extends BlockEntity implements MenuProvi
     @Override public ItemStackHandler getModuleHandler() { return moduleHandler; }
     @Override public boolean isShowAreaEnabled() { return showAreaEnabled; }
     @Override public void setShowAreaEnabled(boolean v) { showAreaEnabled = v; setChanged(); }
+
+    @Override
+    public NullifierTargetMode getTargetMode() {
+        return targetMode;
+    }
+
+    @Override
+    public void setTargetMode(NullifierTargetMode mode) {
+        this.targetMode = mode;
+        if (level != null && !level.isClientSide) {
+            syncIndex(computeEffectiveActive(getBlockState().getValue(WanderNullifierBlock.POWERED)));
+        }
+        setChanged();
+    }
 
     @Override
     public int getRange() {
@@ -185,7 +200,7 @@ public class WanderNullifierBlockEntity extends BlockEntity implements MenuProvi
 
     private void syncIndex(boolean active) {
         if (!(level instanceof ServerLevel serverLevel)) return;
-        if (active) {
+        if (active && targetMode != NullifierTargetMode.DISABLED && targetMode.affectsMobs()) {
             NullifierChunkIndex.refresh(serverLevel, worldPosition, NullifierChunkIndex.Kind.WANDER, getRange());
         } else {
             NullifierChunkIndex.remove(serverLevel, worldPosition, NullifierChunkIndex.Kind.WANDER);
@@ -216,6 +231,7 @@ public class WanderNullifierBlockEntity extends BlockEntity implements MenuProvi
         previousRedstoneState = tag.getBoolean("PreviousRedstoneState");
         range = tag.contains("Range") ? tag.getInt("Range") : -1;
         showAreaEnabled = tag.getBoolean("ShowArea");
+        targetMode = NullifierTargetMode.fromId(tag.contains("TargetMode") ? tag.getInt("TargetMode") : 1);
         if (tag.contains("Modules")) {
             moduleHandler.deserializeNBT(registries, tag.getCompound("Modules"));
         }
@@ -232,6 +248,7 @@ public class WanderNullifierBlockEntity extends BlockEntity implements MenuProvi
         tag.putBoolean("PreviousRedstoneState", previousRedstoneState);
         tag.putInt("Range", getRange());
         tag.putBoolean("ShowArea", showAreaEnabled);
+        tag.putInt("TargetMode", targetMode.getId());
         tag.put("Modules", moduleHandler.serializeNBT(registries));
     }
 }

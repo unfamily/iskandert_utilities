@@ -1844,121 +1844,8 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
      * {@code -id}, {@code #tag}, {@code @mod}, {@code ?nbt}, {@code &macro}, bare id.
      */
     private static ItemStack previewFilterItem(String filter, net.minecraft.core.HolderLookup.Provider registries) {
-        if (filter == null || filter.trim().isEmpty()) {
-            return ItemStack.EMPTY;
-        }
-        String trimmed = filter.trim();
-
-        // ID filter: -minecraft:diamond
-        if (trimmed.startsWith("-")) {
-            try {
-                var id = net.minecraft.resources.ResourceLocation.parse(trimmed.substring(1));
-                var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(id);
-                if (item != null && item != net.minecraft.world.item.Items.AIR) {
-                    return new ItemStack(item);
-                }
-            } catch (Exception ignored) {}
-            return ItemStack.EMPTY;
-        }
-
-        // Tag filter: #c:ingots (cycle samples)
-        if (trimmed.startsWith("#")) {
-            return getItemForTag(trimmed.substring(1));
-        }
-
-        // Mod ID filter: @iska_utils (cycle samples)
-        if (trimmed.startsWith("@")) {
-            return getItemForMod(trimmed.substring(1));
-        }
-
-        // NBT / component filter: ?...
-        if (trimmed.startsWith("?")) {
-            return new ItemStack(net.minecraft.world.item.Items.KNOWLEDGE_BOOK);
-        }
-
-        // Macro filter: &enchanted, &damaged, …
-        if (trimmed.startsWith("&")) {
-            String macro = trimmed.substring(1).trim().toLowerCase();
-            if (macro.equals("enchanted") || macro.startsWith("enchanted")) {
-                return new ItemStack(net.minecraft.world.item.Items.DIAMOND_PICKAXE);
-            }
-            if (macro.equals("damaged") || macro.startsWith("damaged")) {
-                ItemStack stack = new ItemStack(net.minecraft.world.item.Items.DIAMOND_SWORD);
-                stack.setDamageValue(stack.getMaxDamage() / 2);
-                return stack;
-            }
-            if (macro.startsWith("temperature")) {
-                return new ItemStack(net.minecraft.world.item.Items.BLAZE_POWDER);
-            }
-            if (macro.startsWith("light")) {
-                return new ItemStack(net.minecraft.world.item.Items.LANTERN);
-            }
-            if (macro.startsWith("tint")) {
-                return new ItemStack(net.minecraft.world.item.Items.RED_DYE);
-            }
-            // Unspecified macros: knowledge book (Valid Keys / Another-Dynamics)
-            return new ItemStack(net.minecraft.world.item.Items.KNOWLEDGE_BOOK);
-        }
-
-        // Command-style bracket filters for display only
-        if (trimmed.startsWith("minecraft:enchanted_book[")) {
-            return new ItemStack(net.minecraft.world.item.Items.ENCHANTED_BOOK);
-        }
-
-        // Bare item id
-        try {
-            var id = net.minecraft.resources.ResourceLocation.parse(trimmed);
-            var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(id);
-            if (item != null && item != net.minecraft.world.item.Items.AIR) {
-                return new ItemStack(item);
-            }
-        } catch (Exception ignored) {}
-
-        // Last resort: scan registry with typed matcher (covers odd Valid Keys forms)
-        if (registries != null && DeepDrawerItemFilter.usesTypedFilterSyntax(trimmed)) {
-            int checked = 0;
-            for (var item : net.minecraft.core.registries.BuiltInRegistries.ITEM) {
-                ItemStack stack = new ItemStack(item);
-                if (DeepDrawerItemFilter.matchesFilterEntry(stack, trimmed, registries)) {
-                    return stack;
-                }
-                if (++checked > 512) break;
-            }
-        }
-        return ItemStack.EMPTY;
+        return net.unfamily.iskautils.util.FilterDisplayItems.forFilter(filter, registries);
     }
-
-    private static ItemStack getItemForTag(String tagId) {
-        try {
-            var tagLocation = net.minecraft.resources.ResourceLocation.parse(tagId);
-            var itemTag = net.minecraft.tags.ItemTags.create(tagLocation);
-            java.util.List<net.minecraft.world.item.Item> items = new java.util.ArrayList<>();
-            for (var holder : net.minecraft.core.registries.BuiltInRegistries.ITEM.getTagOrEmpty(itemTag)) {
-                items.add(holder.value());
-            }
-            if (!items.isEmpty()) {
-                int index = (int) ((System.currentTimeMillis() / 3500L) % items.size());
-                return new ItemStack(items.get(index));
-            }
-        } catch (Exception ignored) {}
-        return ItemStack.EMPTY;
-    }
-
-    private static ItemStack getItemForMod(String modId) {
-        java.util.List<net.minecraft.world.item.Item> modItems = new java.util.ArrayList<>();
-        for (var item : net.minecraft.core.registries.BuiltInRegistries.ITEM) {
-            var itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
-            if (itemId != null && itemId.getNamespace().startsWith(modId)) {
-                modItems.add(item);
-            }
-        }
-        if (!modItems.isEmpty()) {
-            int index = (int) ((System.currentTimeMillis() / 3500L) % modItems.size());
-            return new ItemStack(modItems.get(index));
-        }
-        return ItemStack.EMPTY;
-    }
-
 
     private void openForbiddenSubview() {
         if (variableInlineEdit) {
@@ -2354,6 +2241,9 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     private void seedEditorGhostFromFilter(String filter) {
         ItemStack fromId = net.unfamily.iskautils.util.DeepDrawerFilterVariants.itemStackFromIdFilter(filter);
         if (fromId.isEmpty()) {
+            editorGhostItem = ItemStack.EMPTY;
+            filterVariants.clear();
+            filterVariantIndex = 0;
             return;
         }
         editorGhostItem = fromId.copyWithCount(1);

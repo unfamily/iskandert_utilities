@@ -24,6 +24,7 @@ public class NullifierBlockItem extends BlockItem {
         int radius = switch (tooltipKey) {
             case "wander_nullifier" -> Config.wanderNullifierRadius;
             case "soul_nullifier"   -> Config.soulNullifierRadius;
+            case "flight_nullifier", "climbing_nullifier" -> Config.enderNullifierRadius;
             default                 -> Config.enderNullifierRadius;
         };
         tooltip.add(Component.translatable("tooltip.iska_utils." + tooltipKey + ".radius", radius));

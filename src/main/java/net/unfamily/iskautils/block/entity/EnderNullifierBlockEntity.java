@@ -18,7 +18,7 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.EnderNullifierBlock;
 import net.unfamily.iskautils.client.gui.NullifierMenu;
 import net.unfamily.iskautils.item.ModItems;
-import net.unfamily.iskautils.world.EnderNullifierSpatialIndex;
+import net.unfamily.iskautils.world.NullifierSpatialIndex;
 
 public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvider, INullifierBE {
     private EnderNullifierRedstoneMode redstoneMode = EnderNullifierRedstoneMode.MANUAL;
@@ -26,6 +26,7 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
     private boolean previousRedstoneState = false;
     private int range = -1;
     private boolean showAreaEnabled = false;
+    private NullifierTargetMode targetMode = NullifierTargetMode.ONLY_MOBS;
 
     private final ItemStackHandler moduleHandler = new ItemStackHandler(1) {
         @Override
@@ -50,6 +51,25 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
     @Override public ItemStackHandler getModuleHandler() { return moduleHandler; }
     @Override public boolean isShowAreaEnabled() { return showAreaEnabled; }
     @Override public void setShowAreaEnabled(boolean v) { showAreaEnabled = v; setChanged(); }
+
+    @Override
+    public NullifierTargetMode getTargetMode() {
+        return targetMode;
+    }
+
+    @Override
+    public void setTargetMode(NullifierTargetMode mode) {
+        if (getNullifierType().hasLimitedTargetModes()
+                && mode != NullifierTargetMode.DISABLED
+                && mode != NullifierTargetMode.ONLY_MOBS) {
+            mode = NullifierTargetMode.ONLY_MOBS;
+        }
+        this.targetMode = mode;
+        if (level != null && !level.isClientSide) {
+            syncSpatialIndex(computeEffectiveActive(getBlockState().getValue(EnderNullifierBlock.POWERED)));
+        }
+        setChanged();
+    }
 
     @Override
     public int getRange() {
@@ -188,13 +208,19 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
 
     private void syncSpatialIndex(boolean active) {
         if (level instanceof ServerLevel serverLevel) {
-            EnderNullifierSpatialIndex.update(serverLevel.dimension(), worldPosition, active, getRange());
+            NullifierSpatialIndex.update(
+                    serverLevel.dimension(),
+                    worldPosition,
+                    NullifierSpatialIndex.Kind.ENDER,
+                    active,
+                    getRange(),
+                    targetMode);
         }
     }
 
     public void clearSpatialIndex() {
         if (level instanceof ServerLevel serverLevel) {
-            EnderNullifierSpatialIndex.remove(serverLevel.dimension(), worldPosition);
+            NullifierSpatialIndex.remove(serverLevel.dimension(), worldPosition);
         }
     }
 
@@ -216,6 +242,7 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
         previousRedstoneState = tag.getBoolean("PreviousRedstoneState");
         range = tag.contains("Range") ? tag.getInt("Range") : -1;
         showAreaEnabled = tag.getBoolean("ShowArea");
+        targetMode = NullifierTargetMode.fromId(tag.contains("TargetMode") ? tag.getInt("TargetMode") : 1);
         if (tag.contains("Modules")) {
             moduleHandler.deserializeNBT(registries, tag.getCompound("Modules"));
         }
@@ -232,6 +259,7 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
         tag.putBoolean("PreviousRedstoneState", previousRedstoneState);
         tag.putInt("Range", getRange());
         tag.putBoolean("ShowArea", showAreaEnabled);
+        tag.putInt("TargetMode", targetMode.getId());
         tag.put("Modules", moduleHandler.serializeNBT(registries));
     }
 }

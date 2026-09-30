@@ -43,6 +43,7 @@ public record FilterPageC2SPacket(BlockPos pos, int page) implements CustomPacke
                 if (menu.getBlockEntity() instanceof ImprovedPatternCrafterBlockEntity be) {
                     be.setGuiFilterPage(packet.page());
                 }
+                menu.broadcastFullState();
             }
         });
     }

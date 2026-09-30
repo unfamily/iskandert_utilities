@@ -1185,6 +1185,18 @@ public class Config
             .comment("Maximum re-applied effect duration in seconds for Entropic Champagne.")
             .defineInRange("550_entropic_champagne_max_duration_seconds", 15, 1, 3600);
 
+    private static final ModConfigSpec.BooleanValue LASTING_CANDY_ENABLED = BUILDER
+            .comment("Enable Lasting Candy curio invulnerability on incoming damage.")
+            .define("551_lasting_candy_enabled", true);
+
+    private static final ModConfigSpec.IntValue LASTING_CANDY_INVULN_SECONDS = BUILDER
+            .comment("Invulnerability duration in seconds after Lasting Candy activates.")
+            .defineInRange("552_lasting_candy_invuln_seconds", 3, 1, 3600);
+
+    private static final ModConfigSpec.IntValue LASTING_CANDY_COOLDOWN_SECONDS = BUILDER
+            .comment("Cooldown in seconds after invulnerability ends.")
+            .defineInRange("553_lasting_candy_cooldown_seconds", 60, 1, 3600);
+
     private static final ModConfigSpec.DoubleValue ENTROPIC_RING_APOTHEOSIS_HAVEN_MULT = BUILDER
             .comment("Entropic Ring damage multiplier at Apotheosis WorldTier Haven.")
             .defineInRange("530_entropic_ring_apotheosis_haven_mult", 1.0D, 0.0D, 100.0D);
@@ -1293,6 +1305,14 @@ public class Config
             .comment("Client blade rotation speed in degrees per tick (used by BER)")
             .defineInRange("003_reaperBladeMaxDegPerTick", 12.0D, 0.0D, 360.0D);
 
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> REAPER_BEHEADING_DROPS = BUILDER
+            .comment("Mob Reaper beheading module: head drops per entity type or tag when a roll succeeds.",
+                    "Format: entityOrTag;headItem  (e.g. #minecraft:creepers;minecraft:creeper_head).",
+                    "Tags use # prefix. If several entries match the same mob, one matching head is chosen at random.",
+                    "Unknown or unregistered head items are skipped at runtime.",
+                    "When this list is empty, built-in vanilla head mappings are used instead.")
+            .defineList("111_reaperBeheadingDrops", Config::defaultReaperBeheadingDrops, obj -> obj instanceof String);
+
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> ENTITY_DAMAGE_CAPS = BUILDER
             .comment("Max damage that damage trap plates and Mob Reaper may deal to matching entities.",
                     "Format: entityOrTag;maxDamage  (e.g. #c:bosses;10 or minecraft:warden;5).",
@@ -1355,6 +1375,16 @@ public class Config
 
     static {
         BUILDER.pop(); // End of collecting_crate category
+
+        BUILDER.comment("Essence of Knowledge Grate").push("essence_of_knowledge_grate");
+    }
+
+    private static final ModConfigSpec.IntValue ESSENCE_OF_KNOWLEDGE_GRATE_XP_POINTS_PER_TICK = BUILDER
+            .comment("Experience points drained from the player per tick while standing on the grate.")
+            .defineInRange("000_xp_points_per_tick", 1, 0, 1000);
+
+    static {
+        BUILDER.pop(); // End of essence_of_knowledge_grate category
 
         BUILDER.comment("Blazing Altar — area flames and natural spawn control").push("blazing_altar");
     }
@@ -2355,6 +2385,10 @@ public class Config
     public static double entropicChampagneProcChance;
     public static int entropicChampagneMinDurationSeconds;
     public static int entropicChampagneMaxDurationSeconds;
+    public static boolean lastingCandyEnabled;
+    public static int lastingCandyInvulnSeconds;
+    public static int lastingCandyCooldownSeconds;
+    public static int essenceOfKnowledgeGrateXpPointsPerTick;
     public static double entropicClockMaxFactorMultiplier;
     public static int entropicClockEntropyPerTick;
     public static int entropicClockMaxStored;
@@ -2434,6 +2468,7 @@ public class Config
     public static int reaperExperienceUpgradeMax;
     public static double reaperExperienceBonusPerLevel;
     public static double reaperBladeMaxDegPerTick;
+    public static java.util.List<String> reaperBeheadingDrops;
     public static int specialRenderDistance;
     public static java.util.List<String> entityDamageCaps;
 
@@ -2692,6 +2727,7 @@ public class Config
         reaperExperienceUpgradeMax = REAPER_EXPERIENCE_UPGRADE_MAX.get();
         reaperExperienceBonusPerLevel = REAPER_EXPERIENCE_BONUS_PER_LEVEL.get();
         reaperBladeMaxDegPerTick = REAPER_BLADE_MAX_DEG_PER_TICK.get();
+        reaperBeheadingDrops = new java.util.ArrayList<>(REAPER_BEHEADING_DROPS.get());
         specialRenderDistance = SPECIAL_RENDER_DISTANCE.get();
         entityDamageCaps = new java.util.ArrayList<>(ENTITY_DAMAGE_CAPS.get());
 
@@ -2770,6 +2806,10 @@ public class Config
         entropicChampagneProcChance = ENTROPIC_CHAMPAGNE_PROC_CHANCE.get();
         entropicChampagneMinDurationSeconds = ENTROPIC_CHAMPAGNE_MIN_DURATION_SECONDS.get();
         entropicChampagneMaxDurationSeconds = ENTROPIC_CHAMPAGNE_MAX_DURATION_SECONDS.get();
+        lastingCandyEnabled = LASTING_CANDY_ENABLED.get();
+        lastingCandyInvulnSeconds = LASTING_CANDY_INVULN_SECONDS.get();
+        lastingCandyCooldownSeconds = LASTING_CANDY_COOLDOWN_SECONDS.get();
+        essenceOfKnowledgeGrateXpPointsPerTick = ESSENCE_OF_KNOWLEDGE_GRATE_XP_POINTS_PER_TICK.get();
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
         
@@ -3065,6 +3105,27 @@ public class Config
             }
         }
         return out.isEmpty() ? fallback : java.util.Collections.unmodifiableList(out);
+    }
+
+    private static java.util.List<String> defaultReaperBeheadingDrops() {
+        return java.util.List.of(
+                "#minecraft:creepers;minecraft:creeper_head",
+                "minecraft:zombie;minecraft:zombie_head",
+                "minecraft:zombie_villager;minecraft:zombie_head",
+                "minecraft:husk;minecraft:zombie_head",
+                "minecraft:drowned;minecraft:zombie_head",
+                "minecraft:skeleton;minecraft:skeleton_skull",
+                "minecraft:wither_skeleton;minecraft:wither_skeleton_skull",
+                "minecraft:piglin;minecraft:piglin_head",
+                "minecraft:piglin_brute;minecraft:piglin_head",
+                "minecraft:zombified_piglin;minecraft:piglin_head",
+                "minecraft:spider;supplementaries:spider_head",
+                "minecraft:spider;enderio:spider_head",
+                "minecraft:cave_spider;supplementaries:spider_head",
+                "minecraft:cave_spider;enderio:spider_head",
+                "minecraft:enderman;supplementaries:enderman_head",
+                "minecraft:enderman;enderio:enderman_head"
+        );
     }
 
     @SubscribeEvent

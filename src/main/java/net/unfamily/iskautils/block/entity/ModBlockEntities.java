@@ -4,6 +4,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.fml.ModList;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -55,6 +56,16 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("soul_nullifier", () ->
                     BlockEntityType.Builder.of(SoulNullifierBlockEntity::new,
                             ModBlocks.SOUL_NULLIFIER.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FlightNullifierBlockEntity>> FLIGHT_NULLIFIER_BE =
+            BLOCK_ENTITIES.register("flight_nullifier", () ->
+                    BlockEntityType.Builder.of(FlightNullifierBlockEntity::new,
+                            ModBlocks.FLIGHT_NULLIFIER.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ClimbingNullifierBlockEntity>> CLIMBING_NULLIFIER_BE =
+            BLOCK_ENTITIES.register("climbing_nullifier", () ->
+                    BlockEntityType.Builder.of(ClimbingNullifierBlockEntity::new,
+                            ModBlocks.CLIMBING_NULLIFIER.get()).build(null));
                             
     // BlockEntity per il nuovo blocco di legno di gomma vuoto
     public static final Supplier<BlockEntityType<RubberLogEmptyBlockEntity>> RUBBER_LOG_EMPTY = 
@@ -264,10 +275,22 @@ public class ModBlockEntities {
      */
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
+        eventBus.addListener(ModBlockEntityEvents::onBlockEntityValidBlocks);
     }
 
     @EventBusSubscriber(modid = IskaUtils.MOD_ID)
     public static class ModBlockEntityEvents {
+        public static void onBlockEntityValidBlocks(BlockEntityTypeAddBlocksEvent event) {
+            event.modify(
+                    BlockEntityType.SIGN,
+                    ModBlocks.RUBBER_SIGN.get(),
+                    ModBlocks.RUBBER_WALL_SIGN.get());
+            event.modify(
+                    BlockEntityType.HANGING_SIGN,
+                    ModBlocks.RUBBER_HANGING_SIGN.get(),
+                    ModBlocks.RUBBER_WALL_HANGING_SIGN.get());
+        }
+
         @SubscribeEvent
         public static void registerCapabilities(RegisterCapabilitiesEvent event) {
             // Register energy capability for Hellfire Igniter

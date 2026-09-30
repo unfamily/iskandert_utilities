@@ -36,7 +36,13 @@ import net.unfamily.iskautils.block.custom.GraveyardSoilBlock;
 import net.unfamily.iskautils.block.custom.ImprovedPatternCrafterBlock;
 import net.unfamily.iskautils.block.custom.PatternCrafterBlock;
 import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.StandingSignBlock;
+import net.minecraft.world.level.block.WallSignBlock;
+import net.minecraft.world.level.block.CeilingHangingSignBlock;
+import net.minecraft.world.level.block.WallHangingSignBlock;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.unfamily.iskautils.fluid.ModFluids;
+import net.unfamily.iskautils.util.ModWoodTypes;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
@@ -295,6 +301,12 @@ public class ModBlocks {
 
     public static final DeferredBlock<SoulNullifierBlock> SOUL_NULLIFIER = BLOCKS.register("soul_nullifier",
             () -> new SoulNullifierBlock(SOUL_NULLIFIER_PROPERTIES));
+
+    public static final DeferredBlock<FlightNullifierBlock> FLIGHT_NULLIFIER = BLOCKS.register("flight_nullifier",
+            () -> new FlightNullifierBlock(ENDER_NULLIFIER_PROPERTIES));
+
+    public static final DeferredBlock<ClimbingNullifierBlock> CLIMBING_NULLIFIER = BLOCKS.register("climbing_nullifier",
+            () -> new ClimbingNullifierBlock(ENDER_NULLIFIER_PROPERTIES));
     
     // Fan (directional block with 6 directions placement)
     public static final DeferredBlock<FanBlock> FAN = BLOCKS.register("fan",
@@ -345,6 +357,17 @@ public class ModBlocks {
 
     public static final DeferredBlock<CollectingCrateBlock> COLLECTING_CRATE = BLOCKS.register("collecting_crate",
             () -> new CollectingCrateBlock(COLLECTING_CRATE_PROPERTIES));
+
+    private static final BlockBehaviour.Properties ESSENCE_OF_KNOWLEDGE_GRATE_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL)
+            .strength(2.0f, 6.0f)
+            .sound(SoundType.METAL)
+            .requiresCorrectToolForDrops()
+            .noOcclusion();
+
+    public static final DeferredBlock<EssenceOfKnowledgeGrateBlock> ESSENCE_OF_KNOLEDGE_GRATE = BLOCKS.register(
+            "essence_of_knoledge_grate",
+            () -> new EssenceOfKnowledgeGrateBlock(ESSENCE_OF_KNOWLEDGE_GRATE_PROPERTIES));
 
     public static final DeferredBlock<LiquidBlock> CONDENSED_KNOWLEDGE_BLOCK = BLOCKS.register("condensed_knowledge",
             () -> new LiquidBlock(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(), BlockBehaviour.Properties.of()
@@ -544,6 +567,26 @@ public class ModBlocks {
     // Rubber Trapdoor
     public static final DeferredBlock<RubberTrapDoorBlock> RUBBER_TRAPDOOR = BLOCKS.register("rubber_trapdoor",
             () -> new RubberTrapDoorBlock(RUBBER_PLANKS_PROPERTIES.noOcclusion()));
+
+    private static final BlockBehaviour.Properties RUBBER_SIGN_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.WOOD)
+            .forceSolidOn()
+            .instrument(NoteBlockInstrument.BASS)
+            .noCollission()
+            .strength(1.0F)
+            .ignitedByLava();
+
+    public static final DeferredBlock<StandingSignBlock> RUBBER_SIGN = BLOCKS.register("rubber_sign",
+            () -> new StandingSignBlock(ModWoodTypes.RUBBER, RUBBER_SIGN_PROPERTIES));
+
+    public static final DeferredBlock<WallSignBlock> RUBBER_WALL_SIGN = BLOCKS.register("rubber_wall_sign",
+            () -> new WallSignBlock(ModWoodTypes.RUBBER, RUBBER_SIGN_PROPERTIES));
+
+    public static final DeferredBlock<CeilingHangingSignBlock> RUBBER_HANGING_SIGN = BLOCKS.register("rubber_hanging_sign",
+            () -> new CeilingHangingSignBlock(ModWoodTypes.RUBBER, RUBBER_SIGN_PROPERTIES));
+
+    public static final DeferredBlock<WallHangingSignBlock> RUBBER_WALL_HANGING_SIGN = BLOCKS.register("rubber_wall_hanging_sign",
+            () -> new WallHangingSignBlock(ModWoodTypes.RUBBER, RUBBER_SIGN_PROPERTIES));
 
     // ===== PLATE BASE BLOCK (vector type, texture above and below plate_base) =====
     public static final DeferredBlock<PlateBaseBlock> PLATE_BASE_BLOCK = BLOCKS.register("plate_base_block",

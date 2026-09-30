@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " A ",
+    "ABA",
+    " A "
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:ladder"
+    },
+    "B": {
+      "item": "iska_utils:base_module"
+    }
+  },
+  "result": {
+    "id": "iska_utils:climbing_nullifier",
+    "count": 1
+  }
+}

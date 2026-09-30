@@ -4,6 +4,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.util.RandomSource;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -37,6 +38,12 @@ public class LivingIncomingDamageEventHandler {
             return;
         }
 
+        if (player instanceof ServerPlayer serverPlayer
+                && LastingCandyEffects.cancelIfInvulnerable(event, serverPlayer)) {
+            clearStages(player);
+            return;
+        }
+
         // Process Greedy Shield first (has highest priority)
         // Returns true if damage was completely blocked
         boolean damageCompletelyBlocked = processGreedyShield(event, player);
@@ -44,6 +51,14 @@ public class LivingIncomingDamageEventHandler {
         // Process Necrotic Crystal Heart only if:
         // 1. Greedy Shield didn't completely block the damage
         // 2. There's still damage remaining
+        if (player instanceof ServerPlayer serverPlayer) {
+            LastingCandyEffects.tryActivate(event, serverPlayer);
+            if (event.getAmount() <= 0.0f) {
+                clearStages(player);
+                return;
+            }
+        }
+
         if (!damageCompletelyBlocked && event.getAmount() > 0.0f) {
             processNecroticCrystalHeart(event, player);
         }

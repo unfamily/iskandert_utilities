@@ -497,6 +497,12 @@ public class ModMessages {
         );
 
         registrar.playToServer(
+            net.unfamily.iskautils.network.packet.NullifierTargetModeC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.NullifierTargetModeC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.NullifierTargetModeC2SPacket::handle
+        );
+
+        registrar.playToServer(
             net.unfamily.iskautils.network.packet.LabelingMachineRenameC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.LabelingMachineRenameC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.LabelingMachineRenameC2SPacket::handle

@@ -84,9 +84,9 @@ public class PotionPlateBlock extends VectorBlock {
             return;
         }
 
-        // no_move must run every tick on both sides so client prediction cannot walk/jump away
-        if (config.getPlateType() == PotionPlateType.SPECIAL && config.isNoMove()) {
-            applyNoMove(livingEntity);
+        // slow (alias no_move) must run every tick on both sides so client prediction stays sticky
+        if (config.getPlateType() == PotionPlateType.SPECIAL && config.isSlow()) {
+            applySlow(livingEntity);
             if (!level.isClientSide) {
                 EFFECT_COOLDOWNS.put(entity.getUUID(), level.getGameTime());
             }
@@ -177,7 +177,7 @@ public class PotionPlateBlock extends VectorBlock {
      */
     private boolean applyDamage(LivingEntity livingEntity, Level level, long currentTime) {
         try {
-            // Create damage source
+            // Non-player damage sources (generic / environmental); unlike Mob Reaper FakePlayer hits, this does not attach a player attacker.
             var damageSource = level.damageSources().generic(); // Default damage source
             
             // Try to get specific damage source if available
@@ -215,12 +215,12 @@ public class PotionPlateBlock extends VectorBlock {
     }
     
     /**
-     * Applies special effects for SPECIAL plates (fire, freeze, no_move, etc.)
+     * Applies special effects for SPECIAL plates (fire, freeze, slow, etc.)
      */
     private boolean applySpecialEffect(LivingEntity livingEntity, long currentTime) {
         try {
-            if (config.isNoMove()) {
-                return applyNoMove(livingEntity);
+            if (config.isSlow()) {
+                return applySlow(livingEntity);
             }
 
             if (config.getFireDuration() > 0) {
@@ -257,13 +257,20 @@ public class PotionPlateBlock extends VectorBlock {
         }
     }
 
+    /** Horizontal (and soft vertical) slow factor; cobweb-like without makeStuckInBlock. */
+    private static final double SLOW_FACTOR = 0.35D;
+
     /**
-     * Immobilizes the entity: zero velocity and block jumping via setDeltaMovement.
-     * Does not use cobweb / makeStuckInBlock physics.
+     * Slows the entity like cobweb: multiply velocity, soft-dampen jump.
+     * Does not use makeStuckInBlock (thin plate).
      */
-    private boolean applyNoMove(LivingEntity livingEntity) {
-        livingEntity.setDeltaMovement(Vec3.ZERO);
-        livingEntity.setJumping(false);
+    private boolean applySlow(LivingEntity livingEntity) {
+        Vec3 motion = livingEntity.getDeltaMovement();
+        double vy = motion.y;
+        if (vy > 0.0D) {
+            vy *= SLOW_FACTOR;
+        }
+        livingEntity.setDeltaMovement(motion.x * SLOW_FACTOR, vy, motion.z * SLOW_FACTOR);
         livingEntity.fallDistance = 0.0f;
         livingEntity.hurtMarked = true;
         return true;

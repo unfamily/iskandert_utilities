@@ -5,18 +5,29 @@ import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 /**
- * Common interface for all three nullifier block entities,
- * enabling a single NullifierMenu / NullifierScreen to handle Ender, Wander and Soul.
+ * Common interface for all nullifier block entities,
+ * enabling a single NullifierMenu / NullifierScreen to handle every nullifier type.
  */
 public interface INullifierBE {
 
     enum NullifierType {
-        ENDER(0), WANDER(1), SOUL(2);
+        ENDER(0), WANDER(1), SOUL(2), FLIGHT(3), CLIMBING(4);
         private final int id;
         NullifierType(int id) { this.id = id; }
         public int getId() { return id; }
         public static NullifierType fromId(int id) {
-            return switch (id) { case 1 -> WANDER; case 2 -> SOUL; default -> ENDER; };
+            return switch (id) {
+                case 1 -> WANDER;
+                case 2 -> SOUL;
+                case 3 -> FLIGHT;
+                case 4 -> CLIMBING;
+                default -> ENDER;
+            };
+        }
+
+        /** Ender, Flight and Climbing only cycle Disabled / Only mobs on the target button. */
+        public boolean hasLimitedTargetModes() {
+            return this == ENDER || this == FLIGHT || this == CLIMBING;
         }
     }
 
@@ -28,6 +39,10 @@ public interface INullifierBE {
     // --- GUI redstone mode (0=Manual, 1=Disabled, 2=Low, 3=High) ---
     int getRedstoneModeGui();
     void setRedstoneModeGui(int guiMode);
+
+    // --- mob/player target ---
+    NullifierTargetMode getTargetMode();
+    void setTargetMode(NullifierTargetMode mode);
 
     // --- area preview ---
     boolean isShowAreaEnabled();
