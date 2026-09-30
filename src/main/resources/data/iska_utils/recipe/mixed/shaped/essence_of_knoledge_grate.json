@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "III",
+    "IBI",
+    "III"
+  ],
+  "key": {
+    "I": "minecraft:iron_bars",
+    "B": "minecraft:book"
+  },
+  "result": {
+    "id": "iska_utils:essence_of_knoledge_grate",
+    "count": 4
+  }
+}

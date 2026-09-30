@@ -1,7 +1,9 @@
 package net.unfamily.iskautils.client;
 
 import net.neoforged.bus.api.SubscribeEvent;
+import net.minecraft.client.renderer.Sheets;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.unfamily.iskautils.util.ModWoodTypes;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterItemDecorationsEvent;
@@ -28,6 +30,8 @@ public final class IskaUtilsClientModEvents {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> Sheets.addWoodType(ModWoodTypes.RUBBER));
+
         // Render layers are set via "render_type" in block model JSON in 26.x.
         // Register client-side camouflage callback for EtherealFrame
         net.unfamily.iskautils.block.entity.EtherealFrameBlockEntity.setClientCamouflageCallback(

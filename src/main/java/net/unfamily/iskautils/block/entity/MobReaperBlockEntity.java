@@ -6,7 +6,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.ExperienceOrb;
@@ -17,7 +16,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -36,6 +34,8 @@ import net.unfamily.iskautils.block.MobReaperBlock;
 import net.unfamily.iskautils.damage.ModDamageTypes;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.util.EntityDamageCapHelper;
+import net.unfamily.iskautils.util.MobReaperBeheadingHelper;
+import net.unfamily.iskautils.util.MobReaperCombatHelper;
 import net.unfamily.iskautils.util.MachineTargetType;
 import net.minecraft.world.ItemStackWithSlot;
 import net.minecraft.world.InteractionHand;
@@ -489,11 +489,14 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
         boolean wasAlive = target.isAlive();
         target.hurtServer(level, damageSource, damage);
         fakePlayer.setLastHurtMob(target);
-        if (target instanceof Mob mob && mob.getTarget() == fakePlayer) {
-            mob.setTarget(null);
+        if (target instanceof Mob mob) {
+            MobReaperCombatHelper.clearFakePlayerAggro(mob, fakePlayer);
         }
         if (!weapon.isEmpty()) {
             EnchantmentHelper.doPostAttackEffectsWithItemSource(level, target, damageSource, weapon);
+        }
+        if (target instanceof Mob mob && mob.isAlive()) {
+            MobReaperCombatHelper.clearFakePlayerAggro(mob, fakePlayer);
         }
 
         if (wasAlive && !target.isAlive()) {
@@ -532,7 +535,7 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
     private void handleKill(ServerLevel level, LivingEntity target, FakePlayer fakePlayer) {
         float beheadingChance = getBeheadingChance();
         if (beheadingChance > 0.0f && level.getRandom().nextFloat() < beheadingChance) {
-            ItemStack skull = getSkullDrop(target);
+            ItemStack skull = MobReaperBeheadingHelper.resolveHeadDrop(target, level.getRandom());
             if (!skull.isEmpty()) {
                 Containers.dropItemStack(level, target.getX(), target.getY(), target.getZ(), skull);
             }
@@ -544,29 +547,5 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
         if (total > 0) {
             ExperienceOrb.award(level, target.position(), total);
         }
-    }
-
-    private static ItemStack getSkullDrop(LivingEntity entity) {
-        if (entity.getType() == EntityType.ZOMBIE
-                || entity.getType() == EntityType.ZOMBIE_VILLAGER
-                || entity.getType() == EntityType.HUSK
-                || entity.getType() == EntityType.DROWNED) {
-            return new ItemStack(Items.ZOMBIE_HEAD);
-        }
-        if (entity.getType() == EntityType.SKELETON) {
-            return new ItemStack(Items.SKELETON_SKULL);
-        }
-        if (entity.getType() == EntityType.WITHER_SKELETON) {
-            return new ItemStack(Items.WITHER_SKELETON_SKULL);
-        }
-        if (entity.getType() == EntityType.CREEPER) {
-            return new ItemStack(Items.CREEPER_HEAD);
-        }
-        if (entity.getType() == EntityType.PIGLIN
-                || entity.getType() == EntityType.PIGLIN_BRUTE
-                || entity.getType() == EntityType.ZOMBIFIED_PIGLIN) {
-            return new ItemStack(Items.PIGLIN_HEAD);
-        }
-        return ItemStack.EMPTY;
     }
 }

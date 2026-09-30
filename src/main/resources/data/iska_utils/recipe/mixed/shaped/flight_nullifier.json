@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " A ",
+    "ABA",
+    " A "
+  ],
+  "key": {
+    "A": "minecraft:feather",
+    "B": "iska_utils:base_module"
+  },
+  "result": {
+    "id": "iska_utils:flight_nullifier",
+    "count": 1
+  }
+}

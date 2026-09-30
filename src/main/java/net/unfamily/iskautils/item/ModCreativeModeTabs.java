@@ -8,11 +8,9 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.data.PotionPlateRegistry;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
-import net.unfamily.iskautils.fluid.ModFluids;
 import net.unfamily.iskautils.integration.artifacts.ArtifactsCompat;
 import net.unfamily.iskautils.item.ModItems;
 
@@ -141,6 +139,8 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RUBBER_PRESSURE_PLATE.get());
                                 pOutput.accept(ModItems.RUBBER_DOOR.get());
                                 pOutput.accept(ModItems.RUBBER_TRAPDOOR.get());
+                                pOutput.accept(ModItems.RUBBER_SIGN_ITEM.get());
+                                pOutput.accept(ModItems.RUBBER_HANGING_SIGN.get());
                                 // Not including rubber_log_empty/filled (hidden)
                                 
                                 //dye things
@@ -152,6 +152,8 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.RUBBER_SAP_EXTRACTOR.get());
                                 pOutput.accept(ModItems.HELLFIRE_IGNITER.get());
                                 pOutput.accept(ModItems.ENDER_NULLIFIER.get());
+                                pOutput.accept(ModItems.FLIGHT_NULLIFIER.get());
+                                pOutput.accept(ModItems.CLIMBING_NULLIFIER.get());
                                 pOutput.accept(ModItems.WANDER_NULLIFIER.get());
                                 if (net.neoforged.fml.ModList.get().isLoaded("forbidden_arcanus")) {
                                     pOutput.accept(ModItems.SOUL_NULLIFIER.get());
@@ -166,6 +168,9 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.TEMPORAL_OVERCLOCKER_CHIPSET.get());
                                 pOutput.accept(ModItems.ENTROPIC_SPAWNER.get());
                                 pOutput.accept(ModItems.ENTROPIC_CLOCK.get());
+                                pOutput.accept(ModItems.PATTERN_CRAFTER.get());
+                                pOutput.accept(ModItems.IMPROVED_PATTERN_CRAFTER.get());
+                                pOutput.accept(ModItems.PATTERN_CRAFTER_IMPROVER.get());
                                 // Deep drawer (all components)
                                 pOutput.accept(ModItems.DEEP_DRAWERS.get());
                                 pOutput.accept(ModItems.DEEP_DRAWER_EXTRACTOR.get());
@@ -189,11 +194,9 @@ public class ModCreativeModeTabs {
                                 // 6. General utility items
                                 pOutput.accept(ModItems.MOB_REAPER.get());
                                 pOutput.accept(ModItems.COLLECTING_CRATE.get());
-                                pOutput.accept(ModFluids.CONDENSED_KNOWLEDGE.bucketItem());
+                                pOutput.accept(ModItems.ESSENCE_OF_KNOLEDGE_GRATE.get());
+                                pOutput.accept(ModItems.CONDENSED_KNOWLEDGE_BUCKET.get());
                                 pOutput.accept(ModItems.KNOWLEDGE_COMPRESSOR.get());
-                                pOutput.accept(ModItems.PATTERN_CRAFTER.get());
-                                pOutput.accept(ModItems.IMPROVED_PATTERN_CRAFTER.get());
-                                pOutput.accept(ModItems.PATTERN_CRAFTER_IMPROVER.get());
                                 pOutput.accept(ModItems.JELLY_OF_KNOWLEDGE.get());
                                 pOutput.accept(ModItems.ANGEL_BLOCK.get());
                                 pOutput.accept(ModItems.RAFT.get());
@@ -206,8 +209,8 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.SCANNER_CHIP_LOOT.get());
                                 pOutput.accept(ModItems.SCANNER_CHIP_LIQUID.get());
                                 pOutput.accept(ModItems.SHOP.get());
-                                pOutput.accept(ModItems.PORTABLE_SHOP.get());
                                 pOutput.accept(ModItems.AUTO_SHOP.get());
+                                pOutput.accept(ModItems.PORTABLE_SHOP.get());
                                 pOutput.accept(ModItems.RUBBER_BOOTS.get());
                                 pOutput.accept(ModItems.SWISS_WRENCH.get());
                                 pOutput.accept(ModItems.LABELING_MACHINE.get());
@@ -241,7 +244,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.SUSPICIOUS_DELIVERY.get());
                                 pOutput.accept(ModItems.NECROTIC_CRYSTAL_HEART.get());
                                 pOutput.accept(ModItems.MINING_EQUITIZER.get());
-
+                                
                                 pOutput.accept(ModItems.OLD_BRICK.get());
                                 pOutput.accept(ModItems.COARSELY_FORGED_RING.get());
                                 pOutput.accept(ModItems.ENTROPIC_RING.get());
@@ -250,11 +253,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.CHOSEN_CHEESE.get());
                                 pOutput.accept(ModItems.ICE_DIAMOND.get());
                                 pOutput.accept(ModItems.SHARPENED_BONE.get());
-                                {
-                                    var roots = new net.minecraft.world.item.ItemStack(ModItems.THE_ROOTS.get());
-                                    net.unfamily.iskautils.item.custom.artifact.TheRootsItem.syncClientCustomModelData(roots);
-                                    pOutput.accept(roots);
-                                }
+                                pOutput.accept(ModItems.THE_ROOTS.get());
                                 pOutput.accept(ModItems.TOTEM_OF_PAIN.get());
                                 pOutput.accept(ModItems.CURSED_CANDLE.get());
                                 pOutput.accept(ModItems.BUSTED_CROWN.get());
@@ -272,12 +271,12 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.ENTROPIC_AGGLOMERATION.get());
                                 pOutput.accept(ModItems.ENTROPIC_CREEPER_SPAWN_EGG.get());
                                 pOutput.accept(ModItems.ENTROPIC_EGG.get());
+
                                 pOutput.accept(ModItems.DRUIDIC_AGGLOMERATION.get());
                                 pOutput.accept(new ItemStack(ModItems.ANCIENT_TABLET.get()));
                                 pOutput.accept(ModItems.ANCIENT_TABLE.get());
                                 pOutput.accept(ModItems.DURABLE_SHEARS.get());
                                 pOutput.accept(ModItems.ENTROPY_CRYSTAL.get());
-                                pOutput.accept(ModItems.UNSTABLE_ENTROPY_CATALYST.get());
                                 pOutput.accept(ModItems.ENTROPIC_SMITHING_TEMPLATE.get());
                                 pOutput.accept(ModItems.ENTROPIC_SWORD.get());
                                 pOutput.accept(ModItems.ENTROPIC_PICKAXE.get());
@@ -285,12 +284,13 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.ENTROPIC_SHOVEL.get());
                                 pOutput.accept(ModItems.ENTROPIC_HOE.get());
                                 pOutput.accept(ModItems.ENTROPIC_PAXEL.get());
-                                pOutput.accept(ModItems.ENTROPIC_SPEAR.get());
                                 pOutput.accept(ModItems.ENTROPIC_HELMET.get());
                                 pOutput.accept(ModItems.ENTROPIC_CHESTPLATE.get());
                                 pOutput.accept(ModItems.ENTROPIC_LEGGINGS.get());
                                 pOutput.accept(ModItems.ENTROPIC_BOOTS.get());
+                                pOutput.accept(ModItems.UNSTABLE_ENTROPY_CATALYST.get());
                                 pOutput.accept(ModItems.ENTROPY_TNT.get());
+                                pOutput.accept(ModItems.TNT_DEFUSER.get());
                                 pOutput.accept(ModItems.ENTROPIC_SOIL.get());
                                 pOutput.accept(ModItems.ENTROPIC_DIRT.get());
                                 pOutput.accept(ModItems.GRAVEYARD_SOIL.get());

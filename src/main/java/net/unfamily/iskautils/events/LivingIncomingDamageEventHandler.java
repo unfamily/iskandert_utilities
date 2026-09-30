@@ -40,6 +40,12 @@ public class LivingIncomingDamageEventHandler {
             return;
         }
 
+        if (player instanceof ServerPlayer serverPlayer
+                && LastingCandyEffects.cancelIfInvulnerable(event, serverPlayer)) {
+            clearStagesAfterDamage(player);
+            return;
+        }
+
         // Process Greedy Shield first (has highest priority)
         // Returns true if damage was completely blocked
         boolean damageCompletelyBlocked = processGreedyShield(event, player);
@@ -47,6 +53,14 @@ public class LivingIncomingDamageEventHandler {
         // Process Necrotic Crystal Heart only if:
         // 1. Greedy Shield didn't completely block the damage
         // 2. There's still damage remaining
+        if (player instanceof ServerPlayer serverPlayer) {
+            LastingCandyEffects.tryActivate(event, serverPlayer);
+            if (event.getAmount() <= 0.0f) {
+                clearStagesAfterDamage(player);
+                return;
+            }
+        }
+
         if (!damageCompletelyBlocked && event.getAmount() > 0.0f) {
             processNecroticCrystalHeart(event, player);
         }

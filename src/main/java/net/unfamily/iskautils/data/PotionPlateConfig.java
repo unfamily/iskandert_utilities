@@ -1,16 +1,14 @@
 package net.unfamily.iskautils.data;
 
 import net.minecraft.core.Holder;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
  * Configuration class for potion effect plates loaded from external configurations
@@ -262,7 +260,7 @@ public class PotionPlateConfig {
     }
     
     /**
-     * Gets the registry-safe block name (converts - to _ for Identifier compatibility)
+     * Gets the registry-safe block name (converts - to _ for ResourceLocation compatibility)
      */
     public String getRegistryBlockName() {
         return plateId.replace("-", "_");
@@ -378,10 +376,24 @@ public class PotionPlateConfig {
     }
 
     /**
-     * Whether this special plate immobilizes entities (no movement / no jump).
+     * Whether this special plate slows entities (cobweb-like). Alias of historical no_move.
      */
-    public boolean isNoMove() {
+    public boolean isSlow() {
         return noMove;
+    }
+
+    /** @deprecated use {@link #isSlow()} */
+    @Deprecated
+    public boolean isNoMove() {
+        return isSlow();
+    }
+
+    /**
+     * Creates a slow plate (preferred name for cobweb-like plates).
+     */
+    public static PotionPlateConfig createSlowPlate(String plateId, int delay,
+                                                     boolean affectsPlayers, boolean affectsMobs, boolean overwritable) {
+        return createNoMovePlate(plateId, delay, affectsPlayers, affectsMobs, overwritable);
     }
     
     /**
@@ -454,9 +466,8 @@ public class PotionPlateConfig {
         
         if (cachedEffect == null) {
             try {
-                Identifier effectLocation = Identifier.parse(effectId);
-                MobEffect effect = BuiltInRegistries.MOB_EFFECT.getOptional(effectLocation).orElse(null);
-                cachedEffect = effect == null ? null : BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect);
+                ResourceLocation effectLocation = ResourceLocation.parse(effectId);
+                cachedEffect = BuiltInRegistries.MOB_EFFECT.getHolder(effectLocation).orElse(null);
             } catch (Exception e) {
                 // Invalid effect ID format
                 return null;
@@ -639,7 +650,7 @@ public class PotionPlateConfig {
                 break;
             case SPECIAL:
                 if (noMove) {
-                    sb.append(", apply=no_move");
+                    sb.append(", apply=slow");
                 }
                 if (fireDuration > 0) {
                     sb.append(", fire=").append(fireDuration).append(" ticks");

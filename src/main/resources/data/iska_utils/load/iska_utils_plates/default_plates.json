@@ -102,7 +102,7 @@
     {
       "plate_type": "special",
       "id": "iska_utils-cobweb",
-      "apply": "no_move",
+      "apply": "slow",
       "duration": 1,
       "delay": 1,
       "affects_players": true,

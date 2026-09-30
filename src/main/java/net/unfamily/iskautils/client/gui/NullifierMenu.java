@@ -21,7 +21,8 @@ public class NullifierMenu extends AbstractContainerMenu {
     public static final int GUI_WIDTH = TEXTURE_WIDTH;
     public static final int GUI_HEIGHT = TEXTURE_HEIGHT;
 
-    public static final int MODULE_SLOT_X = 27;
+    /** Center row: redstone | module | target (see NullifierScreen). */
+    public static final int MODULE_SLOT_X = 79;
     public static final int MODULE_SLOT_Y = 33;
     public static final int MODULE_SLOT_FRAME_X = MODULE_SLOT_X - 1;
     public static final int MODULE_SLOT_FRAME_Y = MODULE_SLOT_Y - 1;
@@ -39,7 +40,8 @@ public class NullifierMenu extends AbstractContainerMenu {
     public static final int POS_Z_INDEX = 5;
     public static final int SHOW_AREA_INDEX = 6;
     public static final int TYPE_ID_INDEX = 7;
-    public static final int DATA_COUNT = 8;
+    public static final int TARGET_MODE_INDEX = 8;
+    public static final int DATA_COUNT = 9;
 
     private final INullifierBE nullifierBE;
     private final ContainerLevelAccess levelAccess;
@@ -64,6 +66,7 @@ public class NullifierMenu extends AbstractContainerMenu {
                     case POS_Z_INDEX -> blockPos.getZ();
                     case SHOW_AREA_INDEX -> nullifierBE.isShowAreaEnabled() ? 1 : 0;
                     case TYPE_ID_INDEX -> nullifierBE.getNullifierType().getId();
+                    case TARGET_MODE_INDEX -> nullifierBE.getTargetMode().getId();
                     default -> 0;
                 };
             }
@@ -187,6 +190,10 @@ public class NullifierMenu extends AbstractContainerMenu {
 
     public int getTypeId() {
         return containerData.get(TYPE_ID_INDEX);
+    }
+
+    public int getTargetModeId() {
+        return containerData.get(TARGET_MODE_INDEX);
     }
 
     public BlockPos getSyncedBlockPos() {

@@ -1,6 +1,8 @@
 package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.MenuProvider;
@@ -11,14 +13,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.EnderNullifierBlock;
 import net.unfamily.iskautils.client.gui.NullifierMenu;
 import net.unfamily.iskautils.item.ModItems;
-import net.unfamily.iskautils.world.EnderNullifierSpatialIndex;
+import net.unfamily.iskautils.world.NullifierSpatialIndex;
 
 public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvider, INullifierBE {
     private EnderNullifierRedstoneMode redstoneMode = EnderNullifierRedstoneMode.MANUAL;
@@ -26,6 +26,7 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
     private boolean previousRedstoneState = false;
     private int range = -1;
     private boolean showAreaEnabled = false;
+    private NullifierTargetMode targetMode = NullifierTargetMode.ONLY_MOBS;
 
     private final ItemStackHandler moduleHandler = new ItemStackHandler(1) {
         @Override
@@ -50,6 +51,25 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
     @Override public ItemStackHandler getModuleHandler() { return moduleHandler; }
     @Override public boolean isShowAreaEnabled() { return showAreaEnabled; }
     @Override public void setShowAreaEnabled(boolean v) { showAreaEnabled = v; setChanged(); }
+
+    @Override
+    public NullifierTargetMode getTargetMode() {
+        return targetMode;
+    }
+
+    @Override
+    public void setTargetMode(NullifierTargetMode mode) {
+        if (getNullifierType().hasLimitedTargetModes()
+                && mode != NullifierTargetMode.DISABLED
+                && mode != NullifierTargetMode.ONLY_MOBS) {
+            mode = NullifierTargetMode.ONLY_MOBS;
+        }
+        this.targetMode = mode;
+        if (level != null && !level.isClientSide) {
+            syncSpatialIndex(computeEffectiveActive(getBlockState().getValue(EnderNullifierBlock.POWERED)));
+        }
+        setChanged();
+    }
 
     @Override
     public int getRange() {
@@ -92,7 +112,7 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
             case 2 -> { manualEnabled = true;  redstoneMode = EnderNullifierRedstoneMode.LOW; }
             case 3 -> { manualEnabled = true;  redstoneMode = EnderNullifierRedstoneMode.HIGH; }
         }
-        if (level != null && !level.isClientSide()) {
+        if (level != null && !level.isClientSide) {
             applyEffectiveState(level, worldPosition, getBlockState());
         }
     }
@@ -108,7 +128,7 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, EnderNullifierBlockEntity blockEntity) {
-        if (level.isClientSide()) {
+        if (level.isClientSide) {
             return;
         }
 
@@ -161,7 +181,7 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
     }
 
     public void reconcileEffectiveState() {
-        if (level == null || level.isClientSide()) {
+        if (level == null || level.isClientSide) {
             return;
         }
         BlockState state = getBlockState();
@@ -188,59 +208,58 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
 
     private void syncSpatialIndex(boolean active) {
         if (level instanceof ServerLevel serverLevel) {
-            EnderNullifierSpatialIndex.update(serverLevel.dimension(), worldPosition, active, getRange());
+            NullifierSpatialIndex.update(
+                    serverLevel.dimension(),
+                    worldPosition,
+                    NullifierSpatialIndex.Kind.ENDER,
+                    active,
+                    getRange(),
+                    targetMode);
         }
     }
 
     public void clearSpatialIndex() {
         if (level instanceof ServerLevel serverLevel) {
-            EnderNullifierSpatialIndex.remove(serverLevel.dimension(), worldPosition);
+            NullifierSpatialIndex.remove(serverLevel.dimension(), worldPosition);
         }
     }
 
     @Override
     public void setLevel(Level level) {
         super.setLevel(level);
-        if (!level.isClientSide()) {
+        if (!level.isClientSide) {
             reconcileEffectiveState();
         }
     }
 
     @Override
-    protected void loadAdditional(ValueInput input) {
-        super.loadAdditional(input);
-        int modeValue = input.getInt("RedstoneMode").orElse(0);
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        int modeValue = tag.contains("RedstoneMode") ? tag.getInt("RedstoneMode") : 0;
         if (modeValue == 3) modeValue = 0;
         redstoneMode = EnderNullifierRedstoneMode.fromValue(modeValue);
-        manualEnabled = input.getBooleanOr("ManualEnabled", true);
-        previousRedstoneState = input.getBooleanOr("PreviousRedstoneState", false);
-        range = input.getInt("Range").orElse(-1);
-        showAreaEnabled = input.getBooleanOr("ShowArea", false);
-        for (net.minecraft.world.ItemStackWithSlot item : input.listOrEmpty("Modules", net.minecraft.world.ItemStackWithSlot.CODEC)) {
-            int slot = item.slot();
-            if (slot >= 0 && slot < moduleHandler.getSlots()) {
-                moduleHandler.setStackInSlot(slot, item.stack());
-            }
+        manualEnabled = !tag.contains("ManualEnabled") || tag.getBoolean("ManualEnabled");
+        previousRedstoneState = tag.getBoolean("PreviousRedstoneState");
+        range = tag.contains("Range") ? tag.getInt("Range") : -1;
+        showAreaEnabled = tag.getBoolean("ShowArea");
+        targetMode = NullifierTargetMode.fromId(tag.contains("TargetMode") ? tag.getInt("TargetMode") : 1);
+        if (tag.contains("Modules")) {
+            moduleHandler.deserializeNBT(registries, tag.getCompound("Modules"));
         }
-        if (level != null && !level.isClientSide()) {
+        if (level != null && !level.isClientSide) {
             reconcileEffectiveState();
         }
     }
 
     @Override
-    protected void saveAdditional(ValueOutput output) {
-        super.saveAdditional(output);
-        output.putInt("RedstoneMode", redstoneMode.getValue());
-        output.putBoolean("ManualEnabled", manualEnabled);
-        output.putBoolean("PreviousRedstoneState", previousRedstoneState);
-        output.putInt("Range", getRange());
-        output.putBoolean("ShowArea", showAreaEnabled);
-        net.minecraft.world.level.storage.ValueOutput.TypedOutputList<net.minecraft.world.ItemStackWithSlot> modules =
-                output.list("Modules", net.minecraft.world.ItemStackWithSlot.CODEC);
-        for (int slot = 0; slot < moduleHandler.getSlots(); slot++) {
-            net.minecraft.world.item.ItemStack stack = moduleHandler.getStackInSlot(slot);
-            if (!stack.isEmpty()) modules.add(new net.minecraft.world.ItemStackWithSlot(slot, stack));
-        }
-        if (modules.isEmpty()) output.discard("Modules");
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        tag.putInt("RedstoneMode", redstoneMode.getValue());
+        tag.putBoolean("ManualEnabled", manualEnabled);
+        tag.putBoolean("PreviousRedstoneState", previousRedstoneState);
+        tag.putInt("Range", getRange());
+        tag.putBoolean("ShowArea", showAreaEnabled);
+        tag.putInt("TargetMode", targetMode.getId());
+        tag.put("Modules", moduleHandler.serializeNBT(registries));
     }
 }

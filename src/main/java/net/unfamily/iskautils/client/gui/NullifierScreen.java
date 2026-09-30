@@ -24,6 +24,9 @@ import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.network.packet.NullifierRangeC2SPacket;
 import net.unfamily.iskautils.network.packet.NullifierRedstoneModeC2SPacket;
 import net.unfamily.iskautils.network.packet.NullifierShowAreaC2SPacket;
+import net.unfamily.iskautils.network.packet.NullifierTargetModeC2SPacket;
+import net.unfamily.iskautils.block.entity.INullifierBE;
+import net.unfamily.iskautils.block.entity.NullifierTargetMode;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
@@ -49,7 +52,8 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
     private static final int CLOSE_BUTTON_Y = 5;
 
-    private static final int REDSTONE_BTN_X = 8;
+    private static final int REDSTONE_BTN_X = 59;
+    private static final int TARGET_BTN_X = 101;
     private static final int SLOT_SIDE_BTN_Y = NullifierMenu.MODULE_SLOT_Y;
 
     private static final int ROW_BTN_GAP = 2;
@@ -60,6 +64,7 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
     private static final int RANGE_BTN_WIDTH = SHOW_BTN_X - RANGE_BTN_X - ROW_BTN_GAP;
 
     private ItemIconButton redstoneModeButton;
+    private ItemIconButton targetModeButton;
     private Button rangeButton;
     private Button showAreaButton;
     private Button closeButton;
@@ -90,6 +95,15 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
                 b -> cycleRedstoneMode(false),
                 this::nullifierRedstoneIcon,
                 this::nullifierRedstoneOverlay,
+                Component.empty()));
+
+        targetModeButton = addRenderableWidget(new ItemIconButton(
+                leftPos + TARGET_BTN_X,
+                topPos + SLOT_SIDE_BTN_Y,
+                BTN,
+                b -> cycleTargetMode(false),
+                this::nullifierTargetIcon,
+                () -> null,
                 Component.empty()));
 
         rangeButton = addRenderableWidget(Button.builder(Component.empty(), b -> {})
@@ -186,6 +200,16 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
             cycleRedstoneMode(true);
             return true;
         }
+        if (targetModeButton != null && targetModeButton.isMouseOver(mouseX, mouseY)) {
+            if (event.button() == 0) {
+                cycleTargetMode(false);
+                return true;
+            }
+            if (event.button() == 1) {
+                cycleTargetMode(true);
+                return true;
+            }
+        }
         return super.mouseClicked(event, doubleClick);
     }
 
@@ -216,6 +240,61 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
             case 1 -> 3;
             case 3 -> 2;
             default -> 0;
+        };
+    }
+
+    private void cycleTargetMode(boolean backward) {
+        NullifierTargetMode current = NullifierTargetMode.fromId(menu.getTargetModeId());
+        INullifierBE.NullifierType type = INullifierBE.NullifierType.fromId(menu.getTypeId());
+        NullifierTargetMode next = backward
+                ? cycleTargetBackward(current, type)
+                : cycleTargetForward(current, type);
+        ClientPacketDistributor.sendToServer(new NullifierTargetModeC2SPacket(menu.getSyncedBlockPos(), next.getId()));
+    }
+
+    private static NullifierTargetMode cycleTargetForward(NullifierTargetMode mode, INullifierBE.NullifierType type) {
+        if (type.hasLimitedTargetModes()) {
+            return mode == NullifierTargetMode.ONLY_MOBS
+                    ? NullifierTargetMode.DISABLED
+                    : NullifierTargetMode.ONLY_MOBS;
+        }
+        return switch (mode) {
+            case DISABLED -> NullifierTargetMode.ONLY_MOBS;
+            case ONLY_MOBS -> NullifierTargetMode.ONLY_PLAYERS;
+            case ONLY_PLAYERS -> NullifierTargetMode.MOBS_AND_PLAYERS;
+            case MOBS_AND_PLAYERS -> NullifierTargetMode.DISABLED;
+        };
+    }
+
+    private static NullifierTargetMode cycleTargetBackward(NullifierTargetMode mode, INullifierBE.NullifierType type) {
+        if (type.hasLimitedTargetModes()) {
+            return mode == NullifierTargetMode.DISABLED
+                    ? NullifierTargetMode.ONLY_MOBS
+                    : NullifierTargetMode.DISABLED;
+        }
+        return switch (mode) {
+            case DISABLED -> NullifierTargetMode.MOBS_AND_PLAYERS;
+            case ONLY_MOBS -> NullifierTargetMode.DISABLED;
+            case ONLY_PLAYERS -> NullifierTargetMode.ONLY_MOBS;
+            case MOBS_AND_PLAYERS -> NullifierTargetMode.ONLY_PLAYERS;
+        };
+    }
+
+    private ItemStack nullifierTargetIcon() {
+        return switch (NullifierTargetMode.fromId(menu.getTargetModeId())) {
+            case DISABLED -> new ItemStack(Items.BARRIER);
+            case ONLY_MOBS -> new ItemStack(Items.ZOMBIE_HEAD);
+            case ONLY_PLAYERS -> new ItemStack(Items.PLAYER_HEAD);
+            case MOBS_AND_PLAYERS -> new ItemStack(Items.IRON_GOLEM_SPAWN_EGG);
+        };
+    }
+
+    private static Component nullifierTargetTooltip(int modeId) {
+        return switch (NullifierTargetMode.fromId(modeId)) {
+            case DISABLED -> Component.translatable("gui.iska_utils.nullifier.target.disabled");
+            case ONLY_MOBS -> Component.translatable("gui.iska_utils.nullifier.target.only_mobs");
+            case ONLY_PLAYERS -> Component.translatable("gui.iska_utils.nullifier.target.only_players");
+            case MOBS_AND_PLAYERS -> Component.translatable("gui.iska_utils.nullifier.target.mobs_and_players");
         };
     }
 
@@ -333,6 +412,8 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
         String titleKey = switch (menu.getTypeId()) {
             case 1 -> "gui.iska_utils.wander_nullifier.title";
             case 2 -> "gui.iska_utils.soul_nullifier.title";
+            case 3 -> "gui.iska_utils.flight_nullifier.title";
+            case 4 -> "gui.iska_utils.climbing_nullifier.title";
             default -> "gui.iska_utils.ender_nullifier.title";
         };
         Component titleText = Component.translatable(titleKey);
@@ -379,6 +460,9 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
     private void renderButtonTooltips(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         if (redstoneModeButton != null && redstoneModeButton.isMouseOver(mouseX, mouseY)) {
             renderButtonTooltip(graphics, mouseX, mouseY, nullifierRedstoneTooltip(menu.getRedstoneModeGui()), true);
+        }
+        if (targetModeButton != null && targetModeButton.isMouseOver(mouseX, mouseY)) {
+            renderButtonTooltip(graphics, mouseX, mouseY, nullifierTargetTooltip(menu.getTargetModeId()), true);
         }
     }
 

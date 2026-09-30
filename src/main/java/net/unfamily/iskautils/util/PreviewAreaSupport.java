@@ -6,8 +6,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.block.CollectingCrateBlock;
+import net.unfamily.iskautils.block.ClimbingNullifierBlock;
 import net.unfamily.iskautils.block.EnderNullifierBlock;
 import net.unfamily.iskautils.block.FanBlock;
+import net.unfamily.iskautils.block.FlightNullifierBlock;
 import net.unfamily.iskautils.block.SoulNullifierBlock;
 import net.unfamily.iskautils.block.StructurePlacerMachineBlock;
 import net.unfamily.iskautils.block.TemporalOverclockerBlock;
@@ -37,6 +39,8 @@ public final class PreviewAreaSupport {
                 || state.getBlock() instanceof CollectingCrateBlock
                 || state.getBlock() instanceof StructurePlacerMachineBlock
                 || state.getBlock() instanceof EnderNullifierBlock
+                || state.getBlock() instanceof FlightNullifierBlock
+                || state.getBlock() instanceof ClimbingNullifierBlock
                 || state.getBlock() instanceof SoulNullifierBlock
                 || state.getBlock() instanceof WanderNullifierBlock
                 || state.getBlock() instanceof BlazingAltarBlock
@@ -60,7 +64,7 @@ public final class PreviewAreaSupport {
         onPreviewOwnerBlockBroken(level, pos, oldState);
     }
 
-    /** Call when the owner block is broken (e.g. {@code affectNeighborsAfterRemoval} on 26.x). */
+    /** Call when the owner block is broken. */
     public static void onPreviewOwnerBlockBroken(Level level, BlockPos pos, BlockState removedState) {
         if (level.isClientSide() || !(level instanceof ServerLevel serverLevel)) {
             return;

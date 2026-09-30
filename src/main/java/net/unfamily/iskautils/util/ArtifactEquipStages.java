@@ -31,6 +31,7 @@ public final class ArtifactEquipStages {
     public static final String MINIATURE_TENT = "iska_utils_internal-miniature_tent_equip";
     public static final String RUNIC_DICE = "iska_utils_internal-runic_dice_equip";
     public static final String ENTROPIC_CHAMPAGNE = "iska_utils_internal-entropic_champagne_equip";
+    public static final String LASTING_CANDY = "iska_utils_internal-lasting_candy_equip";
 
     private static final List<String> ALL_STAGES = List.of(
             OLD_BRICK,
@@ -47,7 +48,8 @@ public final class ArtifactEquipStages {
             ANCIENT_STAR,
             MINIATURE_TENT,
             RUNIC_DICE,
-            ENTROPIC_CHAMPAGNE
+            ENTROPIC_CHAMPAGNE,
+            LASTING_CANDY
     );
 
     private static final Map<Item, String> STAGE_BY_ITEM = buildStageMap();
@@ -86,6 +88,7 @@ public final class ArtifactEquipStages {
         map.put(ModItems.MINIATURE_TENT.get(), MINIATURE_TENT);
         map.put(ModItems.RUNIC_DICE.get(), RUNIC_DICE);
         map.put(ModItems.ENTROPIC_CHAMPAGNE.get(), ENTROPIC_CHAMPAGNE);
+        map.put(ModItems.LASTING_CANDY.get(), LASTING_CANDY);
         return Collections.unmodifiableMap(map);
     }
 }

@@ -1,0 +1,1 @@
+{"type":"minecraft:crafting_shaped","category":"misc","group":"hanging_sign","pattern":["X X","###","###"],"key":{"#":"iska_utils:stripped_rubber_log","X":"minecraft:iron_chain"},"result":{"count":6,"id":"iska_utils:rubber_hanging_sign"}}

@@ -1,15 +1,22 @@
 package net.unfamily.iskautils.block.entity;
 
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.fml.ModList;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.ModBlocks;
+import net.unfamily.iskautils.block.entity.TemporalOverclockerBlockEntity;
+
+import java.util.function.Supplier;
 
 /**
  * Registro delle entità blocco
@@ -17,210 +24,282 @@ import net.unfamily.iskautils.block.ModBlocks;
 public class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, IskaUtils.MOD_ID);
+
+    static {
+        if (!ModList.get().isLoaded("pattern_crafter")) {
+            BLOCK_ENTITIES.addAlias(
+                    ResourceLocation.fromNamespaceAndPath("pattern_crafter", "pattern_crafter"),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "pattern_crafter"));
+            BLOCK_ENTITIES.addAlias(
+                    ResourceLocation.fromNamespaceAndPath("pattern_crafter", "improved_pattern_crafter"),
+                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "improved_pattern_crafter"));
+        }
+    }
             
     // Register the block entity for Hellfire Igniter
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<HellfireIgniterBlockEntity>> HELLFIRE_IGNITER_BE =
             BLOCK_ENTITIES.register("hellfire_igniter", () ->
-                    new BlockEntityType<>(HellfireIgniterBlockEntity::new, ModBlocks.HELLFIRE_IGNITER.get()));
+                    BlockEntityType.Builder.of(HellfireIgniterBlockEntity::new,
+                            ModBlocks.HELLFIRE_IGNITER.get()).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EnderNullifierBlockEntity>> ENDER_NULLIFIER_BE =
             BLOCK_ENTITIES.register("ender_nullifier", () ->
-                    new BlockEntityType<>(EnderNullifierBlockEntity::new, ModBlocks.ENDER_NULLIFIER.get()));
+                    BlockEntityType.Builder.of(EnderNullifierBlockEntity::new,
+                            ModBlocks.ENDER_NULLIFIER.get()).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WanderNullifierBlockEntity>> WANDER_NULLIFIER_BE =
             BLOCK_ENTITIES.register("wander_nullifier", () ->
-                    new BlockEntityType<>(WanderNullifierBlockEntity::new, ModBlocks.WANDER_NULLIFIER.get()));
+                    BlockEntityType.Builder.of(WanderNullifierBlockEntity::new,
+                            ModBlocks.WANDER_NULLIFIER.get()).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SoulNullifierBlockEntity>> SOUL_NULLIFIER_BE =
             BLOCK_ENTITIES.register("soul_nullifier", () ->
-                    new BlockEntityType<>(SoulNullifierBlockEntity::new, ModBlocks.SOUL_NULLIFIER.get()));
+                    BlockEntityType.Builder.of(SoulNullifierBlockEntity::new,
+                            ModBlocks.SOUL_NULLIFIER.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FlightNullifierBlockEntity>> FLIGHT_NULLIFIER_BE =
+            BLOCK_ENTITIES.register("flight_nullifier", () ->
+                    BlockEntityType.Builder.of(FlightNullifierBlockEntity::new,
+                            ModBlocks.FLIGHT_NULLIFIER.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ClimbingNullifierBlockEntity>> CLIMBING_NULLIFIER_BE =
+            BLOCK_ENTITIES.register("climbing_nullifier", () ->
+                    BlockEntityType.Builder.of(ClimbingNullifierBlockEntity::new,
+                            ModBlocks.CLIMBING_NULLIFIER.get()).build(null));
                             
     // BlockEntity per il nuovo blocco di legno di gomma vuoto
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RubberLogEmptyBlockEntity>> RUBBER_LOG_EMPTY =
+    public static final Supplier<BlockEntityType<RubberLogEmptyBlockEntity>> RUBBER_LOG_EMPTY = 
             BLOCK_ENTITIES.register("rubber_log_empty", 
-                    () -> new BlockEntityType<>(RubberLogEmptyBlockEntity::new, ModBlocks.RUBBER_LOG_EMPTY.get()));
+                    () -> BlockEntityType.Builder.of(RubberLogEmptyBlockEntity::new, 
+                            ModBlocks.RUBBER_LOG_EMPTY.get()).build(null));
 
     // BlockEntity for empty dye bush (refill timer)
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DyeBushEmptyBlockEntity>> DYE_BUSH_EMPTY =
+    public static final Supplier<BlockEntityType<DyeBushEmptyBlockEntity>> DYE_BUSH_EMPTY = 
             BLOCK_ENTITIES.register("dye_bush_empty", 
-                    () -> new BlockEntityType<>(DyeBushEmptyBlockEntity::new, ModBlocks.DYE_BUSH_EMPTY.get()));
+                    () -> BlockEntityType.Builder.of(DyeBushEmptyBlockEntity::new, 
+                            ModBlocks.DYE_BUSH_EMPTY.get()).build(null));
 
     // Passive BlockEntity for filled blocks (no logic); keeps block position "active" for tick accelerators
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PassiveFilledBlockEntity>> PASSIVE_FILLED =
+    public static final Supplier<BlockEntityType<PassiveFilledBlockEntity>> PASSIVE_FILLED = 
             BLOCK_ENTITIES.register("passive_filled", 
-                    () -> new BlockEntityType<>(
-                        PassiveFilledBlockEntity::new,
-                        ModBlocks.RUBBER_LOG_FILLED.get(),
-                        ModBlocks.DYE_BUSH_FILLED.get()
-                    ));
+                    () -> BlockEntityType.Builder.of(PassiveFilledBlockEntity::new, 
+                            ModBlocks.RUBBER_LOG_FILLED.get(), 
+                            ModBlocks.DYE_BUSH_FILLED.get()).build(null));
 
     // BlockEntity per il RubberSapExtractor
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RubberSapExtractorBlockEntity>> RUBBER_SAP_EXTRACTOR =
             BLOCK_ENTITIES.register("rubber_sap_extractor", () ->
-                    new BlockEntityType<>(RubberSapExtractorBlockEntity::new, ModBlocks.RUBBER_SAP_EXTRACTOR.get()));
+                    BlockEntityType.Builder.of(RubberSapExtractorBlockEntity::new,
+                            ModBlocks.RUBBER_SAP_EXTRACTOR.get()).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<KnowledgeCompressorBlockEntity>> KNOWLEDGE_COMPRESSOR =
             BLOCK_ENTITIES.register("knowledge_compressor", () ->
-                    new BlockEntityType<>(KnowledgeCompressorBlockEntity::new, ModBlocks.KNOWLEDGE_COMPRESSOR.get()));
-
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PatternCrafterBlockEntity>> PATTERN_CRAFTER_BE =
-            BLOCK_ENTITIES.register("pattern_crafter", () ->
-                    new BlockEntityType<>(PatternCrafterBlockEntity::new, ModBlocks.PATTERN_CRAFTER.get()));
-
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ImprovedPatternCrafterBlockEntity>> IMPROVED_PATTERN_CRAFTER_BE =
-            BLOCK_ENTITIES.register("improved_pattern_crafter", () ->
-                    new BlockEntityType<>(ImprovedPatternCrafterBlockEntity::new, ModBlocks.IMPROVED_PATTERN_CRAFTER.get()));
+                    BlockEntityType.Builder.of(KnowledgeCompressorBlockEntity::new,
+                            ModBlocks.KNOWLEDGE_COMPRESSOR.get()).build(null));
 
     // Registra il Weather Alterer Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WeatherAltererBlockEntity>> WEATHER_ALTERER_BE =
             BLOCK_ENTITIES.register("weather_alterer_block_entity", () ->
-                    new BlockEntityType<>(WeatherAltererBlockEntity::new, ModBlocks.WEATHER_ALTERER.get()));
+                    BlockEntityType.Builder.of(WeatherAltererBlockEntity::new, 
+                            ModBlocks.WEATHER_ALTERER.get()).build(null));
 
     // Registra il Time Alterer Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TimeAltererBlockEntity>> TIME_ALTERER_BE =
             BLOCK_ENTITIES.register("time_alterer_block_entity", () ->
-                    new BlockEntityType<>(TimeAltererBlockEntity::new, ModBlocks.TIME_ALTERER.get()));
+                    BlockEntityType.Builder.of(TimeAltererBlockEntity::new, 
+                            ModBlocks.TIME_ALTERER.get()).build(null));
     
     // Registra il Temporal Overclocker Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TemporalOverclockerBlockEntity>> TEMPORAL_OVERCLOCKER_BE =
             BLOCK_ENTITIES.register("temporal_overclocker_block_entity", () ->
-                    new BlockEntityType<>(TemporalOverclockerBlockEntity::new, ModBlocks.TEMPORAL_OVERCLOCKER.get()));
+                    BlockEntityType.Builder.of(TemporalOverclockerBlockEntity::new, 
+                            ModBlocks.TEMPORAL_OVERCLOCKER.get()).build(null));
 
     // Angel Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AngelBlockEntity>> ANGEL_BLOCK_ENTITY =
             BLOCK_ENTITIES.register("angel_block_entity",
-                    () -> new BlockEntityType<>(AngelBlockEntity::new, ModBlocks.ANGEL_BLOCK.get()));
+                    () -> BlockEntityType.Builder.of(AngelBlockEntity::new, ModBlocks.ANGEL_BLOCK.get())
+                            .build(null));
 
     // Structure Placer Machine Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<StructurePlacerMachineBlockEntity>> STRUCTURE_PLACER_MACHINE_BE =
             BLOCK_ENTITIES.register("structure_placer_machine",
-                    () -> new BlockEntityType<>(StructurePlacerMachineBlockEntity::new, ModBlocks.STRUCTURE_PLACER_MACHINE.get()));
+                    () -> BlockEntityType.Builder.of(StructurePlacerMachineBlockEntity::new, ModBlocks.STRUCTURE_PLACER_MACHINE.get())
+                            .build(null));
 
     // Structure Saver Machine Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<StructureSaverMachineBlockEntity>> STRUCTURE_SAVER_MACHINE_BE =
             BLOCK_ENTITIES.register("structure_saver_machine",
-                    () -> new BlockEntityType<>(StructureSaverMachineBlockEntity::new, ModBlocks.STRUCTURE_SAVER_MACHINE.get()));
+                    () -> BlockEntityType.Builder.of(StructureSaverMachineBlockEntity::new, ModBlocks.STRUCTURE_SAVER_MACHINE.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PatternCrafterBlockEntity>> PATTERN_CRAFTER_BE =
+            BLOCK_ENTITIES.register("pattern_crafter",
+                    () -> BlockEntityType.Builder.of(PatternCrafterBlockEntity::new, ModBlocks.PATTERN_CRAFTER.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ImprovedPatternCrafterBlockEntity>> IMPROVED_PATTERN_CRAFTER_BE =
+            BLOCK_ENTITIES.register("improved_pattern_crafter",
+                    () -> BlockEntityType.Builder.of(ImprovedPatternCrafterBlockEntity::new, ModBlocks.IMPROVED_PATTERN_CRAFTER.get())
+                            .build(null));
 
     // Shop Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ShopBlockEntity>> SHOP_BE =
             BLOCK_ENTITIES.register("shop",
-                    () -> new BlockEntityType<>(ShopBlockEntity::new, ModBlocks.SHOP.get()));
+                    () -> BlockEntityType.Builder.of(ShopBlockEntity::new, ModBlocks.SHOP.get())
+                            .build(null));
 
     // Auto Shop Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AutoShopBlockEntity>> AUTO_SHOP_BE =
             BLOCK_ENTITIES.register("auto_shop",
-                    () -> new BlockEntityType<>(AutoShopBlockEntity::new, ModBlocks.AUTO_SHOP.get()));
+                    () -> BlockEntityType.Builder.of(AutoShopBlockEntity::new, ModBlocks.AUTO_SHOP.get())
+                            .build(null));
 
     // Deep Drawers Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DeepDrawersBlockEntity>> DEEP_DRAWERS_BE =
-            BLOCK_ENTITIES.register("deep_drawer",
-                    () -> new BlockEntityType<>(DeepDrawersBlockEntity::new, ModBlocks.DEEP_DRAWERS.get()));
+            BLOCK_ENTITIES.register("deep_drawers",
+                    () -> BlockEntityType.Builder.of(DeepDrawersBlockEntity::new, ModBlocks.DEEP_DRAWERS.get())
+                            .build(null));
 
     // Deep Drawer Extractor Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DeepDrawerExtractorBlockEntity>> DEEP_DRAWER_EXTRACTOR =
             BLOCK_ENTITIES.register("deep_drawer_extractor",
-                    () -> new BlockEntityType<>(DeepDrawerExtractorBlockEntity::new, ModBlocks.DEEP_DRAWER_EXTRACTOR.get()));
+                    () -> BlockEntityType.Builder.of(DeepDrawerExtractorBlockEntity::new, ModBlocks.DEEP_DRAWER_EXTRACTOR.get())
+                            .build(null));
     
     // Deep Drawer Interface Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DeepDrawerInterfaceBlockEntity>> DEEP_DRAWER_INTERFACE =
             BLOCK_ENTITIES.register("deep_drawer_interface",
-                    () -> new BlockEntityType<>(DeepDrawerInterfaceBlockEntity::new, ModBlocks.DEEP_DRAWER_INTERFACE.get()));
+                    () -> BlockEntityType.Builder.of(DeepDrawerInterfaceBlockEntity::new, ModBlocks.DEEP_DRAWER_INTERFACE.get())
+                            .build(null));
     
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DeepDrawerExtenderBlockEntity>> DEEP_DRAWER_EXTENDER =
             BLOCK_ENTITIES.register("deep_drawer_extender",
-                    () -> new BlockEntityType<>(DeepDrawerExtenderBlockEntity::new, ModBlocks.DEEP_DRAWER_EXTENDER.get()));
+                    () -> BlockEntityType.Builder.of(DeepDrawerExtenderBlockEntity::new, ModBlocks.DEEP_DRAWER_EXTENDER.get())
+                            .build(null));
     
     // Smart Timer Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SmartTimerBlockEntity>> SMART_TIMER_BE =
             BLOCK_ENTITIES.register("smart_timer",
-                    () -> new BlockEntityType<>(SmartTimerBlockEntity::new, ModBlocks.SMART_TIMER.get()));
+                    () -> BlockEntityType.Builder.of(SmartTimerBlockEntity::new, ModBlocks.SMART_TIMER.get())
+                            .build(null));
 
     // Sound Muffler Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SoundMufflerBlockEntity>> SOUND_MUFFLER_BE =
             BLOCK_ENTITIES.register("sound_muffler",
-                    () -> new BlockEntityType<>(SoundMufflerBlockEntity::new, ModBlocks.SOUND_MUFFLER.get()));
+                    () -> BlockEntityType.Builder.of(SoundMufflerBlockEntity::new, ModBlocks.SOUND_MUFFLER.get())
+                            .build(null));
 
-    // Dye Extractor Block Entity
+    // Factory Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FactoryBlockEntity>> FACTORY_BE =
             BLOCK_ENTITIES.register("factory",
-                    () -> new BlockEntityType<>(FactoryBlockEntity::new, ModBlocks.FACTORY.get()));
+                    () -> BlockEntityType.Builder.of(FactoryBlockEntity::new, ModBlocks.FACTORY.get())
+                            .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AncientTableBlockEntity>> ANCIENT_TABLE_BE =
             BLOCK_ENTITIES.register("ancient_table",
-                    () -> new BlockEntityType<>(AncientTableBlockEntity::new, ModBlocks.ANCIENT_TABLE.get()));
+                    () -> BlockEntityType.Builder.of(AncientTableBlockEntity::new, ModBlocks.ANCIENT_TABLE.get())
+                            .build(null));
 
     // Fan Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FanBlockEntity>> FAN_BE =
             BLOCK_ENTITIES.register("fan",
-                    () -> new BlockEntityType<>(FanBlockEntity::new, ModBlocks.FAN.get()));
+                    () -> BlockEntityType.Builder.of(FanBlockEntity::new, ModBlocks.FAN.get())
+                            .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MobReaperBlockEntity>> MOB_REAPER_BE =
             BLOCK_ENTITIES.register("mob_reaper",
-                    () -> new BlockEntityType<>(MobReaperBlockEntity::new, ModBlocks.MOB_REAPER.get()));
+                    () -> BlockEntityType.Builder.of(MobReaperBlockEntity::new, ModBlocks.MOB_REAPER.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CollectingCrateBlockEntity>> COLLECTING_CRATE =
+            BLOCK_ENTITIES.register("collecting_crate",
+                    () -> BlockEntityType.Builder.of(CollectingCrateBlockEntity::new, ModBlocks.COLLECTING_CRATE.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BlazingAltarBlockEntity>> BLAZING_ALTAR_BE =
+            BLOCK_ENTITIES.register("blazing_altar",
+                    () -> BlockEntityType.Builder.of(BlazingAltarBlockEntity::new, ModBlocks.BLAZING_ALTAR.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EntropyTntBlockEntity>> ENTROPY_TNT_BE =
+            BLOCK_ENTITIES.register("entropy_tnt",
+                    () -> BlockEntityType.Builder.of(EntropyTntBlockEntity::new, ModBlocks.ENTROPY_TNT.get())
+                            .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EntropicSpawnerBlockEntity>> ENTROPIC_SPAWNER_BE =
             BLOCK_ENTITIES.register("entropic_spawner",
-                    () -> new BlockEntityType<>(EntropicSpawnerBlockEntity::new, ModBlocks.ENTROPIC_SPAWNER.get()));
-
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CollectingCrateBlockEntity>> COLLECTING_CRATE_BE =
-            BLOCK_ENTITIES.register("collecting_crate",
-                    () -> new BlockEntityType<>(CollectingCrateBlockEntity::new, ModBlocks.COLLECTING_CRATE.get()));
+                    () -> BlockEntityType.Builder.of(EntropicSpawnerBlockEntity::new, ModBlocks.ENTROPIC_SPAWNER.get())
+                            .build(null));
     
     // Sacred Rubber Sapling Block Entity
     // BlockEntity for RubberLogSacredBlock (stores root coordinates)
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RubberLogSacredBlockEntity>> RUBBER_LOG_SACRED_BE =
             BLOCK_ENTITIES.register("rubber_log_sacred", () ->
-                    new BlockEntityType<>(RubberLogSacredBlockEntity::new, ModBlocks.RUBBER_LOG_SACRED.get()));
+                    BlockEntityType.Builder.of(RubberLogSacredBlockEntity::new,
+                            ModBlocks.RUBBER_LOG_SACRED.get()).build(null));
     
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SacredRubberSaplingBlockEntity>> SACRED_RUBBER_SAPLING_BE =
             BLOCK_ENTITIES.register("sacred_rubber_sapling",
-                    () -> new BlockEntityType<>(SacredRubberSaplingBlockEntity::new, ModBlocks.SACRED_RUBBER_SAPLING.get()));
+                    () -> BlockEntityType.Builder.of(SacredRubberSaplingBlockEntity::new, ModBlocks.SACRED_RUBBER_SAPLING.get())
+                            .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EntropicSoilBlockEntity>> ENTROPIC_SOIL_BE =
             BLOCK_ENTITIES.register("entropic_soil",
-                    () -> new BlockEntityType<>(EntropicSoilBlockEntity::new, ModBlocks.ENTROPIC_SOIL.get()));
+                    () -> BlockEntityType.Builder.of(EntropicSoilBlockEntity::new, ModBlocks.ENTROPIC_SOIL.get())
+                            .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EntropicDirtBlockEntity>> ENTROPIC_DIRT_BE =
             BLOCK_ENTITIES.register("entropic_dirt",
-                    () -> new BlockEntityType<>(EntropicDirtBlockEntity::new, ModBlocks.ENTROPIC_DIRT.get()));
+                    () -> BlockEntityType.Builder.of(EntropicDirtBlockEntity::new, ModBlocks.ENTROPIC_DIRT.get())
+                            .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<GraveyardSoilBlockEntity>> GRAVEYARD_SOIL_BE =
             BLOCK_ENTITIES.register("graveyard_soil",
-                    () -> new BlockEntityType<>(GraveyardSoilBlockEntity::new, ModBlocks.GRAVEYARD_SOIL.get()));
+                    () -> BlockEntityType.Builder.of(GraveyardSoilBlockEntity::new, ModBlocks.GRAVEYARD_SOIL.get())
+                            .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DruidicPodzolBlockEntity>> DRUIDIC_PODZOL_BE =
             BLOCK_ENTITIES.register("druidic_podzol",
-                    () -> new BlockEntityType<>(DruidicPodzolBlockEntity::new, ModBlocks.DRUIDIC_PODZOL.get()));
+                    () -> BlockEntityType.Builder.of(DruidicPodzolBlockEntity::new, ModBlocks.DRUIDIC_PODZOL.get())
+                            .build(null));
 
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BlazingAltarBlockEntity>> BLAZING_ALTAR_BE =
-            BLOCK_ENTITIES.register("blazing_altar",
-                    () -> new BlockEntityType<>(BlazingAltarBlockEntity::new, ModBlocks.BLAZING_ALTAR.get()));
-
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EntropyTntBlockEntity>> ENTROPY_TNT_BE =
-            BLOCK_ENTITIES.register("entropy_tnt",
-                    () -> new BlockEntityType<>(EntropyTntBlockEntity::new, ModBlocks.ENTROPY_TNT.get()));
-
+    // Ethereal Frame Block Entity
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EtherealFrameBlockEntity>> ETHEREAL_FRAME_BE =
             BLOCK_ENTITIES.register("ethereal_frame",
-                    () -> new BlockEntityType<>(EtherealFrameBlockEntity::new, ModBlocks.ETHEREAL_FRAME.get()));
+                    () -> BlockEntityType.Builder.of(EtherealFrameBlockEntity::new, ModBlocks.ETHEREAL_FRAME.get())
+                            .build(null));
 
     /**
      * Registra tutte le entità blocco
      */
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
+        eventBus.addListener(ModBlockEntityEvents::onBlockEntityValidBlocks);
     }
 
+    @EventBusSubscriber(modid = IskaUtils.MOD_ID)
     public static class ModBlockEntityEvents {
+        public static void onBlockEntityValidBlocks(BlockEntityTypeAddBlocksEvent event) {
+            event.modify(
+                    BlockEntityType.SIGN,
+                    ModBlocks.RUBBER_SIGN.get(),
+                    ModBlocks.RUBBER_WALL_SIGN.get());
+            event.modify(
+                    BlockEntityType.HANGING_SIGN,
+                    ModBlocks.RUBBER_HANGING_SIGN.get(),
+                    ModBlocks.RUBBER_WALL_HANGING_SIGN.get());
+        }
+
         @SubscribeEvent
         public static void registerCapabilities(RegisterCapabilitiesEvent event) {
             // Register energy capability for Hellfire Igniter
             event.registerBlockEntity(
-                    Capabilities.Energy.BLOCK,
+                    Capabilities.EnergyStorage.BLOCK,
                     HELLFIRE_IGNITER_BE.get(),
                     (blockEntity, context) -> {
                         if (blockEntity instanceof HellfireIgniterBlockEntity hellfireEntity) {
-                            return hellfireEntity.getEnergyHandler();
+                            return hellfireEntity.getEnergyStorage();
                         }
                         return null;
                     }
@@ -228,63 +307,57 @@ public class ModBlockEntities {
             
             // Register energy capability for RubberSapExtractor
             event.registerBlockEntity(
-                    Capabilities.Energy.BLOCK,
+                    Capabilities.EnergyStorage.BLOCK,
                     RUBBER_SAP_EXTRACTOR.get(),
                     (blockEntity, context) -> {
                         if (blockEntity instanceof RubberSapExtractorBlockEntity extractorEntity) {
-                            return extractorEntity.getEnergyHandler();
+                            return extractorEntity.getEnergyStorage();
                         }
                         return null;
                     }
             );
 
-            // Item transfer capability for RubberSapExtractor output (tubes/pipes)
+            // Register item handler capability for RubberSapExtractor (output slot for tubes/pipes)
             event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
+                    Capabilities.ItemHandler.BLOCK,
                     RUBBER_SAP_EXTRACTOR.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof RubberSapExtractorBlockEntity be ? be.getItemTransferHandler() : null
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof RubberSapExtractorBlockEntity extractorEntity) {
+                            return extractorEntity.getItemHandler();
+                        }
+                        return null;
+                    }
             );
 
             event.registerBlockEntity(
-                    Capabilities.Fluid.BLOCK,
+                    Capabilities.FluidHandler.BLOCK,
                     KNOWLEDGE_COMPRESSOR.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof KnowledgeCompressorBlockEntity be ? be.getFluidTransferHandler() : null
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof KnowledgeCompressorBlockEntity compressor) {
+                            return compressor.getFluidHandler();
+                        }
+                        return null;
+                    }
             );
 
             event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
+                    Capabilities.ItemHandler.BLOCK,
                     KNOWLEDGE_COMPRESSOR.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof KnowledgeCompressorBlockEntity be ? be.getItemTransferHandler() : null
-            );
-
-            event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
-                    PATTERN_CRAFTER_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof ImprovedPatternCrafterBlockEntity be ? be.getItemTransferHandler() : null
-            );
-            event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
-                    IMPROVED_PATTERN_CRAFTER_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof ImprovedPatternCrafterBlockEntity be ? be.getItemTransferHandler() : null
-            );
-            event.registerBlockEntity(
-                    Capabilities.Energy.BLOCK,
-                    PATTERN_CRAFTER_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof ImprovedPatternCrafterBlockEntity be ? be.getEnergyHandler() : null
-            );
-            event.registerBlockEntity(
-                    Capabilities.Energy.BLOCK,
-                    IMPROVED_PATTERN_CRAFTER_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof ImprovedPatternCrafterBlockEntity be ? be.getEnergyHandler() : null
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof KnowledgeCompressorBlockEntity compressor) {
+                            return compressor.getItemHandler();
+                        }
+                        return null;
+                    }
             );
             
             // Register energy capability for WeatherAlterer
             event.registerBlockEntity(
-                    Capabilities.Energy.BLOCK,
+                    Capabilities.EnergyStorage.BLOCK,
                     WEATHER_ALTERER_BE.get(),
                     (blockEntity, context) -> {
                         if (blockEntity instanceof WeatherAltererBlockEntity weatherAltererEntity) {
-                            return weatherAltererEntity.getEnergyHandler();
+                            return weatherAltererEntity.getEnergyStorage();
                         }
                         return null;
                     }
@@ -292,11 +365,11 @@ public class ModBlockEntities {
             
             // Register energy capability for TimeAlterer
             event.registerBlockEntity(
-                    Capabilities.Energy.BLOCK,
+                    Capabilities.EnergyStorage.BLOCK,
                     TIME_ALTERER_BE.get(),
                     (blockEntity, context) -> {
                         if (blockEntity instanceof TimeAltererBlockEntity timeAltererEntity) {
-                            return timeAltererEntity.getEnergyHandler();
+                            return timeAltererEntity.getEnergyStorage();
                         }
                         return null;
                     }
@@ -304,147 +377,222 @@ public class ModBlockEntities {
             
             // Register energy capability for TemporalOverclocker
             event.registerBlockEntity(
-                    Capabilities.Energy.BLOCK,
+                    Capabilities.EnergyStorage.BLOCK,
                     TEMPORAL_OVERCLOCKER_BE.get(),
                     (blockEntity, context) -> {
                         if (blockEntity instanceof TemporalOverclockerBlockEntity overclockerEntity) {
-                            return overclockerEntity.getEnergyHandler();
+                            return overclockerEntity.getEnergyStorage();
                         }
                         return null;
                     }
             );
 
             event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
+                    Capabilities.ItemHandler.BLOCK,
                     TEMPORAL_OVERCLOCKER_BE.get(),
                     (blockEntity, context) ->
                             blockEntity instanceof TemporalOverclockerBlockEntity overclocker
-                                    ? overclocker.getItemTransferHandler()
+                                    ? overclocker.getItemHandler()
                                     : null);
-
-            // Register energy capability for Structure Placer Machine
+            
+            // Register item handler capability for Structure Placer Machine
             event.registerBlockEntity(
-                    Capabilities.Energy.BLOCK,
+                    Capabilities.ItemHandler.BLOCK,
                     STRUCTURE_PLACER_MACHINE_BE.get(),
                     (blockEntity, context) -> {
                         if (blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity) {
-                            return machineEntity.getEnergyHandler();
+                            return machineEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register energy capability for Structure Placer Machine
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
+                    STRUCTURE_PLACER_MACHINE_BE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity) {
+                            return machineEntity.getEnergyStorage();
                         }
                         return null;
                     }
             );
 
             event.registerBlockEntity(
-                    Capabilities.Energy.BLOCK,
+                    Capabilities.ItemHandler.BLOCK,
+                    PATTERN_CRAFTER_BE.get(),
+                    (blockEntity, context) -> blockEntity.getAutomationHandler());
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
+                    PATTERN_CRAFTER_BE.get(),
+                    (blockEntity, context) -> blockEntity.getEnergyStorage());
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    IMPROVED_PATTERN_CRAFTER_BE.get(),
+                    (blockEntity, context) -> blockEntity.getAutomationHandler());
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
+                    IMPROVED_PATTERN_CRAFTER_BE.get(),
+                    (blockEntity, context) -> blockEntity.getEnergyStorage());
+            
+            // Register item handler capability for Structure Saver Machine
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    STRUCTURE_SAVER_MACHINE_BE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof StructureSaverMachineBlockEntity saverMachineEntity) {
+                            return saverMachineEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register item handler capability for Auto Shop Block (encapsulated slot only)
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    AUTO_SHOP_BE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof AutoShopBlockEntity autoShopEntity) {
+                            return autoShopEntity.getEncapsulatedSlot();
+                        }
+                        return null;
+                    }
+            );
+
+            event.registerBlockEntity(
+                    Capabilities.FluidHandler.BLOCK,
+                    AUTO_SHOP_BE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof AutoShopBlockEntity autoShopEntity
+                                    ? autoShopEntity.getFluidTransferHandler()
+                                    : null
+            );
+
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
+                    AUTO_SHOP_BE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof AutoShopBlockEntity autoShopEntity
+                                    ? autoShopEntity.getEnergyStorage()
+                                    : null
+            );
+
+            // Mekanism CHEMICAL block capability so gas tubes can connect to AutoShop
+            registerAutoShopChemicalCapability(event);
+            
+            // Shop Block non registra capability IItemHandler per prevenire interazioni con hopper
+            // Shop is opened via player GUI only
+            
+            // Register item handler capability for Deep Drawers
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    DEEP_DRAWERS_BE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof DeepDrawersBlockEntity deepDrawersEntity) {
+                            return deepDrawersEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register item handler capability for Deep Drawer Extractor
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    DEEP_DRAWER_EXTRACTOR.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof DeepDrawerExtractorBlockEntity extractorEntity) {
+                            return extractorEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register item handler capability for Deep Drawer Interface
+            // This exposes the adjacent drawer's content to storage mods
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    DEEP_DRAWER_INTERFACE.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof DeepDrawerInterfaceBlockEntity interfaceEntity) {
+                            return interfaceEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
+            
+            // Register item handler capability for Deep Drawer Extender
+            // This extends the drawer's presence for direct interactions (hoppers, etc.)
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    DEEP_DRAWER_EXTENDER.get(),
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof DeepDrawerExtenderBlockEntity extenderEntity) {
+                            return extenderEntity.getItemHandler();
+                        }
+                        return null;
+                    }
+            );
+
+            event.registerBlockEntity(
+                    Capabilities.EnergyStorage.BLOCK,
                     FACTORY_BE.get(),
                     (blockEntity, context) ->
-                            blockEntity instanceof FactoryBlockEntity factory ? factory.getEnergyHandler() : null);
+                            blockEntity instanceof FactoryBlockEntity factory ? factory.getEnergyStorage() : null);
 
-            // Item transfer (NeoForge 26 ResourceHandler; wraps legacy IItemHandler for hoppers / pipes)
+            // Factory: allow automation via tubes/pipes (IItemHandler)
+            // Input slot: insert only. Output slot: extract only.
             event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
-                    DEEP_DRAWERS_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof DeepDrawersBlockEntity be ? be.getItemTransferHandler() : null
-            );
-            event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
-                    DEEP_DRAWER_EXTRACTOR.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof DeepDrawerExtractorBlockEntity be ? be.getItemTransferHandler() : null
-            );
-            event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
-                    DEEP_DRAWER_INTERFACE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof DeepDrawerInterfaceBlockEntity be ? be.getItemTransferHandler() : null
-            );
-            event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
-                    DEEP_DRAWER_EXTENDER.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof DeepDrawerExtenderBlockEntity be ? be.getItemTransferHandler() : null
-            );
-            event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
-                    SHOP_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof ShopBlockEntity be ? be.getItemTransferHandler() : null
-            );
-            event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
-                    AUTO_SHOP_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof AutoShopBlockEntity be ? be.getItemTransferHandler() : null
-            );
-            event.registerBlockEntity(
-                    Capabilities.Fluid.BLOCK,
-                    AUTO_SHOP_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof AutoShopBlockEntity be ? be.getFluidTransferHandler() : null
-            );
-            event.registerBlockEntity(
-                    Capabilities.Energy.BLOCK,
-                    AUTO_SHOP_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof AutoShopBlockEntity be ? be.getEnergyHandler() : null
-            );
-            registerAutoShopChemicalCapability(event);
-            event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
-                    STRUCTURE_PLACER_MACHINE_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof StructurePlacerMachineBlockEntity be ? be.getItemTransferHandler() : null
-            );
-            event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
-                    STRUCTURE_SAVER_MACHINE_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof StructureSaverMachineBlockEntity be ? be.getItemTransferHandler() : null
-            );
-            event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
-                    FAN_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof FanBlockEntity be ? be.getItemTransferHandler() : null
-            );
-
-            event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
-                    MOB_REAPER_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof MobReaperBlockEntity be ? be.getItemTransferHandler() : null
-            );
-
-            event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
-                    COLLECTING_CRATE_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof CollectingCrateBlockEntity be ? be.getItemTransferHandler() : null
-            );
-
-            event.registerBlockEntity(
-                    Capabilities.Fluid.BLOCK,
-                    COLLECTING_CRATE_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof CollectingCrateBlockEntity be ? be.getFluidTransferHandler() : null
-            );
-
-            // Factory: automation (insert input only, extract output only)
-            event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
+                    Capabilities.ItemHandler.BLOCK,
                     FACTORY_BE.get(),
-                    (blockEntity, ctx) -> blockEntity instanceof FactoryBlockEntity be ? be.getItemTransferHandler() : null
+                    (blockEntity, context) -> {
+                        if (blockEntity instanceof FactoryBlockEntity factoryEntity) {
+                            return factoryEntity.getItemHandler();
+                        }
+                        return null;
+                    }
             );
 
             event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
+                    Capabilities.ItemHandler.BLOCK,
                     ANCIENT_TABLE_BE.get(),
-                    (blockEntity, ctx) ->
-                            blockEntity instanceof AncientTableBlockEntity table ? table.getItemTransferHandler() : null);
+                    (blockEntity, context) ->
+                            blockEntity instanceof AncientTableBlockEntity table ? table.getItemHandler() : null);
 
             event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
+                    Capabilities.ItemHandler.BLOCK,
+                    MOB_REAPER_BE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof MobReaperBlockEntity reaper ? reaper.getModuleHandler() : null);
+
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
+                    COLLECTING_CRATE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof CollectingCrateBlockEntity crate ? crate.getAutomationItemHandler() : null);
+
+            event.registerBlockEntity(
+                    Capabilities.FluidHandler.BLOCK,
+                    COLLECTING_CRATE.get(),
+                    (blockEntity, context) ->
+                            blockEntity instanceof CollectingCrateBlockEntity crate ? crate.getFluidHandler() : null);
+
+            event.registerBlockEntity(
+                    Capabilities.ItemHandler.BLOCK,
                     BLAZING_ALTAR_BE.get(),
-                    (blockEntity, ctx) ->
-                            blockEntity instanceof BlazingAltarBlockEntity altar ? altar.getItemTransferHandler() : null);
+                    (blockEntity, context) ->
+                            blockEntity instanceof BlazingAltarBlockEntity altar ? altar.getPlacerHandler() : null);
 
             event.registerBlockEntity(
-                    Capabilities.Item.BLOCK,
+                    Capabilities.ItemHandler.BLOCK,
                     ENTROPIC_SPAWNER_BE.get(),
-                    (blockEntity, ctx) ->
-                            blockEntity instanceof EntropicSpawnerBlockEntity spawner ? spawner.getItemTransferHandler() : null);
+                    (blockEntity, context) ->
+                            blockEntity instanceof EntropicSpawnerBlockEntity spawner ? spawner.getItemHandler() : null);
         }
 
         /**
          * Registers Mekanism {@code Capabilities.CHEMICAL.block()} on AutoShop so gas tubes connect.
-         * Uses reflection so Mekanism remains an optional dependency.
+         * Uses reflection so Mekanism remains an optional dependency (same pattern as Another-Dynamics).
          */
         @SuppressWarnings("unchecked")
         private static void registerAutoShopChemicalCapability(RegisterCapabilitiesEvent event) {

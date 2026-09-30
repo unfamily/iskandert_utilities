@@ -2,7 +2,7 @@ package net.unfamily.iskautils.util;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
@@ -14,7 +14,9 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.BlazingAltarBlockEntity;
 import net.unfamily.iskautils.block.entity.CollectingCrateBlockEntity;
+import net.unfamily.iskautils.block.entity.ClimbingNullifierBlockEntity;
 import net.unfamily.iskautils.block.entity.EnderNullifierBlockEntity;
+import net.unfamily.iskautils.block.entity.FlightNullifierBlockEntity;
 import net.unfamily.iskautils.block.entity.EntropicSpawnerBlockEntity;
 import net.unfamily.iskautils.block.entity.FanBlockEntity;
 import net.unfamily.iskautils.block.entity.ImprovedPatternCrafterBlockEntity;
@@ -37,7 +39,7 @@ public final class ModuleQuickInstall {
         if (stack == null || stack.isEmpty()) {
             return false;
         }
-        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (id == null || !IskaUtils.MOD_ID.equals(id.getNamespace())) {
             return false;
         }
@@ -67,7 +69,7 @@ public final class ModuleQuickInstall {
             return false;
         }
 
-        if (level.isClientSide()) {
+        if (level.isClientSide) {
             return canInsertAny(modules, held, be);
         }
 
@@ -103,6 +105,12 @@ public final class ModuleQuickInstall {
         }
         if (be instanceof EnderNullifierBlockEntity nullifier) {
             return nullifier.getModuleHandler();
+        }
+        if (be instanceof FlightNullifierBlockEntity flightNullifier) {
+            return flightNullifier.getModuleHandler();
+        }
+        if (be instanceof ClimbingNullifierBlockEntity climbingNullifier) {
+            return climbingNullifier.getModuleHandler();
         }
         if (be instanceof WanderNullifierBlockEntity nullifier) {
             return nullifier.getModuleHandler();

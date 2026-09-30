@@ -8,7 +8,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.InsideBlockEffectApplier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
@@ -19,6 +18,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.data.PotionPlateConfig;
 import net.unfamily.iskautils.data.PotionPlateType;
@@ -64,14 +64,7 @@ public class PotionPlateBlock extends VectorBlock {
     }
     
     @Override
-    protected void entityInside(
-            BlockState state,
-            Level level,
-            BlockPos pos,
-            Entity entity,
-            InsideBlockEffectApplier effectApplier,
-            boolean isPrecise
-    ) {
+    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
         if (config == null || !config.isValid()) {
             return;
         }
@@ -91,16 +84,16 @@ public class PotionPlateBlock extends VectorBlock {
             return;
         }
 
-        // no_move must run every tick on both sides so client prediction cannot walk/jump away
-        if (config.getPlateType() == PotionPlateType.SPECIAL && config.isNoMove()) {
-            applyNoMove(livingEntity);
-            if (!level.isClientSide()) {
+        // slow (alias no_move) must run every tick on both sides so client prediction stays sticky
+        if (config.getPlateType() == PotionPlateType.SPECIAL && config.isSlow()) {
+            applySlow(livingEntity);
+            if (!level.isClientSide) {
                 EFFECT_COOLDOWNS.put(entity.getUUID(), level.getGameTime());
             }
             return;
         }
 
-        if (!level.isClientSide()) {
+        if (!level.isClientSide) {
             // Check cooldown for effects - only apply every x seconds per entity
             UUID entityId = entity.getUUID();
             long currentTime = level.getGameTime();
@@ -184,6 +177,7 @@ public class PotionPlateBlock extends VectorBlock {
      */
     private boolean applyDamage(LivingEntity livingEntity, Level level, long currentTime) {
         try {
+            // Non-player damage sources (generic / environmental); unlike Mob Reaper FakePlayer hits, this does not attach a player attacker.
             // Create damage source
             var damageSource = level.damageSources().generic(); // Default damage source
             
@@ -212,8 +206,7 @@ public class PotionPlateBlock extends VectorBlock {
             if (!config.ignoresEntityDamageCap()) {
                 amount = EntityDamageCapHelper.cap(livingEntity, amount);
             }
-            livingEntity.hurt(damageSource, amount);
-            boolean success = true;
+            boolean success = livingEntity.hurt(damageSource, amount);
             
             return success;
         } catch (Exception e) {
@@ -223,12 +216,12 @@ public class PotionPlateBlock extends VectorBlock {
     }
     
     /**
-     * Applies special effects for SPECIAL plates (fire, freeze, no_move, etc.)
+     * Applies special effects for SPECIAL plates (fire, freeze, slow, etc.)
      */
     private boolean applySpecialEffect(LivingEntity livingEntity, long currentTime) {
         try {
-            if (config.isNoMove()) {
-                return applyNoMove(livingEntity);
+            if (config.isSlow()) {
+                return applySlow(livingEntity);
             }
 
             if (config.getFireDuration() > 0) {
@@ -265,13 +258,20 @@ public class PotionPlateBlock extends VectorBlock {
         }
     }
 
+    /** Horizontal (and soft vertical) slow factor; cobweb-like without makeStuckInBlock. */
+    private static final double SLOW_FACTOR = 0.35D;
+
     /**
-     * Immobilizes the entity: zero velocity and block jumping via setDeltaMovement.
-     * Does not use cobweb / makeStuckInBlock physics.
+     * Slows the entity like cobweb: multiply velocity, soft-dampen jump.
+     * Does not use makeStuckInBlock (thin plate).
      */
-    private boolean applyNoMove(LivingEntity livingEntity) {
-        livingEntity.setDeltaMovement(Vec3.ZERO);
-        livingEntity.setJumping(false);
+    private boolean applySlow(LivingEntity livingEntity) {
+        Vec3 motion = livingEntity.getDeltaMovement();
+        double vy = motion.y;
+        if (vy > 0.0D) {
+            vy *= SLOW_FACTOR;
+        }
+        livingEntity.setDeltaMovement(motion.x * SLOW_FACTOR, vy, motion.z * SLOW_FACTOR);
         livingEntity.fallDistance = 0.0f;
         livingEntity.hurtMarked = true;
         return true;
@@ -282,7 +282,7 @@ public class PotionPlateBlock extends VectorBlock {
      * Called periodically by the game
      */
     public static void cleanupCooldowns(Level level) {
-        if (level.isClientSide()) return;
+        if (level.isClientSide) return;
         
         long currentTime = level.getGameTime();
         // Remove entries older than 10 minutes (12000 ticks)
@@ -315,5 +315,12 @@ public class PotionPlateBlock extends VectorBlock {
             // Horizontal placement
             return SHAPE_HORIZONTAL;
         }
+    }
+    
+    @Override
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        // Per tutti i tipi di piastre non creiamo collisione fisica
+        // in modo che le entità possano attraversare il blocco e attivare entityInside
+        return Shapes.empty();
     }
 } 
