@@ -9,7 +9,7 @@
     "B": { "tag": "c:cobblestones" },
     "A": { "tag": "minecraft:planks" },
     "C": { "item": "minecraft:stonecutter" },
-    "D": { "item": "iska_utils:green_sludge" }
+    "D": { "tag": "iska_utils:basic_resources" }
   },
   "result": {
     "id": "iska_utils:factory",

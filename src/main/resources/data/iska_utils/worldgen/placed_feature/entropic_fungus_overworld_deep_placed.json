@@ -1,12 +1,12 @@
 {
-  "feature": "iska_utils:entropic_fungus_nether",
+  "feature": "iska_utils:entropic_fungus_overworld",
   "placement": [
     {
       "type": "minecraft:count",
       "count": {
         "type": "minecraft:uniform",
-        "min_inclusive": 12,
-        "max_inclusive": 21
+        "min_inclusive": 8,
+        "max_inclusive": 14
       }
     },
     {
@@ -17,10 +17,10 @@
       "height": {
         "type": "minecraft:uniform",
         "min_inclusive": {
-          "above_bottom": 8
+          "absolute": -64
         },
         "max_inclusive": {
-          "below_top": 8
+          "absolute": -1
         }
       }
     },
@@ -28,8 +28,8 @@
       "type": "minecraft:count",
       "count": {
         "type": "minecraft:uniform",
-        "min_inclusive": 2,
-        "max_inclusive": 4
+        "min_inclusive": 1,
+        "max_inclusive": 3
       }
     },
     {
@@ -53,7 +53,8 @@
           {
             "type": "minecraft:matching_blocks",
             "blocks": [
-              "minecraft:air"
+              "minecraft:air",
+              "minecraft:cave_air"
             ]
           },
           {
@@ -70,11 +71,14 @@
               0
             ],
             "blocks": [
-              "minecraft:netherrack",
-              "minecraft:basalt",
-              "minecraft:blackstone",
-              "minecraft:crimson_nylium",
-              "minecraft:warped_nylium"
+              "minecraft:stone",
+              "minecraft:deepslate",
+              "minecraft:tuff",
+              "minecraft:granite",
+              "minecraft:diorite",
+              "minecraft:andesite",
+              "minecraft:calcite",
+              "minecraft:dripstone_block"
             ]
           }
         ]

@@ -821,8 +821,7 @@ public class ModBlocks {
             .noOcclusion()
             .instabreak()
             .sound(SoundType.FUNGUS)
-            .pushReaction(PushReaction.DESTROY)
-            .randomTicks();
+            .pushReaction(PushReaction.DESTROY);
 
     public static final DeferredBlock<EntropicFungusBlock> ENTROPIC_FUNGUS = BLOCKS.register("entropic_fungus",
             () -> new EntropicFungusBlock(ENTROPIC_FUNGUS_PROPERTIES));

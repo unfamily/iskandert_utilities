@@ -1712,7 +1712,7 @@ public class Config
         BUILDER.comment("Scanner Configuration").push("scanner");
     }
 
-    // Scanner field order matches legacy iska_utils-common.toml (100 first, then 001/000/200/…)
+    // Scanner field order matches legacy iska_utils-common.toml (100 first, then 001/200/…)
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SCANNER_ORE_ENTRIES = BUILDER
             .comment("List of ore entries that can be scanned with their colors",
@@ -1759,17 +1759,11 @@ public class Config
             .comment("Duration in ticks needed to hold the scanner for scanning (1 second = 20 ticks)")
             .defineInRange("001_scannerScanDuration", 40, 1, 200);
 
-    private static final ModConfigSpec.IntValue SCANNER_SCAN_RANGE = BUILDER
-            .comment("DEPRECATED: This parameter has been moved to 200_scannerRangeOptions.",
-                    "The maximum scan range is now determined by the highest value in the scannerRangeOptions array.",
-                    "This parameter is kept for backward compatibility but is no longer used.")
-            .translation("iska_utils.config.deprecated_scanner_scan_range")
-            .defineInRange("000_scannerScanRange", 64, 1, Integer.MAX_VALUE);
-
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends Integer>> SCANNER_RANGE_OPTIONS = BUILDER
-            .comment("Available scan range options that can be cycled with keybind")
+            .comment("Available scan range options that can be cycled with keybind",
+                    "Maximum scan range is the highest value in this list")
             .defineList("200_scannerRangeOptions",
-                    java.util.Arrays.asList(16, 24, 32, 64, 96),
+                    java.util.Arrays.asList(16, 24, 32, 64, 96, 128),
                     obj -> obj instanceof Integer);
 
     private static final ModConfigSpec.IntValue SCANNER_DEFAULT_RANGE = BUILDER
@@ -2236,7 +2230,6 @@ public class Config
     public static boolean generateRubberTrees;
     public static boolean generateEntropicFungus;
     public static boolean swissWrenchLegacyModes;
-    public static int scannerScanRange;
     public static java.util.List<Integer> scannerRangeOptions;
     public static int scannerDefaultRange;
     public static int scannerScanDuration;
@@ -2947,7 +2940,6 @@ public class Config
         generateRubberTrees = GENERATE_RUBBER_TREES.get();
         generateEntropicFungus = GENERATE_ENTROPIC_FUNGUS.get();
         
-        scannerScanRange = SCANNER_SCAN_RANGE.get(); // Deprecated, kept for backward compatibility
         scannerRangeOptions = new java.util.ArrayList<>(SCANNER_RANGE_OPTIONS.get());
         scannerDefaultRange = SCANNER_DEFAULT_RANGE.get();
         // Ensure default range is in the options array

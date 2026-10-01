@@ -19,13 +19,9 @@ A mushroom-like plant tied to the entropy progression. It can be planted on **an
 
 **Worldgen** (config `worldgen.001_generate_entropic_fungus`, default **true**):
 
-- **Overworld** — rare, deep underground (roughly below Y 40)
-- **Nether** — similar rarity; **Warped Forest** more common
-- **End** — relatively common on end stone
-
-## Sunlight
-
-In the **Overworld**, if the fungus can see the sky during the day, it breaks into **1** <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy**. Nether and End ignore sunlight. Fungus in a **flower pot** is safe from sun decay.
+- **Overworld** — common cave **patches** of **1–3** from **Y -64 to 72** (deep + upper)
+- **Nether** — same as Overworld; **Warped Forest** denser
+- **End** — very dense patches on end stone
 
 ## Drops
 

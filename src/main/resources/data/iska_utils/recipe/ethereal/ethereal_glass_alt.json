@@ -9,9 +9,7 @@
     "A": {
       "tag": "c:glass_blocks/colorless"
     },
-    "B": {
-      "item": "iska_utils:green_sludge"
-    },
+    "B": { "tag": "iska_utils:basic_resources" },
     "C": {
       "tag": "c:gems/lapis"
     }

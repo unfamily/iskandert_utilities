@@ -3,11 +3,11 @@
   "placement": [
     {
       "type": "minecraft:count",
-      "count": 1
-    },
-    {
-      "type": "minecraft:rarity_filter",
-      "chance": 32
+      "count": {
+        "type": "minecraft:uniform",
+        "min_inclusive": 8,
+        "max_inclusive": 14
+      }
     },
     {
       "type": "minecraft:in_square"
@@ -17,11 +17,67 @@
       "height": {
         "type": "minecraft:uniform",
         "min_inclusive": {
-          "above_bottom": 16
+          "above_bottom": 8
         },
         "max_inclusive": {
-          "below_top": 16
+          "below_top": 8
         }
+      }
+    },
+    {
+      "type": "minecraft:count",
+      "count": {
+        "type": "minecraft:uniform",
+        "min_inclusive": 1,
+        "max_inclusive": 3
+      }
+    },
+    {
+      "type": "minecraft:random_offset",
+      "xz_spread": {
+        "type": "minecraft:uniform",
+        "min_inclusive": -3,
+        "max_inclusive": 3
+      },
+      "y_spread": {
+        "type": "minecraft:uniform",
+        "min_inclusive": -2,
+        "max_inclusive": 2
+      }
+    },
+    {
+      "type": "minecraft:block_predicate_filter",
+      "predicate": {
+        "type": "minecraft:all_of",
+        "predicates": [
+          {
+            "type": "minecraft:matching_blocks",
+            "blocks": [
+              "minecraft:air"
+            ]
+          },
+          {
+            "type": "minecraft:would_survive",
+            "state": {
+              "Name": "iska_utils:entropic_fungus"
+            }
+          },
+          {
+            "type": "minecraft:matching_blocks",
+            "offset": [
+              0,
+              -1,
+              0
+            ],
+            "blocks": [
+              "minecraft:netherrack",
+              "minecraft:basalt",
+              "minecraft:blackstone",
+              "minecraft:crimson_nylium",
+              "minecraft:warped_nylium"
+            ]
+          }
+        ]
       }
     },
     {

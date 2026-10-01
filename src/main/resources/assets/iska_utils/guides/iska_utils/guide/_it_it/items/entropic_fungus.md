@@ -19,13 +19,9 @@ Pianta simile a un fungo legata alla progressione entropica. Si pianta su **qual
 
 **Worldgen** (config `worldgen.001_generate_entropic_fungus`, default **true**):
 
-- **Overworld** — raro, in profondità (circa sotto Y 40)
-- **Nether** — rarità simile; **Warped Forest** più comune
-- **End** — relativamente comune sulla pietra dell'End
-
-## Luce solare
-
-Nell'**Overworld**, se il fungo vede il cielo di giorno, si spezza in **1** <ItemImage id="iska_utils:drop_of_entropy" /> **Goccia di entropia**. Nether ed End non sono affetti. In un **vaso da fiori** il sole non lo distrugge.
+- **Overworld** — **patch** comuni da **1–3** funghi nelle grotte da **Y -64 a 72** (deep + alta)
+- **Nether** — come Overworld; **Warped Forest** più denso
+- **End** — patch molto dense sulla pietra dell'End
 
 ## Drop
 

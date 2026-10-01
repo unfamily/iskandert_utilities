@@ -525,7 +525,6 @@
   "gui.iska_utils.temporal_overclocker.show_modifier_shift": "Shift: All",
   "gui.iska_utils.update": "Update",
   "gui.iska_utils.update_area": "Area updated",
-  "iska_utils.config.deprecated_scanner_scan_range": "000 [Deprecated] Scanner Scan Range",
   "iska_utils.wither_proof_block": "Wither-Proof Blocks",
   "item.iska_utils.ancient_tablet": "Ancient Tablet",
   "block.iska_utils.ancient_table": "Ancient Table",
@@ -1710,12 +1709,18 @@
   "tooltip.iska_utils.saboteur_screwdriver.desc1": "§7Dropped item matches the primed source",
   "tooltip.iska_utils.silverfish_larva.desc0": "§7Infests compatible stone blocks",
   "tooltip.iska_utils.silverfish_larva.desc1": "§7Barrel with Witch Water yields Drop of Entropy",
-  "tooltip.iska_utils.entropic_fungus.desc0": "§7Plantable fungus; sunlight destroys it into Drop of Entropy",
+  "tooltip.iska_utils.entropic_fungus.desc0": "§7Plantable fungus",
   "tooltip.iska_utils.entropic_fungus.desc1": "§7Craft or Factory converts it to 1 Drop of Entropy",
   "tooltip.iska_utils.obscure_glass.desc0": "§7Blocks sky light",
   "tooltip.iska_utils.obscure_glass.desc1": "§7Immune to Wither and Ender Dragon",
   "tooltip.iska_utils.ethereal_glass.desc0": "§7Players pass through; solid to other entities",
   "tooltip.iska_utils.ethereal_glass_pane.desc0": "§7Thin ethereal glass; players pass through",
   "tooltip.iska_utils.ethereal_obscure_glass.desc0": "§7Players pass through; blocks sky light",
-  "tooltip.iska_utils.ethereal_obscure_glass.desc1": "§7Immune to Wither and Ender Dragon"
+  "tooltip.iska_utils.ethereal_obscure_glass.desc1": "§7Immune to Wither and Ender Dragon",
+  "effect.iska_utils.entropic_empowerment.desc": "Increases damage dealt and reduces damage taken. Mob-only; stripped from players.",
+  "effect.iska_utils.entropic_empowerment.description": "Increases damage dealt and reduces damage taken. Mob-only; stripped from players.",
+  "effect.iska_utils.entropic_empowerment_player.desc": "Increases damage dealt and reduces damage taken. Always paired with Entropic Decay.",
+  "effect.iska_utils.entropic_empowerment_player.description": "Increases damage dealt and reduces damage taken. Always paired with Entropic Decay.",
+  "effect.iska_utils.entropic_decay.desc": "When a harmful effect or curse expires, 30% chance to reapply it briefly. Lasts twice as long as Empowerment.",
+  "effect.iska_utils.entropic_decay.description": "When a harmful effect or curse expires, 30% chance to reapply it briefly. Lasts twice as long as Empowerment."
 }

@@ -6,9 +6,7 @@
     "CAC"
   ],
   "key": {
-    "A": {
-      "item": "iska_utils:green_sludge"
-    },
+    "A": { "tag": "iska_utils:basic_resources" },
     "B": {
       "item": "minecraft:ender_eye"
     },

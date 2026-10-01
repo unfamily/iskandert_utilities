@@ -1,6 +1,9 @@
 {
   "type": "iska_utils:entropic_fungus_if_enabled",
   "biomes": "#c:is_overworld",
-  "features": "iska_utils:entropic_fungus_overworld_placed",
+  "features": [
+    "iska_utils:entropic_fungus_overworld_deep_placed",
+    "iska_utils:entropic_fungus_overworld_placed"
+  ],
   "step": "underground_decoration"
 }
