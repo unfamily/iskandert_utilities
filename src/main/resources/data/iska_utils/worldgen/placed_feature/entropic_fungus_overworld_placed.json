@@ -2,8 +2,12 @@
   "feature": "iska_utils:entropic_fungus_overworld",
   "placement": [
     {
-      "type": "minecraft:rarity_filter",
-      "chance": 32
+      "type": "minecraft:count",
+      "count": {
+        "type": "minecraft:uniform",
+        "min_inclusive": 8,
+        "max_inclusive": 14
+      }
     },
     {
       "type": "minecraft:in_square"
@@ -13,31 +17,32 @@
       "height": {
         "type": "minecraft:uniform",
         "min_inclusive": {
-          "above_bottom": 8
+          "absolute": 0
         },
         "max_inclusive": {
-          "absolute": 40
+          "absolute": 72
         }
       }
     },
     {
-      "type": "minecraft:biome"
-    },
-    {
       "type": "minecraft:count",
-      "count": 48
+      "count": {
+        "type": "minecraft:uniform",
+        "min_inclusive": 1,
+        "max_inclusive": 3
+      }
     },
     {
       "type": "minecraft:random_offset",
       "xz_spread": {
         "type": "minecraft:uniform",
-        "min_inclusive": -6,
-        "max_inclusive": 6
+        "min_inclusive": -3,
+        "max_inclusive": 3
       },
       "y_spread": {
         "type": "minecraft:uniform",
-        "min_inclusive": -4,
-        "max_inclusive": 4
+        "min_inclusive": -2,
+        "max_inclusive": 2
       }
     },
     {
@@ -60,7 +65,11 @@
           },
           {
             "type": "minecraft:matching_blocks",
-            "offset": [0, -1, 0],
+            "offset": [
+              0,
+              -1,
+              0
+            ],
             "blocks": [
               "minecraft:stone",
               "minecraft:deepslate",
@@ -74,6 +83,9 @@
           }
         ]
       }
+    },
+    {
+      "type": "minecraft:biome"
     }
   ]
 }

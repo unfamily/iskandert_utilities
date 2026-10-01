@@ -10,11 +10,12 @@ public final class EntropicEmpowermentUtil {
     private EntropicEmpowermentUtil() {}
 
     public static MobEffectInstance createInstance() {
+        // ambient=false so synced effect particles spawn at the normal (non-beacon) rate
         return new MobEffectInstance(
                 ModMobEffects.ENTROPIC_EMPOWERMENT,
                 MobEffectInstance.INFINITE_DURATION,
                 0,
-                true,
+                false,
                 true,
                 true);
     }

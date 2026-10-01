@@ -30,7 +30,17 @@ public class EntropicFlameParticle extends FlameParticle {
         @Override
         public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z,
                                        double xSpeed, double ySpeed, double zSpeed, RandomSource random) {
-            return new EntropicFlameParticle(level, x, y, z, xSpeed, ySpeed, zSpeed, sprites, random);
+            // Vanilla status-effect ticks pass (1,1,1); RisingParticle would fling flames away.
+            // Keep intentional small velocities (spawner / cage), clamp the effect path.
+            double xd = xSpeed;
+            double yd = ySpeed;
+            double zd = zSpeed;
+            if (Math.abs(xSpeed) > 0.1D || Math.abs(ySpeed) > 0.1D || Math.abs(zSpeed) > 0.1D) {
+                xd = 0.0D;
+                yd = 0.0D;
+                zd = 0.0D;
+            }
+            return new EntropicFlameParticle(level, x, y, z, xd, yd, zd, sprites, random);
         }
     }
 }

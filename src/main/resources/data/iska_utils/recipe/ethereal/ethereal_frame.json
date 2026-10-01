@@ -7,7 +7,7 @@
   ],
   "key": {
     "A": "#minecraft:planks",
-    "B": "iska_utils:green_sludge",
+    "B": "#iska_utils:basic_resources",
     "C": "#c:gems/lapis"
   },
   "result": {

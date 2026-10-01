@@ -1433,7 +1433,6 @@
   "block.iska_utils.factory": "Fabbrica",
   "container.iska_utils.factory": "Fabbrica",
   "jei.iska_utils.factory": "Lavorazione fabbrica",
-  "iska_utils.config.deprecated_scanner_scan_range": "000 [Obsoleto] Scanner Scan Range",
   "item.iska_utils.entropic_spawner": "Generatore Entropizzato",
   "tooltip.iska_utils.entropic_spawner.desc0": "Genera il mob configurato sopra il blocco quando le condizioni sono soddisfatte.",
   "tooltip.iska_utils.entropic_spawner.desc1": "Usa un uovo generatore per impostare il tipo di mob.",
@@ -1721,12 +1720,18 @@
   "tooltip.iska_utils.saboteur_screwdriver.desc1": "§7L'oggetto lasciato corrisponde alla fonte innescata",
   "tooltip.iska_utils.silverfish_larva.desc0": "§7Infesta i blocchi di pietra compatibili",
   "tooltip.iska_utils.silverfish_larva.desc1": "§7Barile con Acqua della Strega produce Goccia di Entropia",
-  "tooltip.iska_utils.entropic_fungus.desc0": "§7Fungo piantabile; la luce solare lo distrugge in Goccia di Entropia",
+  "tooltip.iska_utils.entropic_fungus.desc0": "§7Fungo piantabile",
   "tooltip.iska_utils.entropic_fungus.desc1": "§7Crafting o Factory lo convertono in 1 Goccia di Entropia",
   "tooltip.iska_utils.obscure_glass.desc0": "§7Blocca la luce del cielo",
   "tooltip.iska_utils.obscure_glass.desc1": "§7Immune a Wither e Ender Dragon",
   "tooltip.iska_utils.ethereal_glass.desc0": "§7I giocatori lo attraversano; solido per le altre entità",
   "tooltip.iska_utils.ethereal_glass_pane.desc0": "§7Vetro etereo sottile; i giocatori lo attraversano",
   "tooltip.iska_utils.ethereal_obscure_glass.desc0": "§7I giocatori lo attraversano; blocca la luce del cielo",
-  "tooltip.iska_utils.ethereal_obscure_glass.desc1": "§7Immune a Wither e Ender Dragon"
+  "tooltip.iska_utils.ethereal_obscure_glass.desc1": "§7Immune a Wither e Ender Dragon",
+  "effect.iska_utils.entropic_empowerment.desc": "Aumenta i danni inflitti e riduce quelli subiti. Solo per mob; rimosso dai giocatori.",
+  "effect.iska_utils.entropic_empowerment.description": "Aumenta i danni inflitti e riduce quelli subiti. Solo per mob; rimosso dai giocatori.",
+  "effect.iska_utils.entropic_empowerment_player.desc": "Aumenta i danni inflitti e riduce quelli subiti. Sempre accompagnato dal Decadimento entropico.",
+  "effect.iska_utils.entropic_empowerment_player.description": "Aumenta i danni inflitti e riduce quelli subiti. Sempre accompagnato dal Decadimento entropico.",
+  "effect.iska_utils.entropic_decay.desc": "Quando scade un effetto dannoso o una maledizione, 30% di probabilità di riapplicarlo per poco. Dura il doppio del Potenziamento.",
+  "effect.iska_utils.entropic_decay.description": "Quando scade un effetto dannoso o una maledizione, 30% di probabilità di riapplicarlo per poco. Dura il doppio del Potenziamento."
 }
