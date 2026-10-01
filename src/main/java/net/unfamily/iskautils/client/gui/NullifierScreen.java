@@ -27,6 +27,7 @@ import net.unfamily.iskautils.network.packet.NullifierShowAreaC2SPacket;
 import net.unfamily.iskautils.network.packet.NullifierTargetModeC2SPacket;
 import net.unfamily.iskautils.block.entity.INullifierBE;
 import net.unfamily.iskautils.block.entity.NullifierTargetMode;
+import net.unfamily.iskautils.util.MachineTargetType;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
@@ -105,6 +106,7 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
                 this::nullifierTargetIcon,
                 () -> null,
                 Component.empty()));
+        updateTargetModeButtonState();
 
         rangeButton = addRenderableWidget(Button.builder(Component.empty(), b -> {})
                 .bounds(leftPos + RANGE_BTN_X, topPos + RANGE_ROW_Y, RANGE_BTN_WIDTH, BTN)
@@ -144,6 +146,18 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
         if (showingArea) {
             refreshAreaPreview();
         }
+        if (targetModeButton != null) {
+            updateTargetModeButtonState();
+            targetModeButton.setTooltip(Tooltip.create(nullifierTargetTooltip(menu.getTargetModeId())));
+        }
+    }
+
+    private void updateTargetModeButtonState() {
+        if (targetModeButton == null) {
+            return;
+        }
+        INullifierBE.NullifierType type = INullifierBE.NullifierType.fromId(menu.getTypeId());
+        targetModeButton.active = !type.locksTargetToMobsOnly();
     }
 
     @Override
@@ -200,7 +214,7 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
             cycleRedstoneMode(true);
             return true;
         }
-        if (targetModeButton != null && targetModeButton.isMouseOver(mouseX, mouseY)) {
+        if (targetModeButton != null && targetModeButton.active && targetModeButton.isMouseOver(mouseX, mouseY)) {
             if (event.button() == 0) {
                 cycleTargetMode(false);
                 return true;
@@ -244,57 +258,48 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
     }
 
     private void cycleTargetMode(boolean backward) {
-        NullifierTargetMode current = NullifierTargetMode.fromId(menu.getTargetModeId());
         INullifierBE.NullifierType type = INullifierBE.NullifierType.fromId(menu.getTypeId());
+        if (type.locksTargetToMobsOnly()) {
+            return;
+        }
+        NullifierTargetMode current = NullifierTargetMode.fromId(menu.getTargetModeId());
         NullifierTargetMode next = backward
-                ? cycleTargetBackward(current, type)
-                : cycleTargetForward(current, type);
+                ? cycleTargetBackward(current)
+                : cycleTargetForward(current);
         ClientPacketDistributor.sendToServer(new NullifierTargetModeC2SPacket(menu.getSyncedBlockPos(), next.getId()));
     }
 
-    private static NullifierTargetMode cycleTargetForward(NullifierTargetMode mode, INullifierBE.NullifierType type) {
-        if (type.hasLimitedTargetModes()) {
-            return mode == NullifierTargetMode.ONLY_MOBS
-                    ? NullifierTargetMode.DISABLED
-                    : NullifierTargetMode.ONLY_MOBS;
-        }
+    /** Reaper-style: Only mobs → Both → Only players (no Disabled). */
+    private static NullifierTargetMode cycleTargetForward(NullifierTargetMode mode) {
         return switch (mode) {
-            case DISABLED -> NullifierTargetMode.ONLY_MOBS;
-            case ONLY_MOBS -> NullifierTargetMode.ONLY_PLAYERS;
-            case ONLY_PLAYERS -> NullifierTargetMode.MOBS_AND_PLAYERS;
-            case MOBS_AND_PLAYERS -> NullifierTargetMode.DISABLED;
+            case ONLY_MOBS, DISABLED -> NullifierTargetMode.MOBS_AND_PLAYERS;
+            case MOBS_AND_PLAYERS -> NullifierTargetMode.ONLY_PLAYERS;
+            case ONLY_PLAYERS -> NullifierTargetMode.ONLY_MOBS;
         };
     }
 
-    private static NullifierTargetMode cycleTargetBackward(NullifierTargetMode mode, INullifierBE.NullifierType type) {
-        if (type.hasLimitedTargetModes()) {
-            return mode == NullifierTargetMode.DISABLED
-                    ? NullifierTargetMode.ONLY_MOBS
-                    : NullifierTargetMode.DISABLED;
-        }
+    private static NullifierTargetMode cycleTargetBackward(NullifierTargetMode mode) {
         return switch (mode) {
-            case DISABLED -> NullifierTargetMode.MOBS_AND_PLAYERS;
-            case ONLY_MOBS -> NullifierTargetMode.DISABLED;
-            case ONLY_PLAYERS -> NullifierTargetMode.ONLY_MOBS;
-            case MOBS_AND_PLAYERS -> NullifierTargetMode.ONLY_PLAYERS;
+            case ONLY_MOBS, DISABLED -> NullifierTargetMode.ONLY_PLAYERS;
+            case ONLY_PLAYERS -> NullifierTargetMode.MOBS_AND_PLAYERS;
+            case MOBS_AND_PLAYERS -> NullifierTargetMode.ONLY_MOBS;
         };
     }
 
     private ItemStack nullifierTargetIcon() {
-        return switch (NullifierTargetMode.fromId(menu.getTargetModeId())) {
-            case DISABLED -> new ItemStack(Items.BARRIER);
-            case ONLY_MOBS -> new ItemStack(Items.ZOMBIE_HEAD);
-            case ONLY_PLAYERS -> new ItemStack(Items.PLAYER_HEAD);
-            case MOBS_AND_PLAYERS -> new ItemStack(Items.IRON_GOLEM_SPAWN_EGG);
-        };
+        return MachineGuiButtons.targetTypeIcon(toMachineTargetTypeId(menu.getTargetModeId()));
     }
 
     private static Component nullifierTargetTooltip(int modeId) {
-        return switch (NullifierTargetMode.fromId(modeId)) {
-            case DISABLED -> Component.translatable("gui.iska_utils.nullifier.target.disabled");
-            case ONLY_MOBS -> Component.translatable("gui.iska_utils.nullifier.target.only_mobs");
-            case ONLY_PLAYERS -> Component.translatable("gui.iska_utils.nullifier.target.only_players");
-            case MOBS_AND_PLAYERS -> Component.translatable("gui.iska_utils.nullifier.target.mobs_and_players");
+        MachineTargetType targetType = MachineTargetType.fromId(toMachineTargetTypeId(modeId));
+        return Component.translatable("gui.iska_utils.mob_reaper.target_type." + targetType.getName());
+    }
+
+    private static int toMachineTargetTypeId(int nullifierModeId) {
+        return switch (NullifierTargetMode.fromId(nullifierModeId)) {
+            case ONLY_PLAYERS -> MachineTargetType.PLAYERS_ONLY.getId();
+            case MOBS_AND_PLAYERS -> MachineTargetType.MOBS_AND_PLAYERS.getId();
+            default -> MachineTargetType.MOBS_ONLY.getId();
         };
     }
 

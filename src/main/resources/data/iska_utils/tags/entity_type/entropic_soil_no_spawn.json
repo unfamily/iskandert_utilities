@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
+    "iska_utils:entropic_creeper",
     {
       "id": "mowziesmobs:grottol",
       "required": false

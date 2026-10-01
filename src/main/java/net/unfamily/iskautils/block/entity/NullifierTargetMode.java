@@ -1,7 +1,8 @@
 package net.unfamily.iskautils.block.entity;
 
 /**
- * Who an active nullifier applies its effect to (when not {@link #DISABLED}).
+ * Who an active nullifier applies its effect to.
+ * {@link #DISABLED} is legacy; {@link #fromId(int)} and sanitize map it to {@link #ONLY_MOBS}.
  */
 public enum NullifierTargetMode {
     DISABLED(0),
@@ -21,10 +22,9 @@ public enum NullifierTargetMode {
 
     public static NullifierTargetMode fromId(int id) {
         return switch (id) {
-            case 1 -> ONLY_MOBS;
             case 2 -> ONLY_PLAYERS;
             case 3 -> MOBS_AND_PLAYERS;
-            default -> DISABLED;
+            default -> ONLY_MOBS; // includes legacy DISABLED(0) and ONLY_MOBS(1)
         };
     }
 
@@ -36,8 +36,8 @@ public enum NullifierTargetMode {
         return this == ONLY_PLAYERS || this == MOBS_AND_PLAYERS;
     }
 
-    /** Flight nullifier: ONLY_MOBS means block survival/adventure player flight (default). */
+    /** Flight nullifier: block player flight when the mode affects players. */
     public boolean blocksPlayerFlightInZone() {
-        return this == ONLY_MOBS;
+        return affectsPlayers();
     }
 }

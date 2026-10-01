@@ -15,13 +15,19 @@ categories:
 
 ## What it does
 
-Block that **cancels mob teleports** within a cubic **radius** around it on every axis (set in the GUI). Does not affect players.
+Block that **cancels teleportation** within a cubic **radius** around it on every axis (set in the GUI).
+
+Entities in the configured ignore list (default: `#c:bosses`) are exempt and can still teleport through the zone.
 
 ## GUI
 
 Right-click the block to open its control GUI:
 
 - **Range**: Use the **-** and **+** buttons to adjust the protection radius. The current and maximum values are shown.
+- **Target** (icon button, right side): cycles through the affected group. Left-click advances, right-click goes back.
+  - *Mobs only* (default): affects non-player entities.
+  - *Players only*: affects players in Survival and Adventure.
+  - *Mobs and players*: affects both groups.
 - **Redstone Mode** (icon button): cycles through Ignore, Low, High, Disabled.
   - *Ignore* (gunpowder): always active when manually enabled, ignores redstone signal.
   - *Low*: active while redstone signal is **absent** (and manually enabled).
@@ -34,6 +40,6 @@ Right-click the block to open its control GUI:
 ## Tips
 
 - Place at the center of the area you want to protect.
-- Useful near mob farms where teleporting mobs break containment.
+- Useful near farms where teleporting entities break containment.
 - Starts **active** (Manual mode, manually enabled) when placed.
 - See also: [Wander Nullifier](wander_nullifier.md), [Soul Nullifier](soul_nullifier.md).

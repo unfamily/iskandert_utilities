@@ -23,4 +23,4 @@ Often found inside <ItemImage id="iska_utils:suspicious_delivery" /> **Suspiciou
 
 ## Recycling
 
-Can be recycled into one <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy** at a crafting table or **Factory**, like other delivery artifacts.
+Can be recycled into **three** <ItemImage id="iska_utils:drop_of_entropy" /> **Drops of Entropy** at a crafting table or **Factory**, like other delivery artifacts.

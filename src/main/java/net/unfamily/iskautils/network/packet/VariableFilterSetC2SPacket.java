@@ -14,7 +14,7 @@ import net.unfamily.iskautils.client.gui.ImprovedPatternCrafterMenu;
 /** Sets one Pattern Crafter variable filter string (and optional letter). */
 public record VariableFilterSetC2SPacket(BlockPos pos, int slotIndex, String filter, int letter)
         implements CustomPacketPayload {
-    private static final int MAX_LEN = 256;
+    private static final int MAX_LEN = 512;
 
     public static final Type<VariableFilterSetC2SPacket> TYPE = new Type<>(
             Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "pc_variable_filter_set"));

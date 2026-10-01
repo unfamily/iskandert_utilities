@@ -6,7 +6,7 @@
     " A "
   ],
   "key": {
-    "A": "minecraft:feather",
+    "A": "#c:gems/diamond",
     "B": "iska_utils:base_module"
   },
   "result": {

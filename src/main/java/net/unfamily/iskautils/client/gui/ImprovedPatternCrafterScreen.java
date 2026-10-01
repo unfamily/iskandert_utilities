@@ -140,8 +140,6 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     /** Pending pattern grid letter edits; flushed on Save. */
     private final boolean[] pendingGridDirty = new boolean[9];
     private final int[] pendingGridValues = new int[9];
-    /** Immediate JEI ghost stacks for pending pattern cells (until Save). */
-    private final ItemStack[] pendingGridDisplays = new ItemStack[9];
     private boolean pendingCraftingModeDirty = false;
     private int pendingCraftingMode = 0;
 
@@ -221,6 +219,8 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     private ItemStack editorGhostItem = ItemStack.EMPTY;
     private final java.util.List<String> filterVariants = new java.util.ArrayList<>();
     private int filterVariantIndex = 0;
+    /** Last filter string used to seed the inline editor ghost (server sync). */
+    private String filterEditGhostSeedSource = "";
     /** Cached Mark Input bounds (used to place inline variable ghost selector). */
     private int markInputBtnX;
     private int markInputBtnY;
@@ -842,7 +842,6 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     private void clearPendingGrid() {
         for (int i = 0; i < pendingGridDirty.length; i++) {
             pendingGridDirty[i] = false;
-            pendingGridDisplays[i] = ItemStack.EMPTY;
         }
         pendingCraftingModeDirty = false;
     }
@@ -897,16 +896,8 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         for (int i = 0; i < 9; i++) {
             pendingGridValues[i] = letters[i];
             pendingGridDirty[i] = true;
-            if (displays != null && i < displays.size() && displays.get(i) != null && !displays.get(i).isEmpty()) {
-                pendingGridDisplays[i] = displays.get(i).copyWithCount(1);
-            } else {
-                pendingGridDisplays[i] = ItemStack.EMPTY;
-            }
             if (gridCells[i / 3][i % 3] != null) {
                 gridCells[i / 3][i % 3].setValue(letters[i]);
-                if (!pendingGridDisplays[i].isEmpty()) {
-                    gridCells[i / 3][i % 3].setDisplayItems(List.of(pendingGridDisplays[i]));
-                }
             }
         }
         pendingCraftingMode = craftingMode;
@@ -931,9 +922,6 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             any = true;
         }
         if (any) {
-            for (int i = 0; i < pendingGridDisplays.length; i++) {
-                pendingGridDisplays[i] = ItemStack.EMPTY;
-            }
             playButtonSound();
         }
     }
@@ -1026,12 +1014,13 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 be.getBlockPos(), cellIndex, stack.copyWithCount(1)));
         pendingGridValues[cellIndex] = letter;
         pendingGridDirty[cellIndex] = true;
-        pendingGridDisplays[cellIndex] = stack.copyWithCount(1);
         int row = cellIndex / 3;
         int col = cellIndex % 3;
         if (gridCells[row][col] != null) {
             gridCells[row][col].setValue(letter);
-            gridCells[row][col].setDisplayItems(List.of(pendingGridDisplays[cellIndex]));
+            var registries = be.getLevel() != null ? be.getLevel().registryAccess() : null;
+            ItemStack preview = previewDisplayForGridLetter(letter, registries);
+            gridCells[row][col].setDisplayItems(preview.isEmpty() ? List.of() : List.of(preview));
         }
         playButtonSound();
     }
@@ -1121,6 +1110,12 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             }
         }
 
+        if (variableInlineEdit && editingVariableIndex >= 0) {
+            maybeReseedFilterEditGhost(liveFilterString(editingVariableIndex));
+        } else if (nestedFilterEdit && nestedEditIndex >= 0 && nestedEditIndex < draftForbidden.size()) {
+            maybeReseedFilterEditGhost(draftForbidden.get(nestedEditIndex));
+        }
+
         // Update grid cells from synced pattern data (keep local pending edits)
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
@@ -1138,10 +1133,6 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                         ItemStack preview = previewFilterItem(filterStr, registries);
                         if (!preview.isEmpty()) candidates.add(preview);
                     }
-                }
-                if (candidates.isEmpty() && pendingGridDirty[cellIndex]
-                        && pendingGridDisplays[cellIndex] != null && !pendingGridDisplays[cellIndex].isEmpty()) {
-                    candidates.add(pendingGridDisplays[cellIndex]);
                 }
                 gridCells[row][col].setDisplayItems(candidates);
             }
@@ -1869,125 +1860,37 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
      * {@code -id}, {@code #tag}, {@code @mod}, {@code ?nbt}, {@code &macro}, bare id.
      */
     private static ItemStack previewFilterItem(String filter, net.minecraft.core.HolderLookup.Provider registries) {
-        if (filter == null || filter.trim().isEmpty()) {
+        return net.unfamily.iskautils.util.FilterDisplayItems.forFilter(filter, registries);
+    }
+
+    private ItemStack previewDisplayForGridLetter(int letter, net.minecraft.core.HolderLookup.Provider registries) {
+        if (letter <= PatternData.EMPTY) {
             return ItemStack.EMPTY;
         }
-        String trimmed = filter.trim();
-
-        // ID filter: -minecraft:diamond
-        if (trimmed.startsWith("-")) {
-            try {
-                var id = Identifier.tryParse(trimmed.substring(1));
-                if (id == null) return ItemStack.EMPTY;
-                var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(id);
-                if (item != null && item != net.minecraft.world.item.Items.AIR) {
-                    return new ItemStack(item);
-                }
-            } catch (Exception ignored) {}
-            return ItemStack.EMPTY;
-        }
-
-        // Tag filter: #c:ingots (cycle samples)
-        if (trimmed.startsWith("#")) {
-            return getItemForTag(trimmed.substring(1));
-        }
-
-        // Mod ID filter: @iska_utils (cycle samples)
-        if (trimmed.startsWith("@")) {
-            return getItemForMod(trimmed.substring(1));
-        }
-
-        // NBT / component filter: ?...
-        if (trimmed.startsWith("?")) {
-            return new ItemStack(net.minecraft.world.item.Items.KNOWLEDGE_BOOK);
-        }
-
-        // Macro filter: &enchanted, &damaged, …
-        if (trimmed.startsWith("&")) {
-            String macro = trimmed.substring(1).trim().toLowerCase();
-            if (macro.equals("enchanted") || macro.startsWith("enchanted")) {
-                return new ItemStack(net.minecraft.world.item.Items.DIAMOND_PICKAXE);
+        for (int filter = 0; filter < liveEffectiveKeyInputCount(); filter++) {
+            if (liveFilterLetter(filter) != letter) {
+                continue;
             }
-            if (macro.equals("damaged") || macro.startsWith("damaged")) {
-                ItemStack stack = new ItemStack(net.minecraft.world.item.Items.DIAMOND_SWORD);
-                stack.setDamageValue(stack.getMaxDamage() / 2);
-                return stack;
+            String filterStr = liveFilterString(filter);
+            if (filterStr.isEmpty()) {
+                continue;
             }
-            if (macro.startsWith("temperature")) {
-                return new ItemStack(net.minecraft.world.item.Items.BLAZE_POWDER);
-            }
-            if (macro.startsWith("light")) {
-                return new ItemStack(net.minecraft.world.item.Items.LANTERN);
-            }
-            if (macro.startsWith("tint")) {
-                return new ItemStack(net.minecraft.world.item.Items.RED_DYE);
-            }
-            // Unspecified macros: knowledge book (Valid Keys / Another-Dynamics)
-            return new ItemStack(net.minecraft.world.item.Items.KNOWLEDGE_BOOK);
-        }
-
-        // Command-style bracket filters for display only
-        if (trimmed.startsWith("minecraft:enchanted_book[")) {
-            return new ItemStack(net.minecraft.world.item.Items.ENCHANTED_BOOK);
-        }
-
-        // Bare item id
-        try {
-            var id = Identifier.tryParse(trimmed);
-            if (id != null) {
-                var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(id);
-                if (item != null && item != net.minecraft.world.item.Items.AIR) {
-                    return new ItemStack(item);
-                }
-            }
-        } catch (Exception ignored) {}
-
-        // Last resort: scan registry with typed matcher (covers odd Valid Keys forms)
-        if (registries != null && DeepDrawerItemFilter.usesTypedFilterSyntax(trimmed)) {
-            int checked = 0;
-            for (var item : net.minecraft.core.registries.BuiltInRegistries.ITEM) {
-                ItemStack stack = new ItemStack(item);
-                if (DeepDrawerItemFilter.matchesFilterEntry(stack, trimmed, registries)) {
-                    return stack;
-                }
-                if (++checked > 512) break;
+            ItemStack preview = previewFilterItem(filterStr, registries);
+            if (!preview.isEmpty()) {
+                return preview;
             }
         }
         return ItemStack.EMPTY;
     }
 
-    private static ItemStack getItemForTag(String tagId) {
-        try {
-            var tagLocation = Identifier.tryParse(tagId);
-            if (tagLocation == null) return ItemStack.EMPTY;
-            var itemTag = net.minecraft.tags.ItemTags.create(tagLocation);
-            java.util.List<net.minecraft.world.item.Item> items = new java.util.ArrayList<>();
-            for (var holder : net.minecraft.core.registries.BuiltInRegistries.ITEM.getTagOrEmpty(itemTag)) {
-                items.add(holder.value());
-            }
-            if (!items.isEmpty()) {
-                int index = (int) ((System.currentTimeMillis() / 3500L) % items.size());
-                return new ItemStack(items.get(index));
-            }
-        } catch (Exception ignored) {}
-        return ItemStack.EMPTY;
-    }
-
-    private static ItemStack getItemForMod(String modId) {
-        java.util.List<net.minecraft.world.item.Item> modItems = new java.util.ArrayList<>();
-        for (var item : net.minecraft.core.registries.BuiltInRegistries.ITEM) {
-            var itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
-            if (itemId != null && itemId.getNamespace().startsWith(modId)) {
-                modItems.add(item);
-            }
+    private void maybeReseedFilterEditGhost(String syncedFilter) {
+        String filter = syncedFilter != null ? syncedFilter : "";
+        if (filter.equals(filterEditGhostSeedSource)) {
+            return;
         }
-        if (!modItems.isEmpty()) {
-            int index = (int) ((System.currentTimeMillis() / 3500L) % modItems.size());
-            return new ItemStack(modItems.get(index));
-        }
-        return ItemStack.EMPTY;
+        filterEditGhostSeedSource = filter;
+        seedEditorGhostFromFilter(filter);
     }
-
 
     private void openForbiddenSubview() {
         if (variableInlineEdit) {
@@ -2316,6 +2219,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             updateForbiddenEditButtons();
         } else if (variableInlineEdit && editingVariableIndex >= 0) {
             draftVariableFilter = value;
+            seedEditorGhostFromFilter(value);
             int letter = menu.getFilterLetter(editingVariableIndex);
             if (letter <= 0) letter = 1;
             ClientPacketDistributor.sendToServer(new VariableFilterSetC2SPacket(
@@ -2348,24 +2252,29 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         editorGhostItem = ItemStack.EMPTY;
         filterVariants.clear();
         filterVariantIndex = 0;
+        filterEditGhostSeedSource = "";
     }
 
     /**
-     * When opening an existing {@code -id} filter, load that item into the selector so the player
-     * can cycle to tags / other variants. Leaves textbox unchanged; empty / non-id filters stay empty.
+     * Seeds the editor ghost from the authoritative filter string (never from orphan item snapshots).
      */
     private void seedEditorGhostFromFilter(String filter) {
+        var registries = minecraft != null && minecraft.level != null ? minecraft.level.registryAccess() : null;
+        filterEditGhostSeedSource = filter != null ? filter : "";
         ItemStack fromId = net.unfamily.iskautils.util.DeepDrawerFilterVariants.itemStackFromIdFilter(filter);
-        if (fromId.isEmpty()) {
+        if (!fromId.isEmpty()) {
+            editorGhostItem = fromId.copyWithCount(1);
+            filterVariants.clear();
+            filterVariants.addAll(net.unfamily.iskautils.util.DeepDrawerFilterVariants.generateAllFilterVariants(
+                    editorGhostItem, registries));
+            filterVariantIndex = net.unfamily.iskautils.util.DeepDrawerFilterVariants.indexOfVariant(
+                    filterVariants, filter);
             return;
         }
-        editorGhostItem = fromId.copyWithCount(1);
-        var registries = minecraft != null && minecraft.level != null ? minecraft.level.registryAccess() : null;
+        ItemStack preview = net.unfamily.iskautils.util.FilterDisplayItems.forFilter(filter, registries);
+        editorGhostItem = preview.isEmpty() ? ItemStack.EMPTY : preview.copyWithCount(1);
         filterVariants.clear();
-        filterVariants.addAll(net.unfamily.iskautils.util.DeepDrawerFilterVariants.generateAllFilterVariants(
-                editorGhostItem, registries));
-        filterVariantIndex = net.unfamily.iskautils.util.DeepDrawerFilterVariants.indexOfVariant(
-                filterVariants, filter);
+        filterVariantIndex = 0;
     }
 
     private void acceptEditorGhost(ItemStack stack) {

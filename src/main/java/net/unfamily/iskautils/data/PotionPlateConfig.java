@@ -1,7 +1,7 @@
 package net.unfamily.iskautils.data;
 
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffect;
@@ -260,7 +260,7 @@ public class PotionPlateConfig {
     }
     
     /**
-     * Gets the registry-safe block name (converts - to _ for ResourceLocation compatibility)
+     * Gets the registry-safe block name (converts - to _ for Identifier compatibility)
      */
     public String getRegistryBlockName() {
         return plateId.replace("-", "_");
@@ -466,8 +466,9 @@ public class PotionPlateConfig {
         
         if (cachedEffect == null) {
             try {
-                ResourceLocation effectLocation = ResourceLocation.parse(effectId);
-                cachedEffect = BuiltInRegistries.MOB_EFFECT.getHolder(effectLocation).orElse(null);
+                Identifier effectLocation = Identifier.parse(effectId);
+                MobEffect effect = BuiltInRegistries.MOB_EFFECT.getOptional(effectLocation).orElse(null);
+                cachedEffect = effect == null ? null : BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect);
             } catch (Exception e) {
                 // Invalid effect ID format
                 return null;

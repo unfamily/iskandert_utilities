@@ -61,6 +61,9 @@ public final class LoadActionParser {
                 }
                 action.setType(CommandItemAction.ActionType.DROP);
                 action.setDropItemId(rl);
+                if (actionJson.has("count")) {
+                    action.setDropCount(actionJson.get("count").getAsInt());
+                }
             } else if (actionJson.has("item")) {
                 action.setType(CommandItemAction.ActionType.ITEM);
                 String itemAction = actionJson.get("item").getAsString().toLowerCase();

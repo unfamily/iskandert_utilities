@@ -6,8 +6,8 @@
     " A "
   ],
   "key": {
-    "A": "#c:ingots/deorum",
-    "B": "#c:gems/arcane_crystal"
+    "A": "#c:gems/arcane_crystal",
+    "B": "#c:ingots/deorum"
   },
   "result": {
     "id": "iska_utils:soul_nullifier",

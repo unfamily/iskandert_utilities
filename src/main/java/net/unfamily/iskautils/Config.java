@@ -138,6 +138,14 @@ public class Config {
             .comment("Maximum number of Range Module items stackable in a nullifier's module slot")
             .defineInRange("009_nullifierRangeUpgradeMax", 3, 0, 64);
 
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> NULLIFIER_IGNORED_ENTITIES = BUILDER
+            .comment("Entity types ignored by Ender / Flight / Climbing Nullifiers (not Soul / Wander).",
+                    "Entries starting with # are entity type tags (e.g. #c:bosses).",
+                    "Entries without # are entity type IDs (e.g. minecraft:warden).")
+            .defineList("010_nullifierIgnoredEntities",
+                    java.util.List.of("#c:bosses"),
+                    obj -> obj instanceof String);
+
     static {
         BUILDER.pop(); // End of nullifiers category
     }
@@ -1373,8 +1381,16 @@ public class Config {
     }
 
     private static final ModConfigSpec.IntValue ESSENCE_OF_KNOWLEDGE_GRATE_XP_POINTS_PER_TICK = BUILDER
-            .comment("Experience points drained from the player per tick while standing on the grate.")
+            .comment("Starting XP points drained per tick while standing on the grate (before acceleration).")
             .defineInRange("000_xp_points_per_tick", 1, 0, 1000);
+
+    private static final ModConfigSpec.IntValue ESSENCE_OF_KNOWLEDGE_GRATE_MAX_XP_POINTS_PER_TICK = BUILDER
+            .comment("Maximum XP points per tick after standing long enough. Still limited by tank free space and player XP.")
+            .defineInRange("001_max_xp_points_per_tick", 64, 0, 10000);
+
+    private static final ModConfigSpec.IntValue ESSENCE_OF_KNOWLEDGE_GRATE_ACCELERATION_TICKS = BUILDER
+            .comment("Ticks of continuous standing to ramp from base rate to max rate (20 ticks = 1 second).")
+            .defineInRange("002_acceleration_ticks", 100, 1, 6000);
 
     static {
         BUILDER.pop(); // End of essence_of_knowledge_grate category
@@ -1642,6 +1658,12 @@ public class Config {
             .comment("When true, rubber trees are injected into overworld generation (vegetal_decoration step).",
                     "Set to false to disable worldgen rubber trees (saplings and structures are unaffected).")
             .define("000_generate_rubber_trees", true);
+
+    public static final ModConfigSpec.BooleanValue GENERATE_ENTROPIC_FUNGUS = BUILDER
+            .comment("When true, Entropic Fungus generates in the world:",
+                    "Overworld rare underground; Nether similar (Warped Forest more common); End relatively common.",
+                    "Set to false to disable worldgen (block/item remain available).")
+            .define("001_generate_entropic_fungus", true);
 
     static {
         BUILDER.pop(); // End of worldgen category
@@ -1960,6 +1982,46 @@ public class Config {
                     "Default: false")
             .define("022_labeling_force_italic_non_ops", false);
 
+    private static final ModConfigSpec.BooleanValue FORCE_SILVERFISH_LARVA = BUILDER
+            .comment("If true, registers silverfish_larva even when Ex Deorum is not loaded.",
+                    "Default: false")
+            .define("030_force_silverfish_larva", false);
+
+    /**
+     * Item registration and guide gating. Safe during DeferredRegister clinit
+     * (config may not be loaded yet — peeks common TOML for the force flag).
+     */
+    public static boolean shouldRegisterSilverfishLarva() {
+        if (net.neoforged.fml.ModList.get().isLoaded("exdeorum")) {
+            return true;
+        }
+        if (SPEC.isLoaded()) {
+            return FORCE_SILVERFISH_LARVA.get();
+        }
+        return peekForceSilverfishLarvaFromDisk();
+    }
+
+    private static boolean peekForceSilverfishLarvaFromDisk() {
+        try {
+            java.nio.file.Path path = net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get().resolve("iska_utils-common.toml");
+            if (!java.nio.file.Files.isRegularFile(path)) {
+                return false;
+            }
+            for (String line : java.nio.file.Files.readAllLines(path)) {
+                String trimmed = line.strip();
+                if (trimmed.startsWith("030_force_silverfish_larva")) {
+                    int eq = trimmed.indexOf('=');
+                    if (eq >= 0) {
+                        return Boolean.parseBoolean(trimmed.substring(eq + 1).strip());
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // Default false when config cannot be read during early bootstrap.
+        }
+        return false;
+    }
+
     static {
         BUILDER.comment("Mod logging (off by default in production)").push("logging");
     }
@@ -2139,6 +2201,7 @@ public class Config {
     public static int soulNullifierRadius;
     public static int soulNullifierMaxRange;
     public static int nullifierRangeUpgradeMax;
+    public static java.util.List<String> nullifierIgnoredEntities;
     public static int enderNullifierRangeModuleBonus;
     public static int wanderNullifierRangeModuleBonus;
     public static int soulNullifierRangeModuleBonus;
@@ -2160,6 +2223,7 @@ public class Config {
     public static int rubberSapExtractorEnergyBuffer;
     public static int rubberSapExtractorSpeed;
     public static boolean generateRubberTrees;
+    public static boolean generateEntropicFungus;
     public static boolean swissWrenchLegacyModes;
     public static java.util.List<String> crudeOils = new java.util.ArrayList<>();
     /** Raw {@code item_id;min-max} for Suspicious Delivery wanderer trade cost. */
@@ -2378,6 +2442,8 @@ public class Config {
     public static int lastingCandyInvulnSeconds;
     public static int lastingCandyCooldownSeconds;
     public static int essenceOfKnowledgeGrateXpPointsPerTick;
+    public static int essenceOfKnowledgeGrateMaxXpPointsPerTick;
+    public static int essenceOfKnowledgeGrateAccelerationTicks;
     public static double entropicClockMaxFactorMultiplier;
     public static int entropicClockEntropyPerTick;
     public static int entropicClockMaxStored;
@@ -2532,6 +2598,7 @@ public class Config {
         soulNullifierRadius = SOUL_NULLIFIER_RADIUS.get();
         soulNullifierMaxRange = SOUL_NULLIFIER_MAX_RANGE.get();
         nullifierRangeUpgradeMax = NULLIFIER_RANGE_UPGRADE_MAX.get();
+        nullifierIgnoredEntities = new java.util.ArrayList<>(NULLIFIER_IGNORED_ENTITIES.get());
         enderNullifierRangeModuleBonus = ENDER_NULLIFIER_RANGE_MODULE_BONUS.get();
         wanderNullifierRangeModuleBonus = WANDER_NULLIFIER_RANGE_MODULE_BONUS.get();
         soulNullifierRangeModuleBonus = SOUL_NULLIFIER_RANGE_MODULE_BONUS.get();
@@ -2805,6 +2872,8 @@ public class Config {
         lastingCandyInvulnSeconds = LASTING_CANDY_INVULN_SECONDS.get();
         lastingCandyCooldownSeconds = LASTING_CANDY_COOLDOWN_SECONDS.get();
         essenceOfKnowledgeGrateXpPointsPerTick = ESSENCE_OF_KNOWLEDGE_GRATE_XP_POINTS_PER_TICK.get();
+        essenceOfKnowledgeGrateMaxXpPointsPerTick = ESSENCE_OF_KNOWLEDGE_GRATE_MAX_XP_POINTS_PER_TICK.get();
+        essenceOfKnowledgeGrateAccelerationTicks = ESSENCE_OF_KNOWLEDGE_GRATE_ACCELERATION_TICKS.get();
         deepDrawerExtractorInterval = DEEP_DRAWER_EXTRACTOR_INTERVAL.get();
         deepDrawerExtractorMaxFilters = DEEP_DRAWER_EXTRACTOR_MAX_FILTERS.get();
         ftbTeamsSyncEnabled = FTB_TEAMS_SYNC_ENABLED.get();
@@ -2873,6 +2942,7 @@ public class Config {
         
         rubberSapExtractorSpeed = RUBBER_SAP_EXTRACTOR_SPEED.get();
         generateRubberTrees = GENERATE_RUBBER_TREES.get();
+        generateEntropicFungus = GENERATE_ENTROPIC_FUNGUS.get();
         
         scannerScanRange = SCANNER_SCAN_RANGE.get(); // Deprecated, kept for backward compatibility
         scannerRangeOptions = new java.util.ArrayList<>(SCANNER_RANGE_OPTIONS.get());

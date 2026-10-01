@@ -1,3 +1,6 @@
 {
-  "parent": "iska_utils:block/essence_of_knoledge_grate"
+  "model": {
+    "type": "minecraft:model",
+    "model": "iska_utils:item/essence_of_knoledge_grate"
+  }
 }

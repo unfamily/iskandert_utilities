@@ -21,11 +21,11 @@ A rare **resource** — not worn on the body. Used on the <ItemImage id="iska_ut
 
 **From opening a Suspicious Delivery**
 
-- Reward when you open a **Suspicious Delivery** (uncommon).
+- **Five** drops when you open a **Suspicious Delivery** (uncommon primitive outcome).
 
 **From recycling**
 
-- At a crafting table or <ItemImage id="iska_utils:factory" /> **Factory**: one eligible item → one Drop of Entropy.
+- At a crafting table or <ItemImage id="iska_utils:factory" /> **Factory**: one eligible item → **three** Drops of Entropy.
 - **Unopened** <ItemImage id="iska_utils:suspicious_delivery" /> **Suspicious Delivery**
 - Most **delivery artifacts** you do not need, for example:
   - <ItemImage id="iska_utils:ancient_tablet" /> Ancient Tablet
@@ -43,5 +43,21 @@ A rare **resource** — not worn on the body. Used on the <ItemImage id="iska_ut
   - <ItemImage id="iska_utils:the_roots" /> The Roots
   - <ItemImage id="iska_utils:mining_equitizer" /> Mining Equitizer
   - <ItemImage id="iska_utils:cursed_candle" /> Arcane Candle
+
+**World and combat loot**
+
+- **Witches** — **1–2** drops (Looting can add up to **1** more).
+- **Endermites** — **2–3** drops (Looting can add up to **1** more).
+- **Dungeon chests** (injected loot) — **1–5** drops per roll.
+- <ItemImage id="iska_utils:factory" /> **Factory**: insert <ItemImage id="iska_utils:entropic_fungus" /> **Entropic Fungus** → **1** Drop of Entropy.
+
+<iska_utils:IfSilverfishLarva>
+
+**Ex Deorum integration** (requires **Ex Deorum** and the registered <ItemImage id="iska_utils:silverfish_larva" /> **Silverfish Larva** item — see that page):
+
+- Use a larva on an **Ex Deorum barrel** that holds **witch water** → **1** Drop of Entropy.
+- Infest stone with a larva; a **silverfish** standing in **witch water** becomes an **endermite** and can drop entropy on defeat.
+
+</iska_utils:IfSilverfishLarva>
 
 **Drop of Entropy** itself is **not** recyclable.

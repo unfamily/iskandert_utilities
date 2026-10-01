@@ -2,7 +2,7 @@ package net.unfamily.iskautils.util;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
@@ -39,7 +39,7 @@ public final class ModuleQuickInstall {
         if (stack == null || stack.isEmpty()) {
             return false;
         }
-        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (id == null || !IskaUtils.MOD_ID.equals(id.getNamespace())) {
             return false;
         }
@@ -69,7 +69,7 @@ public final class ModuleQuickInstall {
             return false;
         }
 
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return canInsertAny(modules, held, be);
         }
 

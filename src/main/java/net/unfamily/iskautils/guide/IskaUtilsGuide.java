@@ -41,6 +41,7 @@ public final class IskaUtilsGuide {
             Guide.builder(GUIDE_ID)
                     .itemSettings(guideItemSettings)
                     .extension(TagCompiler.EXTENSION_POINT, new TheRootsTitleTagCompiler())
+                    .extension(TagCompiler.EXTENSION_POINT, new SilverfishLarvaConditionalTagCompiler())
                     .index(new TheRootsNavigationIndex())
                     .build();
             LOGGER.info("GuideME guide registered");

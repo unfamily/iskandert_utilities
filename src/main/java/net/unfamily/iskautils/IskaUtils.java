@@ -151,8 +151,9 @@ public class IskaUtils {
         ModItems.register(modEventBus);
         ModFluids.register(modEventBus);
         net.unfamily.iskautils.crafting.ModFactoryRecipes.register(modEventBus);
-        ModMobEffects.register(modEventBus);
         net.unfamily.iskautils.particle.ModParticles.register(modEventBus);
+        ModMobEffects.register(modEventBus);
+        net.unfamily.iskautils.potion.ModPotions.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         net.unfamily.iskautils.entity.ModEntities.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
@@ -186,6 +187,7 @@ public class IskaUtils {
         net.unfamily.iskautils.shop.ShopEntryTypeRegistry.ensureBuiltins();
         net.unfamily.iskautils.arcane.ArcaneDictionaryEffectsInit.registerBuiltins();
         net.unfamily.iskautils.arcane.ArcaneDictionaryLoader.loadAllBootstrap();
+        net.unfamily.iskautils.data.DynamicToolBehaviorScanner.loadAllBootstrap();
         
         // Register network messages
         ModMessages.register();

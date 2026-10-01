@@ -1,0 +1,6 @@
+{
+  "pane_culling_fix": true,
+  "targets": [
+    "iska_utils:ethereal_glass_pane"
+  ]
+}

@@ -7,7 +7,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
@@ -624,7 +624,7 @@ public class DynamicPotionPlateScanner {
     }
     
     /**
-     * Validates if a string is a valid ResourceLocation path
+     * Validates if a string is a valid Identifier path
      */
     private static boolean isValidResourceLocationPath(String path) {
         if (path == null || path.isEmpty()) {
@@ -642,7 +642,7 @@ public class DynamicPotionPlateScanner {
     }
     
     /**
-     * Checks if a character is valid for ResourceLocation paths
+     * Checks if a character is valid for Identifier paths
      */
     private static boolean isValidResourceLocationChar(char c) {
         return (c >= 'a' && c <= 'z') ||

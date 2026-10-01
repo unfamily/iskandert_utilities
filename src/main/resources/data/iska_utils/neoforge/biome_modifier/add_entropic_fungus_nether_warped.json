@@ -1,0 +1,6 @@
+{
+  "type": "iska_utils:entropic_fungus_if_enabled",
+  "biomes": "minecraft:warped_forest",
+  "features": "iska_utils:entropic_fungus_nether_warped_placed",
+  "step": "underground_decoration"
+}

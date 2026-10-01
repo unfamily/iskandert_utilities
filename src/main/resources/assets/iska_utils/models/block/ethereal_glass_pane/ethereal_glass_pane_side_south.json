@@ -1,0 +1,39 @@
+{
+  "loader": "fusion:model",
+  "type": "connecting",
+  "parent": "minecraft:block/template_glass_pane_side_alt",
+  "textures": {
+    "pane": "iska_utils:block/ethereal_glass/ethereal_glass",
+    "edge": "iska_utils:block/ethereal_glass/ethereal_glass_edge"
+  },
+  "connections": {
+    "type": "or",
+    "predicates": [
+      {
+        "type": "or",
+        "predicates": [
+          {
+            "type": "match_state",
+            "block": "iska_utils:ethereal_glass_pane",
+            "properties": {
+              "south": [
+                "true"
+              ]
+            }
+          },
+          {
+            "type": "is_direction",
+            "directions": [
+              "bottom_left",
+              "bottom_right",
+              "left",
+              "right",
+              "top_left",
+              "top_right"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

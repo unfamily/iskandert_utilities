@@ -1,5 +1,6 @@
 package net.unfamily.iskautils.guide;
 
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.ModLogger;
 
 import guideme.Guide;
@@ -19,6 +20,8 @@ public final class TheRootsNavigationPatcher {
     private static final ModLogger LOGGER = ModLogger.of(TheRootsNavigationPatcher.class);
     static final Identifier GUIDE_ID = Identifier.fromNamespaceAndPath("iska_utils", "guide");
     private static final Identifier THE_ROOTS_PAGE = Identifier.fromNamespaceAndPath("iska_utils", "items/the_roots.md");
+    private static final Identifier SILVERFISH_LARVA_PAGE =
+            Identifier.fromNamespaceAndPath("iska_utils", "items/silverfish_larva.md");
 
     private TheRootsNavigationPatcher() {
     }
@@ -28,12 +31,9 @@ public final class TheRootsNavigationPatcher {
             return;
         }
         var patched = patchTree(guide.getNavigationTree());
-        if (patched != null) {
-            setNavigationTree(guide, patched);
-        }
+        setNavigationTree(guide, patched);
     }
 
-    @Nullable
     private static NavigationTree patchTree(NavigationTree tree) {
         var patchedRoots = tree.getRootNodes().stream().map(TheRootsNavigationPatcher::patchNode).toList();
         var index = new HashMap<Identifier, NavigationNode>();
@@ -45,7 +45,10 @@ public final class TheRootsNavigationPatcher {
 
     private static NavigationNode patchNode(NavigationNode node) {
         var title = isTheRootsPage(node.pageId()) ? TheRootsGuideNames.displayName() : node.title();
-        var children = node.children().stream().map(TheRootsNavigationPatcher::patchNode).toList();
+        var children = node.children().stream()
+                .filter(child -> !shouldHidePage(child.pageId()))
+                .map(TheRootsNavigationPatcher::patchNode)
+                .toList();
         return new NavigationNode(node.pageId(), title, node.icon(), children, node.position(), node.hasPage());
     }
 
@@ -60,6 +63,10 @@ public final class TheRootsNavigationPatcher {
 
     private static boolean isTheRootsPage(@Nullable Identifier pageId) {
         return THE_ROOTS_PAGE.equals(pageId);
+    }
+
+    private static boolean shouldHidePage(@Nullable Identifier pageId) {
+        return SILVERFISH_LARVA_PAGE.equals(pageId) && !Config.shouldRegisterSilverfishLarva();
     }
 
     private static void setNavigationTree(Guide guide, NavigationTree tree) {

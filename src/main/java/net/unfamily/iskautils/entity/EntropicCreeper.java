@@ -9,11 +9,14 @@ import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.effect.ModMobEffects;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.util.EntropyExplosionHelper;
+import net.unfamily.iskautils.util.EntropicEmpowermentUtil;
 
 /**
  * Creeper variant that detonates via ExplosionSystem.
+ * Always carries infinite Entropic Empowerment (same as soil-spawned mobs); never spawns from entropic soil.
  */
 public class EntropicCreeper extends Creeper {
     public EntropicCreeper(EntityType<? extends Creeper> type, Level level) {
@@ -25,8 +28,11 @@ public class EntropicCreeper extends Creeper {
     }
 
     @Override
-    protected boolean shouldDespawnInPeaceful() {
-        return true;
+    public void tick() {
+        super.tick();
+        if (!this.level().isClientSide() && !this.hasEffect(ModMobEffects.ENTROPIC_EMPOWERMENT)) {
+            EntropicEmpowermentUtil.apply(this);
+        }
     }
 
     @Override

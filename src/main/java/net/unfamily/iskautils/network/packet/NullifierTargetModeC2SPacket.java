@@ -37,10 +37,7 @@ public record NullifierTargetModeC2SPacket(BlockPos pos, int modeId) implements 
     public static void handle(NullifierTargetModeC2SPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             ServerPlayer player = (ServerPlayer) context.player();
-            ServerLevel level = player.serverLevel();
-            if (!player.canInteractWithBlock(packet.pos(), 8.0)) {
-                return;
-            }
+            ServerLevel level = (ServerLevel) player.level();
             var be = level.getBlockEntity(packet.pos());
             if (!(be instanceof INullifierBE nullifier)) {
                 return;

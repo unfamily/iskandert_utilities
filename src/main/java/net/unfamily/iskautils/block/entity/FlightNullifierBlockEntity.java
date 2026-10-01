@@ -59,13 +59,9 @@ public class FlightNullifierBlockEntity extends BlockEntity implements MenuProvi
 
     @Override
     public void setTargetMode(NullifierTargetMode mode) {
-        if (getNullifierType().hasLimitedTargetModes()
-                && mode != NullifierTargetMode.DISABLED
-                && mode != NullifierTargetMode.ONLY_MOBS) {
-            mode = NullifierTargetMode.ONLY_MOBS;
-        }
+        mode = getNullifierType().sanitizeTargetMode(mode);
         this.targetMode = mode;
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             syncSpatialIndex(computeEffectiveActive(getBlockState().getValue(FlightNullifierBlock.POWERED)));
         }
         setChanged();
@@ -112,7 +108,7 @@ public class FlightNullifierBlockEntity extends BlockEntity implements MenuProvi
             case 2 -> { manualEnabled = true;  redstoneMode = EnderNullifierRedstoneMode.LOW; }
             case 3 -> { manualEnabled = true;  redstoneMode = EnderNullifierRedstoneMode.HIGH; }
         }
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             applyEffectiveState(level, worldPosition, getBlockState());
         }
     }
@@ -128,7 +124,7 @@ public class FlightNullifierBlockEntity extends BlockEntity implements MenuProvi
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, FlightNullifierBlockEntity blockEntity) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
 
@@ -181,7 +177,7 @@ public class FlightNullifierBlockEntity extends BlockEntity implements MenuProvi
     }
 
     public void reconcileEffectiveState() {
-        if (level == null || level.isClientSide) {
+        if (level == null || level.isClientSide()) {
             return;
         }
         BlockState state = getBlockState();
@@ -227,39 +223,48 @@ public class FlightNullifierBlockEntity extends BlockEntity implements MenuProvi
     @Override
     public void setLevel(Level level) {
         super.setLevel(level);
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             reconcileEffectiveState();
         }
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        int modeValue = tag.contains("RedstoneMode") ? tag.getInt("RedstoneMode") : 0;
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
+        super.loadAdditional(input);
+        int modeValue = input.getInt("RedstoneMode").orElse(0);
         if (modeValue == 3) modeValue = 0;
         redstoneMode = EnderNullifierRedstoneMode.fromValue(modeValue);
-        manualEnabled = !tag.contains("ManualEnabled") || tag.getBoolean("ManualEnabled");
-        previousRedstoneState = tag.getBoolean("PreviousRedstoneState");
-        range = tag.contains("Range") ? tag.getInt("Range") : -1;
-        showAreaEnabled = tag.getBoolean("ShowArea");
-        targetMode = NullifierTargetMode.fromId(tag.contains("TargetMode") ? tag.getInt("TargetMode") : 1);
-        if (tag.contains("Modules")) {
-            moduleHandler.deserializeNBT(registries, tag.getCompound("Modules"));
+        manualEnabled = input.getBooleanOr("ManualEnabled", true);
+        previousRedstoneState = input.getBooleanOr("PreviousRedstoneState", false);
+        range = input.getInt("Range").orElse(-1);
+        showAreaEnabled = input.getBooleanOr("ShowArea", false);
+        targetMode = NullifierTargetMode.fromId(input.getIntOr("TargetMode", NullifierTargetMode.ONLY_MOBS.getId()));
+        for (net.minecraft.world.ItemStackWithSlot item : input.listOrEmpty("Modules", net.minecraft.world.ItemStackWithSlot.CODEC)) {
+            int slot = item.slot();
+            if (slot >= 0 && slot < moduleHandler.getSlots()) {
+                moduleHandler.setStackInSlot(slot, item.stack());
+            }
         }
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             reconcileEffectiveState();
         }
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.putInt("RedstoneMode", redstoneMode.getValue());
-        tag.putBoolean("ManualEnabled", manualEnabled);
-        tag.putBoolean("PreviousRedstoneState", previousRedstoneState);
-        tag.putInt("Range", getRange());
-        tag.putBoolean("ShowArea", showAreaEnabled);
-        tag.putInt("TargetMode", targetMode.getId());
-        tag.put("Modules", moduleHandler.serializeNBT(registries));
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
+        super.saveAdditional(output);
+        output.putInt("RedstoneMode", redstoneMode.getValue());
+        output.putBoolean("ManualEnabled", manualEnabled);
+        output.putBoolean("PreviousRedstoneState", previousRedstoneState);
+        output.putInt("Range", getRange());
+        output.putBoolean("ShowArea", showAreaEnabled);
+        output.putInt("TargetMode", targetMode.getId());
+        net.minecraft.world.level.storage.ValueOutput.TypedOutputList<net.minecraft.world.ItemStackWithSlot> modules =
+                output.list("Modules", net.minecraft.world.ItemStackWithSlot.CODEC);
+        for (int slot = 0; slot < moduleHandler.getSlots(); slot++) {
+            net.minecraft.world.item.ItemStack stack = moduleHandler.getStackInSlot(slot);
+            if (!stack.isEmpty()) modules.add(new net.minecraft.world.ItemStackWithSlot(slot, stack));
+        }
+        if (modules.isEmpty()) output.discard("Modules");
     }
 }

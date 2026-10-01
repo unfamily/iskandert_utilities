@@ -177,10 +177,11 @@ config="iska_utils.mixins.json"
     ordering="AFTER"
     side="BOTH"
 
-# Optional Fusion (connected textures); fallback models used when absent
+# Required Fusion (connected textures for ethereal/obscure glass)
 [[dependencies.${mod_id}]]
     modId="fusion"
-    type="optional"
+    type="required"
+    versionRange="[1.0.0,)"
     ordering="AFTER"
     side="BOTH"
 

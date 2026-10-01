@@ -25,7 +25,7 @@ public final class NullifierSpatialIndex {
 
     public record Entry(int radius, Kind kind, NullifierTargetMode targetMode) {}
 
-    private static final Map<ResourceKey<Level>, Map<Long, Map<BlockPos, Entry>>> BY_DIMENSION = new ConcurrentHashMap<>();
+    private static final Map<ResourceKey<Level>, Map<ChunkPos, Map<BlockPos, Entry>>> BY_DIMENSION = new ConcurrentHashMap<>();
 
     private NullifierSpatialIndex() {}
 
@@ -37,10 +37,10 @@ public final class NullifierSpatialIndex {
             int radius,
             NullifierTargetMode targetMode) {
         if (active && targetMode != NullifierTargetMode.DISABLED) {
-            long chunkKey = ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
+            ChunkPos chunkPos = ChunkPos.containing(pos);
             BY_DIMENSION
                     .computeIfAbsent(dimension, d -> new ConcurrentHashMap<>())
-                    .computeIfAbsent(chunkKey, k -> new ConcurrentHashMap<>())
+                    .computeIfAbsent(chunkPos, k -> new ConcurrentHashMap<>())
                     .put(pos.immutable(), new Entry(radius, kind, targetMode));
         } else {
             remove(dimension, pos);
@@ -48,16 +48,16 @@ public final class NullifierSpatialIndex {
     }
 
     public static void remove(ResourceKey<Level> dimension, BlockPos pos) {
-        Map<Long, Map<BlockPos, Entry>> dimMap = BY_DIMENSION.get(dimension);
+        Map<ChunkPos, Map<BlockPos, Entry>> dimMap = BY_DIMENSION.get(dimension);
         if (dimMap == null) {
             return;
         }
-        long chunkKey = ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
-        Map<BlockPos, Entry> chunkMap = dimMap.get(chunkKey);
+        ChunkPos chunkPos = ChunkPos.containing(pos);
+        Map<BlockPos, Entry> chunkMap = dimMap.get(chunkPos);
         if (chunkMap != null) {
             chunkMap.remove(pos);
             if (chunkMap.isEmpty()) {
-                dimMap.remove(chunkKey);
+                dimMap.remove(chunkPos);
             }
         }
         if (dimMap.isEmpty()) {
@@ -66,16 +66,24 @@ public final class NullifierSpatialIndex {
     }
 
     public static Set<BlockPos> getNullifiersInChunk(ResourceKey<Level> dimension, ChunkPos chunkPos) {
-        Map<Long, Map<BlockPos, Entry>> dimMap = BY_DIMENSION.get(dimension);
+        Map<ChunkPos, Map<BlockPos, Entry>> dimMap = BY_DIMENSION.get(dimension);
         if (dimMap == null) {
             return Collections.emptySet();
         }
-        Map<BlockPos, Entry> chunkMap = dimMap.get(chunkPos.toLong());
+        Map<BlockPos, Entry> chunkMap = dimMap.get(chunkPos);
         return chunkMap == null ? Collections.emptySet() : chunkMap.keySet();
     }
 
     public static boolean isTeleportBlocked(ResourceKey<Level> dimension, Vec3 position) {
+        return isTeleportBlockedForMobs(dimension, position);
+    }
+
+    public static boolean isTeleportBlockedForMobs(ResourceKey<Level> dimension, Vec3 position) {
         return matches(dimension, position, Kind.ENDER, NullifierTargetMode::affectsMobs);
+    }
+
+    public static boolean isTeleportBlockedForPlayers(ResourceKey<Level> dimension, Vec3 position) {
+        return matches(dimension, position, Kind.ENDER, NullifierTargetMode::affectsPlayers);
     }
 
     public static boolean shouldBlockMobClimbing(ResourceKey<Level> dimension, Vec3 position) {
@@ -86,8 +94,12 @@ public final class NullifierSpatialIndex {
         return matches(dimension, position, Kind.FLIGHT, NullifierTargetMode::blocksPlayerFlightInZone);
     }
 
+    public static boolean shouldBlockMobFlight(ResourceKey<Level> dimension, Vec3 position) {
+        return matches(dimension, position, Kind.FLIGHT, NullifierTargetMode::affectsMobs);
+    }
+
     public static boolean shouldBlockPlayerGauntletClimb(ResourceKey<Level> dimension, Vec3 position) {
-        return matches(dimension, position, Kind.CLIMBING, NullifierTargetMode::affectsMobs);
+        return matches(dimension, position, Kind.CLIMBING, NullifierTargetMode::affectsPlayers);
     }
 
     private static boolean matches(
@@ -95,7 +107,7 @@ public final class NullifierSpatialIndex {
             Vec3 position,
             Kind kind,
             Predicate<NullifierTargetMode> modeTest) {
-        Map<Long, Map<BlockPos, Entry>> dimMap = BY_DIMENSION.get(dimension);
+        Map<ChunkPos, Map<BlockPos, Entry>> dimMap = BY_DIMENSION.get(dimension);
         if (dimMap == null) {
             return false;
         }
@@ -106,7 +118,7 @@ public final class NullifierSpatialIndex {
 
         for (int dcx = -searchChunkRadius; dcx <= searchChunkRadius; dcx++) {
             for (int dcz = -searchChunkRadius; dcz <= searchChunkRadius; dcz++) {
-                Map<BlockPos, Entry> nullifiers = dimMap.get(ChunkPos.asLong(centerChunkX + dcx, centerChunkZ + dcz));
+                Map<BlockPos, Entry> nullifiers = dimMap.get(new ChunkPos(centerChunkX + dcx, centerChunkZ + dcz));
                 if (nullifiers == null) {
                     continue;
                 }

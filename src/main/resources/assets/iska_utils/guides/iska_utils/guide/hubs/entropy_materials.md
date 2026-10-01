@@ -11,7 +11,7 @@ categories:
 
 Progression built around the <ItemImage id="iska_utils:ancient_tablet" /> **Ancient Tablet**: a portable crafter that holds ingredients and performs special crafts.
 
-You need <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy** — from opening a **Suspicious Delivery**, or by **recycling** unopened **Suspicious Delivery** and unwanted delivery artifacts.
+You need <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy** — from opening a **Suspicious Delivery** (**five** drops on the primitive outcome), **recycling** delivery items (**three** drops each at a crafting table or **Factory**), **world loot** (witches, dungeons, endermites), crafting **<ItemImage id="iska_utils:entropic_fungus" /> Entropic Fungus** (or sunlight-killing it), and optionally **Ex Deorum** tricks with **Silverfish Larva** (see those pages).
 
 From the tablet you forge <ItemImage id="iska_utils:entropy_crystal" /> **Entropy Crystal** and <ItemImage id="iska_utils:unstable_entropy_catalyst" /> **Unstable Entropy Catalyst**. The catalyst **decays** in your inventory; plan ahead. <ItemImage id="iska_utils:entropy_tnt" /> **Entropy TNT** uses crystal and catalyst.
 

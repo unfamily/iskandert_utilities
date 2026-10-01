@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "entries": [
+    "iska_utils:witch_entropy",
+    "iska_utils:endermite_entropy",
+    "iska_utils:dungeon_entropy"
+  ]
+}

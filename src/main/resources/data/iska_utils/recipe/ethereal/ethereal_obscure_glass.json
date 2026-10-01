@@ -7,7 +7,7 @@
   ],
   "key": {
     "A": "iska_utils:obscure_glass",
-    "B": "iska_utils:green_sludge",
+    "B": "#iska_utils:basic_resources",
     "C": "#c:gems/lapis"
   },
   "result": {

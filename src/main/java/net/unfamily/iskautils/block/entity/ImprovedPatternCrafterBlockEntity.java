@@ -248,15 +248,13 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
     protected ImprovedPatternCrafterBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
         int maxKeys = getMaxKeyInputs();
-        this.inputFilterHandler = new ItemStackHandler(maxKeys) {
-            @Override
-            protected void onContentsChanged(int slot) {
-                setChanged();
-            }
-        };
         this.filterLetters = new int[maxKeys];
         this.inputFilterStrings = new String[maxKeys];
         java.util.Arrays.fill(this.inputFilterStrings, "");
+        this.inputFilterHandler = new InputFilterDisplayHandler(
+                maxKeys,
+                slot -> slot >= 0 && slot < inputFilterStrings.length ? inputFilterStrings[slot] : "",
+                () -> level != null ? level.registryAccess() : null);
         this.outputHandler = new ItemStackHandler(getOutputSlotCount()) {
             @Override
             protected void onContentsChanged(int slot) {

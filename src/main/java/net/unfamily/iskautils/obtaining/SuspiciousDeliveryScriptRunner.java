@@ -120,13 +120,13 @@ public final class SuspiciousDeliveryScriptRunner {
                     action.getMessage().send(source, origin, LOGGER.unwrap(), CONTEXT);
                 }
             }
-            case DROP -> spawnDrop(player, action.getDropItemId(), origin);
+            case DROP -> spawnDrop(player, action.getDropItemId(), action.getDropCount(), origin);
             case ITEM -> LOGGER.warn("Suspicious Delivery ignored item action: {}", action.getItemAction());
             case IF, DELAY -> LOGGER.warn("Suspicious Delivery unexpected action type {}", action.getType());
         }
     }
 
-    private static void spawnDrop(ServerPlayer player, net.minecraft.resources.Identifier itemId, Vec3 origin) {
+    private static void spawnDrop(ServerPlayer player, net.minecraft.resources.Identifier itemId, int count, Vec3 origin) {
         if (itemId == null) {
             return;
         }
@@ -139,7 +139,7 @@ public final class SuspiciousDeliveryScriptRunner {
         if (level.isClientSide()) {
             return;
         }
-        ItemEntity ent = new ItemEntity(level, origin.x, origin.y, origin.z, new ItemStack(item));
+        ItemEntity ent = new ItemEntity(level, origin.x, origin.y, origin.z, new ItemStack(item, Math.max(1, count)));
         level.addFreshEntity(ent);
     }
 

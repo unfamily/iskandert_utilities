@@ -1,10 +1,10 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    "#iska_utils:delivery_recycle"
+    { "tag": "iska_utils:delivery_recycle" }
   ],
   "result": {
     "id": "iska_utils:drop_of_entropy",
-    "count": 1
+    "count": 3
   }
 }

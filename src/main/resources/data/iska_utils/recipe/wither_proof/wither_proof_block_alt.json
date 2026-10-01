@@ -8,7 +8,7 @@
   "key": {
     "A": "#c:stones",
     "B": "#minecraft:coals",
-    "C": "iska_utils:green_sludge"
+    "C": "#iska_utils:basic_resources"
   },
   "result": {
     "id": "iska_utils:wither_proof_block",

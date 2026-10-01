@@ -5,8 +5,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -29,14 +31,8 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.unfamily.iskautils.block.entity.FlightNullifierBlockEntity;
 import net.unfamily.iskautils.util.PreviewAreaSupport;
-import net.unfamily.iskautils.block.entity.EnderNullifierRedstoneMode;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
-
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.Containers;
-import net.unfamily.iskautils.block.entity.INullifierBE;
-
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public class FlightNullifierBlock extends DirectionalBlock implements EntityBlock {
     public static final BooleanProperty ON = BooleanProperty.create("on");
@@ -95,13 +91,13 @@ public class FlightNullifierBlock extends DirectionalBlock implements EntityBloc
 
     @Override
     public boolean canConnectRedstone(BlockState state, BlockGetter level, BlockPos pos, @Nullable Direction direction) {
-        return true;
+        return direction != null;
     }
 
     @Override
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
         super.onPlace(state, level, pos, oldState, isMoving);
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof FlightNullifierBlockEntity nullifier) {
                 nullifier.reconcileEffectiveState();
@@ -110,28 +106,27 @@ public class FlightNullifierBlock extends DirectionalBlock implements EntityBloc
     }
 
     @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (!level.isClientSide && !state.is(newState.getBlock())) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof FlightNullifierBlockEntity nullifier) {
-                nullifier.clearSpatialIndex();
-                var handler = nullifier.getModuleHandler();
-                for (int i = 0; i < handler.getSlots(); i++) {
-                    var stack = handler.getStackInSlot(i);
-                    if (!stack.isEmpty()) {
-                        Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
-                        handler.setStackInSlot(i, net.minecraft.world.item.ItemStack.EMPTY);
-                    }
+    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof FlightNullifierBlockEntity nullifier) {
+            nullifier.clearSpatialIndex();
+            var handler = nullifier.getModuleHandler();
+            for (int i = 0; i < handler.getSlots(); i++) {
+                var stack = handler.getStackInSlot(i);
+                if (!stack.isEmpty()) {
+                    Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
+                    handler.setStackInSlot(i, net.minecraft.world.item.ItemStack.EMPTY);
                 }
             }
-            PreviewAreaSupport.onPreviewOwnerBlockRemoved(level, pos, state, newState);
         }
-        super.onRemove(state, level, pos, newState, isMoving);
+        PreviewAreaSupport.onPreviewOwnerBlockBroken(level, pos, state);
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 
     @Override
-    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        if (level.isClientSide) {
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block,
+                                   net.minecraft.world.level.redstone.Orientation orientation, boolean isMoving) {
+        if (level.isClientSide()) {
             return;
         }
 
@@ -173,22 +168,16 @@ public class FlightNullifierBlock extends DirectionalBlock implements EntityBloc
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        if (level.isClientSide) {
-            return InteractionResult.SUCCESS;
-        }
-        if (!(player instanceof ServerPlayer serverPlayer)) {
-            return InteractionResult.PASS;
-        }
+        if (level.isClientSide()) return InteractionResult.SUCCESS;
+        if (!(player instanceof ServerPlayer serverPlayer)) return InteractionResult.PASS;
         BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (!(blockEntity instanceof FlightNullifierBlockEntity nullifier)) {
-            return InteractionResult.PASS;
-        }
+        if (!(blockEntity instanceof FlightNullifierBlockEntity nullifier)) return InteractionResult.PASS;
         if (player.isShiftKeyDown()) {
             nullifier.toggleManualEnabled(level, pos, state);
             level.playSound(null, pos,
                     nullifier.isManualEnabled() ? SoundEvents.STONE_BUTTON_CLICK_ON : SoundEvents.STONE_BUTTON_CLICK_OFF,
                     SoundSource.BLOCKS, 0.4F, 1.0F);
-            serverPlayer.displayClientMessage(
+            serverPlayer.sendSystemMessage(
                     nullifier.isManualEnabled()
                             ? Component.translatable("message.iska_utils.flight_nullifier.enabled").withStyle(ChatFormatting.GREEN)
                             : Component.translatable("message.iska_utils.flight_nullifier.disabled").withStyle(ChatFormatting.RED),
@@ -239,3 +228,4 @@ public class FlightNullifierBlock extends DirectionalBlock implements EntityBloc
         };
     }
 }
+

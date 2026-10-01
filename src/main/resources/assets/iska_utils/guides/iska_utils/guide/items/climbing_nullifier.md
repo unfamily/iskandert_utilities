@@ -15,13 +15,19 @@ categories:
 
 ## What it does
 
-Stops **mobs** from climbing ladders, scaffolding, and other climbable blocks inside a cubic **radius**. Also blocks **Gauntlet of Climbing** wall-climb while inside the zone. Same range and modules as the [Ender Nullifier](ender_nullifier.md).
+Stops **climbing** on ladders, scaffolding, and other climbable blocks inside a cubic **radius**. Also blocks **Gauntlet of Climbing** wall-climb while inside the zone. Same range and modules as the [Ender Nullifier](ender_nullifier.md).
+
+Entities in the configured ignore list (default: `#c:bosses`) are exempt from this nullifier.
 
 ## GUI
 
-**Redstone**, **module**, **target** (Only mobs / Disabled), range, and preview — same as other nullifiers.
+- **Target** (icon button, right side): cycles through the affected group. Left-click advances, right-click goes back.
+  - *Mobs only* (default): stops non-player entities from climbing.
+  - *Players only*: stops players from climbing (including Gauntlet).
+  - *Mobs and players*: affects both groups.
+- **Redstone**, **module slot**, range, and area preview — same as other nullifiers.
 
 ## Tips
 
-- Useful to keep mobs from scaling farms or walls.
+- Useful to keep entities from scaling farms or walls.
 - See also: [Flight Nullifier](flight_nullifier.md), [Ender Nullifier](ender_nullifier.md).

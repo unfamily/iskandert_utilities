@@ -9,7 +9,7 @@ categories:
 ---
 # World and machines
 
-**Weather, time, and ambience** (detector + alterers), **Sound Muffler**, **Smart Timer**, and **Angel Block** each have their own page below. Also in this hub: structure machines, Temporal Overclocker, **Entropised Spawner**, Factory, **Pattern Crafter**, **Mob Reaper**, **Collecting Crate**, **Modular Fan**, **Knowledge Compressor**, shops, and Hellfire Igniter.
+**Weather, time, and ambience** (detector + alterers), **Sound Muffler**, **Smart Timer**, and **Angel Block** each have their own page below. Also in this hub: structure machines, Temporal Overclocker, **Entropised Spawner**, Factory, **Pattern Crafter**, **Mob Reaper**, **Collecting Crate**, **Modular Fan**, **Knowledge Compressor**, **Essence of Knowledge Grate**, shops, Hellfire Igniter, **Obscure Glass**, **Ethereal Glass**, **Redstone Activator**, and the four nullifiers.
 
 
 <SubPages icons={true} alphabetical={true} />

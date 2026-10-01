@@ -24,6 +24,13 @@ public final class ModBiomeModifierSerializers {
                     GenerationStep.Decoration.CODEC.fieldOf("step").forGetter(RubberTreesIfEnabledBiomeModifier::step)
             ).apply(instance, RubberTreesIfEnabledBiomeModifier::new)));
 
+    public static final DeferredHolder<MapCodec<? extends BiomeModifier>, MapCodec<EntropicFungusIfEnabledBiomeModifier>> ENTROPIC_FUNGUS_IF_ENABLED =
+            SERIALIZERS.register("entropic_fungus_if_enabled", () -> RecordCodecBuilder.mapCodec(instance -> instance.group(
+                    Biome.LIST_CODEC.fieldOf("biomes").forGetter(EntropicFungusIfEnabledBiomeModifier::biomes),
+                    PlacedFeature.LIST_CODEC.fieldOf("features").forGetter(EntropicFungusIfEnabledBiomeModifier::features),
+                    GenerationStep.Decoration.CODEC.fieldOf("step").forGetter(EntropicFungusIfEnabledBiomeModifier::step)
+            ).apply(instance, EntropicFungusIfEnabledBiomeModifier::new)));
+
     private ModBiomeModifierSerializers() {}
 
     public static void register(IEventBus modEventBus) {

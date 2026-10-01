@@ -1,13 +1,14 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "SSS",
-    "CAC"
+    " C ",
+    "CAC",
+    " B "
   ],
   "key": {
-    "S": "minecraft:slime_ball",
-    "C": "minecraft:cobweb",
-    "A": "iska_utils:iska_utils_slowness"
+    "A": "minecraft:cobweb",
+    "B": "iska_utils:iska_utils_slowness",
+    "C": "minecraft:slime_ball"
   },
   "result": {
     "id": "iska_utils:iska_utils_cobweb",

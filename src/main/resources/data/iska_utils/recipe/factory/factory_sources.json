@@ -4,7 +4,6 @@
     {
       "input": "iska_utils:dye_berry",
       "amount": 3,
-      "energy_per_operation": 1,
       "select": [
         { "output": "minecraft:white_dye", "amount": 4 },
         { "output": "minecraft:orange_dye", "amount": 4 },
@@ -45,6 +44,13 @@
     },
     {
       "input": "#iska_utils:delivery_recycle",
+      "amount": 1,
+      "select": [
+        { "output": "iska_utils:drop_of_entropy", "amount": 3 }
+      ]
+    },
+    {
+      "input": "iska_utils:entropic_fungus",
       "amount": 1,
       "select": [
         { "output": "iska_utils:drop_of_entropy", "amount": 1 }

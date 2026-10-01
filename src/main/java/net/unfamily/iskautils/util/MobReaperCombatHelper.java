@@ -21,9 +21,7 @@ public final class MobReaperCombatHelper {
         if (lastHurt == fakePlayer) {
             mob.setLastHurtByMob(null);
         }
-        if (mob.getLastHurtByPlayer() == fakePlayer) {
-            mob.setLastHurtByPlayer(null);
-        }
+        // 26.x has getLastHurtByPlayer but no null-clear setter; target/lastHurtByMob clear is enough for creepers.
         if (mob instanceof Creeper creeper && creeper.getTarget() == null && creeper.getLastHurtByMob() == null) {
             creeper.setSwellDir(-1);
         }

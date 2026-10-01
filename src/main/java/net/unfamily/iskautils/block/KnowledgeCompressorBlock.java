@@ -6,6 +6,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -71,9 +72,17 @@ public class KnowledgeCompressorBlock extends HorizontalDirectionalBlock impleme
         return RenderShape.MODEL;
     }
 
+    /**
+     * Empty-hand right-click extracts stored jelly. Must not consume clicks when holding an item
+     * (vanilla still routes main-hand item clicks through {@code useWithoutItem} via
+     * {@code PASS_TO_DEFAULT_BLOCK_INTERACTION}).
+     */
     @Override
     public InteractionResult useWithoutItem(
             BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+        if (!player.getItemInHand(InteractionHand.MAIN_HAND).isEmpty()) {
+            return InteractionResult.PASS;
+        }
         if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }

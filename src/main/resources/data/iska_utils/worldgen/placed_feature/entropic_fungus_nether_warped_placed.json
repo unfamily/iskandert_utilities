@@ -1,0 +1,77 @@
+{
+  "feature": "iska_utils:entropic_fungus_nether",
+  "placement": [
+    {
+      "type": "minecraft:count",
+      "count": 2
+    },
+    {
+      "type": "minecraft:rarity_filter",
+      "chance": 12
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:height_range",
+      "height": {
+        "type": "minecraft:uniform",
+        "min_inclusive": {
+          "above_bottom": 16
+        },
+        "max_inclusive": {
+          "below_top": 16
+        }
+      }
+    },
+    {
+      "type": "minecraft:biome"
+    },
+    {
+      "type": "minecraft:count",
+      "count": 48
+    },
+    {
+      "type": "minecraft:random_offset",
+      "xz_spread": {
+        "type": "minecraft:uniform",
+        "min_inclusive": -6,
+        "max_inclusive": 6
+      },
+      "y_spread": {
+        "type": "minecraft:uniform",
+        "min_inclusive": -4,
+        "max_inclusive": 4
+      }
+    },
+    {
+      "type": "minecraft:block_predicate_filter",
+      "predicate": {
+        "type": "minecraft:all_of",
+        "predicates": [
+          {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:air"
+          },
+          {
+            "type": "minecraft:would_survive",
+            "state": {
+              "Name": "iska_utils:entropic_fungus"
+            }
+          },
+          {
+            "type": "minecraft:matching_blocks",
+            "offset": [0, -1, 0],
+            "blocks": [
+              "minecraft:netherrack",
+              "minecraft:basalt",
+              "minecraft:blackstone",
+              "minecraft:crimson_nylium",
+              "minecraft:warped_nylium"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

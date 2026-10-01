@@ -23,6 +23,8 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.Containers;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.unfamily.iskautils.Config;
@@ -128,6 +130,15 @@ public class MobReaperBlock extends HorizontalDirectionalBlock implements Entity
     @Override
     public boolean canConnectRedstone(BlockState state, BlockGetter level, BlockPos pos, @Nullable Direction direction) {
         return direction != null;
+    }
+
+    /**
+     * Full-block collision/outline by default, but no sturdy faces so fences,
+     * glass panes and walls do not attach.
+     */
+    @Override
+    protected VoxelShape getBlockSupportShape(BlockState state, BlockGetter level, BlockPos pos) {
+        return Shapes.empty();
     }
 
     @Override

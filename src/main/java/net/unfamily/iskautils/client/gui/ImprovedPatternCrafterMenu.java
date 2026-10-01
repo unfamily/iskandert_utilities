@@ -499,6 +499,29 @@ public class ImprovedPatternCrafterMenu extends AbstractContainerMenu {
         }
     }
 
+    /**
+     * Refreshes filter slot items from BE string filters before a full container sync.
+     */
+    @Override
+    public void broadcastFullState() {
+        refreshInputFilterSlotDisplays();
+        super.broadcastFullState();
+    }
+
+    private void refreshInputFilterSlotDisplays() {
+        if (blockEntity == null) {
+            return;
+        }
+        var registries = blockEntity.getLevel() != null ? blockEntity.getLevel().registryAccess() : null;
+        int offset = inputFilterViewHandler != null ? inputFilterViewHandler.getOffset() : 0;
+        for (int menuIndex = INPUT_FILTER_START; menuIndex < getInputFilterEnd(); menuIndex++) {
+            int backendIndex = offset + (menuIndex - INPUT_FILTER_START);
+            ItemStack display = net.unfamily.iskautils.util.FilterDisplayItems.forFilter(
+                    blockEntity.getInputFilterString(backendIndex), registries);
+            slots.get(menuIndex).set(display);
+        }
+    }
+
     // ===== Ghost Slot Click Handling =====
 
     /**

@@ -54,6 +54,7 @@ public class CommandItemAction {
     private ItemActionType itemAction;
     private net.unfamily.iskautils.obtaining.MessageSpec message;
     private Identifier dropItemId;
+    private int dropCount = 1;
     private List<CommandItemDefinition.StageCondition> stages = new ArrayList<>();
     
     // For IF action type
@@ -110,6 +111,14 @@ public class CommandItemAction {
 
     public Identifier getDropItemId() {
         return dropItemId;
+    }
+
+    public void setDropCount(int dropCount) {
+        this.dropCount = Math.max(1, dropCount);
+    }
+
+    public int getDropCount() {
+        return Math.max(1, dropCount);
     }
     
     /**

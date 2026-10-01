@@ -6,7 +6,7 @@
     " A "
   ],
   "key": {
-    "A": "minecraft:ladder",
+    "A": "#c:gems/amethyst",
     "B": "iska_utils:base_module"
   },
   "result": {

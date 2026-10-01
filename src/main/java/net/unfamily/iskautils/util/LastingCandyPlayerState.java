@@ -33,12 +33,15 @@ public final class LastingCandyPlayerState {
             if (!persistentData.contains("iskautils")) {
                 return 0L;
             }
-            CompoundTag iskaData = persistentData.getCompound("iskautils");
-            if (!iskaData.contains("longValues")) {
+            CompoundTag iskaData = persistentData.getCompound("iskautils").orElse(null);
+            if (iskaData == null || !iskaData.contains("longValues")) {
                 return 0L;
             }
-            CompoundTag longValues = iskaData.getCompound("longValues");
-            return longValues.getLong(key);
+            CompoundTag longValues = iskaData.getCompound("longValues").orElse(null);
+            if (longValues == null) {
+                return 0L;
+            }
+            return longValues.getLong(key).orElse(0L);
         } catch (Exception e) {
             return 0L;
         }
@@ -47,14 +50,12 @@ public final class LastingCandyPlayerState {
     private static void setLong(Player player, String key, long value) {
         try {
             CompoundTag persistentData = player.getPersistentData();
-            if (!persistentData.contains("iskautils")) {
-                persistentData.put("iskautils", new CompoundTag());
-            }
-            CompoundTag iskaData = persistentData.getCompound("iskautils");
-            if (!iskaData.contains("longValues")) {
-                iskaData.put("longValues", new CompoundTag());
-            }
-            CompoundTag longValues = iskaData.getCompound("longValues");
+            CompoundTag iskaData = persistentData.contains("iskautils")
+                    ? persistentData.getCompound("iskautils").orElse(new CompoundTag())
+                    : new CompoundTag();
+            CompoundTag longValues = iskaData.contains("longValues")
+                    ? iskaData.getCompound("longValues").orElse(new CompoundTag())
+                    : new CompoundTag();
             longValues.putLong(key, value);
             iskaData.put("longValues", longValues);
             persistentData.put("iskautils", iskaData);

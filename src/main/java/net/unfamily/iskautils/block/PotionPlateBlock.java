@@ -8,6 +8,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.InsideBlockEffectApplier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
@@ -64,7 +65,13 @@ public class PotionPlateBlock extends VectorBlock {
     }
     
     @Override
-    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
+    protected void entityInside(
+            BlockState state,
+            Level level,
+            BlockPos pos,
+            Entity entity,
+            InsideBlockEffectApplier effectApplier,
+            boolean isPrecise) {
         if (config == null || !config.isValid()) {
             return;
         }
@@ -86,14 +93,14 @@ public class PotionPlateBlock extends VectorBlock {
 
         // slow (alias no_move) must run every tick on both sides so client prediction stays sticky
         if (config.getPlateType() == PotionPlateType.SPECIAL && config.isSlow()) {
-            applySlow(livingEntity);
-            if (!level.isClientSide) {
+            applySlow(livingEntity, state);
+            if (!level.isClientSide()) {
                 EFFECT_COOLDOWNS.put(entity.getUUID(), level.getGameTime());
             }
             return;
         }
 
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             // Check cooldown for effects - only apply every x seconds per entity
             UUID entityId = entity.getUUID();
             long currentTime = level.getGameTime();
@@ -206,9 +213,8 @@ public class PotionPlateBlock extends VectorBlock {
             if (!config.ignoresEntityDamageCap()) {
                 amount = EntityDamageCapHelper.cap(livingEntity, amount);
             }
-            boolean success = livingEntity.hurt(damageSource, amount);
-            
-            return success;
+            livingEntity.hurt(damageSource, amount);
+            return true;
         } catch (Exception e) {
             LOGGER.error("Failed to apply damage from plate {}: {}", config.getPlateId(), e.getMessage());
             return false;
@@ -221,7 +227,7 @@ public class PotionPlateBlock extends VectorBlock {
     private boolean applySpecialEffect(LivingEntity livingEntity, long currentTime) {
         try {
             if (config.isSlow()) {
-                return applySlow(livingEntity);
+                return applySlow(livingEntity, livingEntity.level().getBlockState(livingEntity.blockPosition()));
             }
 
             if (config.getFireDuration() > 0) {
@@ -258,22 +264,14 @@ public class PotionPlateBlock extends VectorBlock {
         }
     }
 
-    /** Horizontal (and soft vertical) slow factor; cobweb-like without makeStuckInBlock. */
-    private static final double SLOW_FACTOR = 0.35D;
-
     /**
-     * Slows the entity like cobweb: multiply velocity, soft-dampen jump.
-     * Does not use makeStuckInBlock (thin plate).
+     * Full immobilization via {@link Entity#makeStuckInBlock}.
+     * Multipliers must be non-zero: vanilla skips stuck handling when
+     * {@code stuckSpeedMultiplier.lengthSqr() <= 1.0E-7} (so {@link Vec3#ZERO} does nothing).
+     * Values far below cobweb (0.25/0.05) effectively pin the entity in place.
      */
-    private boolean applySlow(LivingEntity livingEntity) {
-        Vec3 motion = livingEntity.getDeltaMovement();
-        double vy = motion.y;
-        if (vy > 0.0D) {
-            vy *= SLOW_FACTOR;
-        }
-        livingEntity.setDeltaMovement(motion.x * SLOW_FACTOR, vy, motion.z * SLOW_FACTOR);
-        livingEntity.fallDistance = 0.0f;
-        livingEntity.hurtMarked = true;
+    private boolean applySlow(LivingEntity livingEntity, BlockState state) {
+        livingEntity.makeStuckInBlock(state, new Vec3(0.001D, 0.001D, 0.001D));
         return true;
     }
     
@@ -282,7 +280,7 @@ public class PotionPlateBlock extends VectorBlock {
      * Called periodically by the game
      */
     public static void cleanupCooldowns(Level level) {
-        if (level.isClientSide) return;
+        if (level.isClientSide()) return;
         
         long currentTime = level.getGameTime();
         // Remove entries older than 10 minutes (12000 ticks)

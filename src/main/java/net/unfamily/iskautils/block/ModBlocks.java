@@ -1,33 +1,36 @@
 package net.unfamily.iskautils.block;
 
+import java.util.function.UnaryOperator;
+
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.LeavesBlock;
+import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.StairBlock;
+import net.minecraft.world.level.block.WallBlock;
+import net.minecraft.world.level.block.StandingSignBlock;
+import net.minecraft.world.level.block.WallSignBlock;
+import net.minecraft.world.level.block.CeilingHangingSignBlock;
+import net.minecraft.world.level.block.WallHangingSignBlock;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.unfamily.iskautils.util.ModWoodTypes;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
-import net.minecraft.resources.ResourceLocation;
-import net.neoforged.fml.ModList;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.block.standard.*;
-import net.unfamily.iskautils.block.player.*;
-import net.minecraft.world.level.block.LeavesBlock;
-import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.StairBlock;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.WallBlock;
 import net.unfamily.iskautils.block.EtherealFrameBlock;
 import net.unfamily.iskautils.block.EtherealGlassBlock;
 import net.unfamily.iskautils.block.EtherealObscureGlassBlock;
-import net.unfamily.iskautils.block.ShopBlock;
-import net.unfamily.iskautils.block.AutoShopBlock;
-import net.unfamily.iskautils.block.BurningFlameBlock;
-import net.unfamily.iskautils.block.RedstoneSignalBlock;
-import net.unfamily.iskautils.block.EntropyTntBlock;
-import net.unfamily.iskautils.block.HardIceBlock;
-import net.unfamily.iskautils.block.SmartTimerBlock;
-import net.unfamily.iskautils.block.TemporalOverclockerBlock;
+import net.unfamily.iskautils.block.player.*;
+import net.unfamily.iskautils.block.custom.DruidicPodzolBlock;
 import net.unfamily.iskautils.block.custom.DruidicPodzolBlock;
 import net.unfamily.iskautils.block.custom.EntropicDirtBlock;
 import net.unfamily.iskautils.block.custom.EntropicSoilBlock;
@@ -35,110 +38,112 @@ import net.unfamily.iskautils.block.custom.BlazingAltarBlock;
 import net.unfamily.iskautils.block.custom.GraveyardSoilBlock;
 import net.unfamily.iskautils.block.custom.ImprovedPatternCrafterBlock;
 import net.unfamily.iskautils.block.custom.PatternCrafterBlock;
-import net.minecraft.world.level.block.LiquidBlock;
-import net.minecraft.world.level.block.StandingSignBlock;
-import net.minecraft.world.level.block.WallSignBlock;
-import net.minecraft.world.level.block.CeilingHangingSignBlock;
-import net.minecraft.world.level.block.WallHangingSignBlock;
-import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
-import net.unfamily.iskautils.fluid.ModFluids;
-import net.unfamily.iskautils.util.ModWoodTypes;
+import net.unfamily.iskautils.block.standard.*;
 
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IskaUtils.MOD_ID);
 
-    static {
-        if (!ModList.get().isLoaded("pattern_crafter")) {
-            BLOCKS.addAlias(
-                    ResourceLocation.fromNamespaceAndPath("pattern_crafter", "pattern_crafter"),
-                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "pattern_crafter"));
-            BLOCKS.addAlias(
-                    ResourceLocation.fromNamespaceAndPath("pattern_crafter", "improved_pattern_crafter"),
-                    ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "improved_pattern_crafter"));
-        }
+    /**
+     * NeoForge 26+: {@link net.neoforged.neoforge.registries.RegisterEvent} invokes block suppliers immediately;
+     * {@link net.neoforged.neoforge.registries.DeferredHolder#get()} for another block in this mod can still be unbound during that pass.
+     * Resolve the base from {@link BuiltInRegistries#BLOCK} by id instead.
+     */
+    private static BlockState baseBlockStateForStairs(String path) {
+        Identifier id = Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, path);
+        return BuiltInRegistries.BLOCK.getOptional(id)
+                .orElseThrow(() -> new IllegalStateException("Missing base block for dependent stair (register base first in ModBlocks): " + id))
+                .defaultBlockState();
+    }
+
+    /**
+     * Minecraft 26+: {@link BlockBehaviour.Properties} must have {@link BlockBehaviour.Properties#setId} before the block constructor runs.
+     */
+    public static BlockBehaviour.Properties assignBlockId(Identifier key, UnaryOperator<BlockBehaviour.Properties> configure) {
+        return configure.apply(BlockBehaviour.Properties.of())
+                .setId(ResourceKey.create(Registries.BLOCK, key));
     }
 
     // Common properties for all vector blocks
-    private static final BlockBehaviour.Properties VECTOR_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> VECTOR_PROPERTIES = p -> p
             .mapColor(MapColor.COLOR_BLACK)
             .strength(0.3f, 1.0f)
             .sound(SoundType.DEEPSLATE)
             .noOcclusion()
-            .noCollission()
+            .noCollision()
             .isRedstoneConductor((state, level, pos) -> false)
             .pushReaction(PushReaction.DESTROY)
             .isViewBlocking((state, level, pos) -> false)
             .lightLevel((state) -> 0);
-    
+
     // Properties for the Hellfire Igniter
-    private static final BlockBehaviour.Properties HELLFIRE_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> HELLFIRE_PROPERTIES = p -> p
             .mapColor(MapColor.STONE)
             .strength(1.5f, 6.0f)
             .sound(SoundType.STONE)
             .requiresCorrectToolForDrops()
             .lightLevel((state) -> state.getValue(HellfireIgniterBlock.POWERED) ? 7 : 0);
-    
+
     // Properties for the Fan
-    private static final BlockBehaviour.Properties FAN_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> FAN_PROPERTIES = p -> p
             .mapColor(MapColor.STONE)
             .strength(1.5f, 6.0f)
             .sound(SoundType.METAL)
             .requiresCorrectToolForDrops()
             .noOcclusion();
-    
+
     // Properties for Rubber Sap Extractor
-    private static final BlockBehaviour.Properties RUBBER_SAP_EXTRACTOR_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> RUBBER_SAP_EXTRACTOR_PROPERTIES = p -> p
             .mapColor(MapColor.STONE)
             .strength(3.5f, 6.0f)
             .sound(SoundType.COPPER)
             .requiresCorrectToolForDrops()
             .lightLevel((state) -> state.getValue(HellfireIgniterBlock.POWERED) ? 7 : 3)
             .noOcclusion();
-    
+
     // ===== WITHER PROOF BLOCKS =====
-    
+
     // Properties for Wither Proof Block
-    private static final BlockBehaviour.Properties WITHER_PROOF_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> WITHER_PROOF_PROPERTIES = p -> p
             .strength(3.0f, 1200.0f)
             .sound(SoundType.STONE)
             .requiresCorrectToolForDrops();
-            
+
     // Properties for Netherite Bars
-    private static final BlockBehaviour.Properties NETHERITE_BARS_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> NETHERITE_BARS_PROPERTIES = p -> p
             .mapColor(MapColor.COLOR_BLACK)
             .strength(6.0f, 1200.0f)
             .sound(SoundType.NETHERITE_BLOCK)
             .requiresCorrectToolForDrops()
             .noOcclusion();
-            
-    private static final BlockBehaviour.Properties STRUCTURE_PLACER_MACHINE_PROPERTIES = BlockBehaviour.Properties.of()
+
+    private static final UnaryOperator<BlockBehaviour.Properties> STRUCTURE_PLACER_MACHINE_PROPERTIES = p -> p
             .mapColor(MapColor.METAL)
             .strength(3.0f, 6.0f)
             .sound(SoundType.METAL)
             .requiresCorrectToolForDrops();
 
-    private static final BlockBehaviour.Properties PATTERN_CRAFTER_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> PATTERN_CRAFTER_PROPERTIES = p -> p
             .mapColor(MapColor.METAL)
             .strength(3.0f, 6.0f)
             .sound(SoundType.METAL);
-    
+
     // Wither Proof Block
     public static final DeferredBlock<WitherProofBlock> WITHER_PROOF_BLOCK = BLOCKS.register("wither_proof_block",
-            () -> new WitherProofBlock(WITHER_PROOF_PROPERTIES));
+            key -> new WitherProofBlock(assignBlockId(key, WITHER_PROOF_PROPERTIES)));
 
     // Wither Proof Stairs
     public static final DeferredBlock<StairBlock> WITHER_PROOF_STAIRS = BLOCKS.register("wither_proof_stairs",
-            () -> new StairBlock(WITHER_PROOF_BLOCK.get().defaultBlockState(), WITHER_PROOF_PROPERTIES));
+            key -> new StairBlock(baseBlockStateForStairs("wither_proof_block"), assignBlockId(key, WITHER_PROOF_PROPERTIES)));
 
     // Wither Proof Slab
     public static final DeferredBlock<SlabBlock> WITHER_PROOF_SLAB = BLOCKS.register("wither_proof_slab",
-            () -> new SlabBlock(WITHER_PROOF_PROPERTIES));
+            key -> new SlabBlock(assignBlockId(key, WITHER_PROOF_PROPERTIES)));
 
     // Wither Proof Wall
     public static final DeferredBlock<WallBlock> WITHER_PROOF_WALL = BLOCKS.register("wither_proof_wall",
-            () -> new WallBlock(WITHER_PROOF_PROPERTIES.forceSolidOn()));
+            key -> new WallBlock(assignBlockId(key, p -> WITHER_PROOF_PROPERTIES.apply(p).forceSolidOn())));
 
-    private static final BlockBehaviour.Properties OBSCURE_GLASS_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> OBSCURE_GLASS_PROPERTIES = p -> p
             .strength(0.3f, 1200.0f)
             .sound(SoundType.GLASS)
             .noOcclusion()
@@ -148,11 +153,11 @@ public class ModBlocks {
             .lightLevel(state -> 0);
 
     public static final DeferredBlock<ObscureGlassBlock> OBSCURE_GLASS = BLOCKS.register("obscure_glass",
-            () -> new ObscureGlassBlock(OBSCURE_GLASS_PROPERTIES));
+            key -> new ObscureGlassBlock(assignBlockId(key, OBSCURE_GLASS_PROPERTIES)));
 
     // ===== ETHEREAL GLASS =====
     // Glass-like: not wither/explosion proof (unlike obscure / ethereal obscure glass).
-    private static final BlockBehaviour.Properties ETHEREAL_GLASS_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> ETHEREAL_GLASS_PROPERTIES = p -> p
             .strength(0.3f, 0.3f)
             .sound(SoundType.GLASS)
             .noOcclusion()
@@ -162,12 +167,12 @@ public class ModBlocks {
             .lightLevel(state -> 0);
 
     public static final DeferredBlock<EtherealGlassBlock> ETHEREAL_GLASS = BLOCKS.register("ethereal_glass",
-            () -> new EtherealGlassBlock(ETHEREAL_GLASS_PROPERTIES));
+            key -> new EtherealGlassBlock(assignBlockId(key, ETHEREAL_GLASS_PROPERTIES)));
 
     public static final DeferredBlock<EtherealGlassPaneBlock> ETHEREAL_GLASS_PANE = BLOCKS.register("ethereal_glass_pane",
-            () -> new EtherealGlassPaneBlock(ETHEREAL_GLASS_PROPERTIES));
+            key -> new EtherealGlassPaneBlock(assignBlockId(key, ETHEREAL_GLASS_PROPERTIES)));
 
-    private static final BlockBehaviour.Properties ETHEREAL_OBSCURE_GLASS_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> ETHEREAL_OBSCURE_GLASS_PROPERTIES = p -> p
             .strength(0.3f, 1200.0f)
             .sound(SoundType.GLASS)
             .noOcclusion()
@@ -177,11 +182,11 @@ public class ModBlocks {
             .lightLevel(state -> 0);
 
     public static final DeferredBlock<EtherealObscureGlassBlock> ETHEREAL_OBSCURE_GLASS = BLOCKS.register("ethereal_obscure_glass",
-            () -> new EtherealObscureGlassBlock(ETHEREAL_OBSCURE_GLASS_PROPERTIES));
+            key -> new EtherealObscureGlassBlock(assignBlockId(key, ETHEREAL_OBSCURE_GLASS_PROPERTIES)));
 
     // ===== ETHEREAL FRAME =====
     // Wood-like by default; can be reinforced to wither-proof values via gameplay.
-    private static final BlockBehaviour.Properties ETHEREAL_FRAME_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> ETHEREAL_FRAME_PROPERTIES = p -> p
             .strength(2.0f, 3.0f)
             .sound(SoundType.WOOD)
             .noOcclusion()
@@ -191,85 +196,70 @@ public class ModBlocks {
             .lightLevel(state -> 0);
 
     public static final DeferredBlock<EtherealFrameBlock> ETHEREAL_FRAME = BLOCKS.register("ethereal_frame",
-            () -> new EtherealFrameBlock(ETHEREAL_FRAME_PROPERTIES));
+            key -> new EtherealFrameBlock(assignBlockId(key, ETHEREAL_FRAME_PROPERTIES)));
 
     // Netherite Bars
     public static final DeferredBlock<NetheriteBarsBlock> NETHERITE_BARS = BLOCKS.register("netherite_bars",
-            () -> new NetheriteBarsBlock(NETHERITE_BARS_PROPERTIES));
-    
+            key -> new NetheriteBarsBlock(assignBlockId(key, NETHERITE_BARS_PROPERTIES)));
+
     // ===== STANDARD VECTOR PLATES (DON'T AFFECT PLAYERS) =====
-    
-    // Slow Vector Plate (slowest)
+
     public static final DeferredBlock<SlowVectBlock> SLOW_VECT = BLOCKS.register("slow_vect",
-            () -> new SlowVectBlock(VECTOR_PROPERTIES));
-    
-    // Moderate Vector Plate
+            key -> new SlowVectBlock(assignBlockId(key, VECTOR_PROPERTIES)));
+
     public static final DeferredBlock<ModerateVectBlock> MODERATE_VECT = BLOCKS.register("moderate_vect",
-            () -> new ModerateVectBlock(VECTOR_PROPERTIES));
-    
-    // Fast Vector Plate
+            key -> new ModerateVectBlock(assignBlockId(key, VECTOR_PROPERTIES)));
+
     public static final DeferredBlock<FastVectBlock> FAST_VECT = BLOCKS.register("fast_vect",
-            () -> new FastVectBlock(VECTOR_PROPERTIES));
-    
-    // Extreme Vector Plate
+            key -> new FastVectBlock(assignBlockId(key, VECTOR_PROPERTIES)));
+
     public static final DeferredBlock<ExtremeVectBlock> EXTREME_VECT = BLOCKS.register("extreme_vect",
-            () -> new ExtremeVectBlock(VECTOR_PROPERTIES));
-    
-    // Ultra Vector Plate (fastest)
+            key -> new ExtremeVectBlock(assignBlockId(key, VECTOR_PROPERTIES)));
+
     public static final DeferredBlock<UltraVectBlock> ULTRA_VECT = BLOCKS.register("ultra_vect",
-            () -> new UltraVectBlock(VECTOR_PROPERTIES));
-    
+            key -> new UltraVectBlock(assignBlockId(key, VECTOR_PROPERTIES)));
+
     // ===== PLAYER VECTOR PLATES (AFFECT PLAYERS) =====
-    
-    // Player Slow Vector Plate (slowest)
+
     public static final DeferredBlock<PlayerSlowVectBlock> PLAYER_SLOW_VECT = BLOCKS.register("player_slow_vect",
-            () -> new PlayerSlowVectBlock(VECTOR_PROPERTIES));
-    
-    // Player Moderate Vector Plate
+            key -> new PlayerSlowVectBlock(assignBlockId(key, VECTOR_PROPERTIES)));
+
     public static final DeferredBlock<PlayerModerateVectBlock> PLAYER_MODERATE_VECT = BLOCKS.register("player_moderate_vect",
-            () -> new PlayerModerateVectBlock(VECTOR_PROPERTIES));
-    
-    // Player Fast Vector Plate
+            key -> new PlayerModerateVectBlock(assignBlockId(key, VECTOR_PROPERTIES)));
+
     public static final DeferredBlock<PlayerFastVectBlock> PLAYER_FAST_VECT = BLOCKS.register("player_fast_vect",
-            () -> new PlayerFastVectBlock(VECTOR_PROPERTIES));
-    
-    // Player Extreme Vector Plate
+            key -> new PlayerFastVectBlock(assignBlockId(key, VECTOR_PROPERTIES)));
+
     public static final DeferredBlock<PlayerExtremeVectBlock> PLAYER_EXTREME_VECT = BLOCKS.register("player_extreme_vect",
-            () -> new PlayerExtremeVectBlock(VECTOR_PROPERTIES));
-    
-    // Player Ultra Vector Plate (fastest)
+            key -> new PlayerExtremeVectBlock(assignBlockId(key, VECTOR_PROPERTIES)));
+
     public static final DeferredBlock<PlayerUltraVectBlock> PLAYER_ULTRA_VECT = BLOCKS.register("player_ultra_vect",
-            () -> new PlayerUltraVectBlock(VECTOR_PROPERTIES));
-    
+            key -> new PlayerUltraVectBlock(assignBlockId(key, VECTOR_PROPERTIES)));
+
     // ===== UTILITY BLOCKS =====
-    
-    // Structure Placer Machine (automated structure placement)
+
     public static final DeferredBlock<StructurePlacerMachineBlock> STRUCTURE_PLACER_MACHINE = BLOCKS.register("structure_placer_machine",
-            () -> new StructurePlacerMachineBlock(STRUCTURE_PLACER_MACHINE_PROPERTIES));
-    
-    // Structure Saver Machine (saves structures to compound tags)
+            key -> new StructurePlacerMachineBlock(assignBlockId(key, STRUCTURE_PLACER_MACHINE_PROPERTIES)));
+
     public static final DeferredBlock<StructureSaverMachineBlock> STRUCTURE_SAVER_MACHINE = BLOCKS.register("structure_saver_machine",
-            () -> new StructureSaverMachineBlock(STRUCTURE_PLACER_MACHINE_PROPERTIES));
+            key -> new StructureSaverMachineBlock(assignBlockId(key, STRUCTURE_PLACER_MACHINE_PROPERTIES)));
+
+    public static final DeferredBlock<ShopBlock> SHOP = BLOCKS.register("shop",
+            key -> new ShopBlock(assignBlockId(key, STRUCTURE_PLACER_MACHINE_PROPERTIES)));
+
+    public static final DeferredBlock<AutoShopBlock> AUTO_SHOP = BLOCKS.register("auto_shop",
+            key -> new AutoShopBlock(assignBlockId(key, STRUCTURE_PLACER_MACHINE_PROPERTIES)));
 
     public static final DeferredBlock<PatternCrafterBlock> PATTERN_CRAFTER = BLOCKS.register("pattern_crafter",
-            () -> new PatternCrafterBlock(PATTERN_CRAFTER_PROPERTIES));
+            key -> new PatternCrafterBlock(assignBlockId(key, PATTERN_CRAFTER_PROPERTIES)));
 
     public static final DeferredBlock<ImprovedPatternCrafterBlock> IMPROVED_PATTERN_CRAFTER = BLOCKS.register("improved_pattern_crafter",
-            () -> new ImprovedPatternCrafterBlock(PATTERN_CRAFTER_PROPERTIES));
+            key -> new ImprovedPatternCrafterBlock(assignBlockId(key, PATTERN_CRAFTER_PROPERTIES)));
 
-    // Shop Block (allows players to buy and sell items)
-    public static final DeferredBlock<ShopBlock> SHOP = BLOCKS.register("shop",
-            () -> new ShopBlock(STRUCTURE_PLACER_MACHINE_PROPERTIES));
-
-    // Auto Shop Block (allows automatic buying and selling of items)
-    public static final DeferredBlock<AutoShopBlock> AUTO_SHOP = BLOCKS.register("auto_shop",
-            () -> new AutoShopBlock(STRUCTURE_PLACER_MACHINE_PROPERTIES));
-
-    // Hellfire Igniter (creates fire when activated by redstone)
     public static final DeferredBlock<HellfireIgniterBlock> HELLFIRE_IGNITER = BLOCKS.register("hellfire_igniter",
-            () -> new HellfireIgniterBlock(HELLFIRE_PROPERTIES));
+            key -> new HellfireIgniterBlock(assignBlockId(key, HELLFIRE_PROPERTIES)));
 
-    private static final BlockBehaviour.Properties ENDER_NULLIFIER_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> ENDER_NULLIFIER_PROPERTIES = p -> p
             .mapColor(MapColor.COLOR_PURPLE)
             .strength(1.5f, 6.0f)
             .sound(SoundType.DEEPSLATE)
@@ -278,10 +268,10 @@ public class ModBlocks {
             .lightLevel((state) -> state.getValue(EnderNullifierBlock.ON) ? 7 : 0);
 
     public static final DeferredBlock<EnderNullifierBlock> ENDER_NULLIFIER = BLOCKS.register("ender_nullifier",
-            () -> new EnderNullifierBlock(ENDER_NULLIFIER_PROPERTIES));
+            key -> new EnderNullifierBlock(assignBlockId(key, ENDER_NULLIFIER_PROPERTIES)));
 
-    private static final BlockBehaviour.Properties WANDER_NULLIFIER_PROPERTIES = BlockBehaviour.Properties.of()
-            .mapColor(MapColor.EMERALD)
+    private static final UnaryOperator<BlockBehaviour.Properties> WANDER_NULLIFIER_PROPERTIES = p -> p
+            .mapColor(MapColor.COLOR_GREEN)
             .strength(1.5f, 6.0f)
             .sound(SoundType.DEEPSLATE)
             .requiresCorrectToolForDrops()
@@ -289,10 +279,10 @@ public class ModBlocks {
             .lightLevel((state) -> state.getValue(WanderNullifierBlock.ON) ? 7 : 0);
 
     public static final DeferredBlock<WanderNullifierBlock> WANDER_NULLIFIER = BLOCKS.register("wander_nullifier",
-            () -> new WanderNullifierBlock(WANDER_NULLIFIER_PROPERTIES));
+            key -> new WanderNullifierBlock(assignBlockId(key, WANDER_NULLIFIER_PROPERTIES)));
 
-    private static final BlockBehaviour.Properties SOUL_NULLIFIER_PROPERTIES = BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_LIGHT_BLUE)
+    private static final UnaryOperator<BlockBehaviour.Properties> SOUL_NULLIFIER_PROPERTIES = p -> p
+            .mapColor(MapColor.COLOR_PURPLE)
             .strength(1.5f, 6.0f)
             .sound(SoundType.DEEPSLATE)
             .requiresCorrectToolForDrops()
@@ -300,26 +290,40 @@ public class ModBlocks {
             .lightLevel((state) -> state.getValue(SoulNullifierBlock.ON) ? 7 : 0);
 
     public static final DeferredBlock<SoulNullifierBlock> SOUL_NULLIFIER = BLOCKS.register("soul_nullifier",
-            () -> new SoulNullifierBlock(SOUL_NULLIFIER_PROPERTIES));
+            key -> new SoulNullifierBlock(assignBlockId(key, SOUL_NULLIFIER_PROPERTIES)));
+
+    private static final UnaryOperator<BlockBehaviour.Properties> FLIGHT_NULLIFIER_PROPERTIES = p -> p
+            .mapColor(MapColor.COLOR_PURPLE)
+            .strength(1.5f, 6.0f)
+            .sound(SoundType.DEEPSLATE)
+            .requiresCorrectToolForDrops()
+            .noOcclusion()
+            .lightLevel((state) -> state.getValue(FlightNullifierBlock.ON) ? 7 : 0);
 
     public static final DeferredBlock<FlightNullifierBlock> FLIGHT_NULLIFIER = BLOCKS.register("flight_nullifier",
-            () -> new FlightNullifierBlock(ENDER_NULLIFIER_PROPERTIES));
+            key -> new FlightNullifierBlock(assignBlockId(key, FLIGHT_NULLIFIER_PROPERTIES)));
+
+    private static final UnaryOperator<BlockBehaviour.Properties> CLIMBING_NULLIFIER_PROPERTIES = p -> p
+            .mapColor(MapColor.COLOR_PURPLE)
+            .strength(1.5f, 6.0f)
+            .sound(SoundType.DEEPSLATE)
+            .requiresCorrectToolForDrops()
+            .noOcclusion()
+            .lightLevel((state) -> state.getValue(ClimbingNullifierBlock.ON) ? 7 : 0);
 
     public static final DeferredBlock<ClimbingNullifierBlock> CLIMBING_NULLIFIER = BLOCKS.register("climbing_nullifier",
-            () -> new ClimbingNullifierBlock(ENDER_NULLIFIER_PROPERTIES));
-    
-    // Fan (directional block with 6 directions placement)
+            key -> new ClimbingNullifierBlock(assignBlockId(key, CLIMBING_NULLIFIER_PROPERTIES)));
+
     public static final DeferredBlock<FanBlock> FAN = BLOCKS.register("fan",
-            () -> new FanBlock(FAN_PROPERTIES));
+            key -> new FanBlock(assignBlockId(key, FAN_PROPERTIES)));
 
     public static final DeferredBlock<MobReaperBlock> MOB_REAPER = BLOCKS.register("mob_reaper",
-            () -> new MobReaperBlock(FAN_PROPERTIES));
+            key -> new MobReaperBlock(assignBlockId(key, FAN_PROPERTIES)));
 
-    // Rubber Sap Extractor (automatically extracts sap from rubber logs)
     public static final DeferredBlock<RubberSapExtractorBlock> RUBBER_SAP_EXTRACTOR = BLOCKS.register("rubber_sap_extractor",
-            () -> new RubberSapExtractorBlock(RUBBER_SAP_EXTRACTOR_PROPERTIES));
+            key -> new RubberSapExtractorBlock(assignBlockId(key, RUBBER_SAP_EXTRACTOR_PROPERTIES)));
 
-    private static final BlockBehaviour.Properties KNOWLEDGE_COMPRESSOR_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> KNOWLEDGE_COMPRESSOR_PROPERTIES = p -> p
             .mapColor(MapColor.COLOR_PURPLE)
             .strength(3.5f, 6.0f)
             .sound(SoundType.STONE)
@@ -328,19 +332,18 @@ public class ModBlocks {
             .noOcclusion();
 
     public static final DeferredBlock<KnowledgeCompressorBlock> KNOWLEDGE_COMPRESSOR = BLOCKS.register("knowledge_compressor",
-            () -> new KnowledgeCompressorBlock(KNOWLEDGE_COMPRESSOR_PROPERTIES));
+            key -> new KnowledgeCompressorBlock(assignBlockId(key, KNOWLEDGE_COMPRESSOR_PROPERTIES)));
 
-    // Factory (dye / item processing machine)
-    private static final BlockBehaviour.Properties FACTORY_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> FACTORY_PROPERTIES = p -> p
             .mapColor(MapColor.STONE)
             .strength(3.0f, 6.0f)
             .sound(SoundType.STONE)
             .requiresCorrectToolForDrops();
 
-    public static final DeferredBlock<net.unfamily.iskautils.block.custom.FactoryBlock> FACTORY =
-            BLOCKS.register("factory", () -> new net.unfamily.iskautils.block.custom.FactoryBlock(FACTORY_PROPERTIES));
+    public static final DeferredBlock<net.unfamily.iskautils.block.custom.FactoryBlock> FACTORY = BLOCKS.register("factory",
+            key -> new net.unfamily.iskautils.block.custom.FactoryBlock(assignBlockId(key, FACTORY_PROPERTIES)));
 
-    private static final BlockBehaviour.Properties ANCIENT_TABLE_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> ANCIENT_TABLE_PROPERTIES = p -> p
             .mapColor(MapColor.STONE)
             .strength(3.0f, 6.0f)
             .sound(SoundType.STONE)
@@ -348,80 +351,70 @@ public class ModBlocks {
 
     public static final DeferredBlock<net.unfamily.iskautils.block.custom.AncientTableBlock> ANCIENT_TABLE =
             BLOCKS.register("ancient_table",
-                    () -> new net.unfamily.iskautils.block.custom.AncientTableBlock(ANCIENT_TABLE_PROPERTIES));
+                    key -> new net.unfamily.iskautils.block.custom.AncientTableBlock(assignBlockId(key, ANCIENT_TABLE_PROPERTIES)));
 
-    private static final BlockBehaviour.Properties COLLECTING_CRATE_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> COLLECTING_CRATE_PROPERTIES = p -> p
             .mapColor(MapColor.WOOD)
             .strength(3.0f, 6.0f)
             .sound(SoundType.WOOD);
 
     public static final DeferredBlock<CollectingCrateBlock> COLLECTING_CRATE = BLOCKS.register("collecting_crate",
-            () -> new CollectingCrateBlock(COLLECTING_CRATE_PROPERTIES));
+            key -> new CollectingCrateBlock(assignBlockId(key, COLLECTING_CRATE_PROPERTIES)));
 
-    private static final BlockBehaviour.Properties ESSENCE_OF_KNOWLEDGE_GRATE_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> ESSENCE_OF_KNOWLEDGE_GRATE_PROPERTIES = p -> p
             .mapColor(MapColor.METAL)
             .strength(2.0f, 6.0f)
-            .sound(SoundType.METAL)
+            .sound(SoundType.COPPER)
             .requiresCorrectToolForDrops()
             .noOcclusion();
 
     public static final DeferredBlock<EssenceOfKnowledgeGrateBlock> ESSENCE_OF_KNOLEDGE_GRATE = BLOCKS.register(
             "essence_of_knoledge_grate",
-            () -> new EssenceOfKnowledgeGrateBlock(ESSENCE_OF_KNOWLEDGE_GRATE_PROPERTIES));
+            key -> new EssenceOfKnowledgeGrateBlock(assignBlockId(key, ESSENCE_OF_KNOWLEDGE_GRATE_PROPERTIES)));
 
-    public static final DeferredBlock<LiquidBlock> CONDENSED_KNOWLEDGE_BLOCK = BLOCKS.register("condensed_knowledge",
-            () -> new LiquidBlock(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(), BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_LIGHT_GREEN)
-                    .noCollission()
-                    .strength(100.0f)
-                    .noLootTable()));
-
-    // Smart Timer (emits redstone signal periodically)
-    private static final BlockBehaviour.Properties SMART_TIMER_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> SMART_TIMER_PROPERTIES = p -> p
             .mapColor(MapColor.STONE)
             .strength(1.5f, 6.0f)
             .sound(SoundType.STONE)
             .requiresCorrectToolForDrops()
             .isRedstoneConductor((state, level, pos) -> false);
-    
+
     public static final DeferredBlock<SmartTimerBlock> SMART_TIMER = BLOCKS.register("smart_timer",
-            () -> new SmartTimerBlock(SMART_TIMER_PROPERTIES));
+            key -> new SmartTimerBlock(assignBlockId(key, SMART_TIMER_PROPERTIES)));
 
     // ===== SMOOTH BLACKSTONE =====
-    private static final BlockBehaviour.Properties SMOOTH_BLACKSTONE_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> SMOOTH_BLACKSTONE_PROPERTIES = p -> p
             .mapColor(MapColor.COLOR_BLACK)
             .strength(1.5f, 6.0f)
             .sound(SoundType.DEEPSLATE)
             .requiresCorrectToolForDrops();
 
     public static final DeferredBlock<Block> SMOOTH_BLACKSTONE = BLOCKS.register("smooth_blackstone",
-            () -> new Block(SMOOTH_BLACKSTONE_PROPERTIES));
+            key -> new Block(assignBlockId(key, SMOOTH_BLACKSTONE_PROPERTIES)));
     public static final DeferredBlock<SlabBlock> SMOOTH_BLACKSTONE_SLAB = BLOCKS.register("smooth_blackstone_slab",
-            () -> new SlabBlock(SMOOTH_BLACKSTONE_PROPERTIES));
+            key -> new SlabBlock(assignBlockId(key, SMOOTH_BLACKSTONE_PROPERTIES)));
     public static final DeferredBlock<StairBlock> SMOOTH_BLACKSTONE_STAIRS = BLOCKS.register("smooth_blackstone_stairs",
-            () -> new StairBlock(SMOOTH_BLACKSTONE.get().defaultBlockState(), SMOOTH_BLACKSTONE_PROPERTIES));
+            key -> new StairBlock(baseBlockStateForStairs("smooth_blackstone"), assignBlockId(key, SMOOTH_BLACKSTONE_PROPERTIES)));
     public static final DeferredBlock<Block> SMOOTH_BLACKSTONE_WALL = BLOCKS.register("smooth_blackstone_wall",
-            () -> new SmoothBlackstoneWallBlock(SMOOTH_BLACKSTONE_PROPERTIES));
+            key -> new SmoothBlackstoneWallBlock(assignBlockId(key, SMOOTH_BLACKSTONE_PROPERTIES)));
 
     // ===== RUBBER TREE BLOCKS =====
-    private static final BlockBehaviour.Properties RUBBER_LOG_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> RUBBER_LOG_PROPERTIES = p -> p
             .mapColor(MapColor.WOOD)
             .strength(2.0f)
             .sound(SoundType.WOOD);
-    
-    // Sacred Rubber Root properties (harder than regular logs, but not obsidian-level)
-    private static final BlockBehaviour.Properties SACRED_RUBBER_ROOT_PROPERTIES = BlockBehaviour.Properties.of()
+
+    private static final UnaryOperator<BlockBehaviour.Properties> SACRED_RUBBER_ROOT_PROPERTIES = p -> p
             .mapColor(MapColor.WOOD)
-            .strength(5.0f, 600.0f) // Harder than logs, but not obsidian-level
+            .strength(5.0f, 600.0f)
             .sound(SoundType.WOOD);
-            
-            
-    private static final BlockBehaviour.Properties RUBBER_LOG_SAP_PROPERTIES = BlockBehaviour.Properties.of()
+
+    private static final UnaryOperator<BlockBehaviour.Properties> RUBBER_LOG_SAP_PROPERTIES = p -> p
             .mapColor(MapColor.WOOD)
             .strength(2.0f)
             .sound(SoundType.WOOD);
-            
-    private static final BlockBehaviour.Properties RUBBER_LEAVES_PROPERTIES = BlockBehaviour.Properties.of()
+
+    private static final UnaryOperator<BlockBehaviour.Properties> RUBBER_LEAVES_PROPERTIES = p -> p
             .mapColor(MapColor.PLANT)
             .strength(0.2f)
             .sound(SoundType.GRASS)
@@ -429,276 +422,234 @@ public class ModBlocks {
             .isValidSpawn((state, level, pos, type) -> false)
             .isSuffocating((state, level, pos) -> false)
             .isViewBlocking((state, level, pos) -> false);
-    
-    private static final BlockBehaviour.Properties RUBBER_SAPLING_PROPERTIES = BlockBehaviour.Properties.of()
+
+    private static final UnaryOperator<BlockBehaviour.Properties> RUBBER_SAPLING_PROPERTIES = p -> p
             .mapColor(MapColor.PLANT)
-            .noCollission()
+            .noCollision()
             .randomTicks()
             .instabreak()
             .sound(SoundType.GRASS)
             .pushReaction(PushReaction.DESTROY);
-            
-    // Properties for sacred rubber sapling (no randomTicks, will use scheduled ticks instead)
-    private static final BlockBehaviour.Properties SACRED_RUBBER_SAPLING_PROPERTIES = BlockBehaviour.Properties.of()
+
+    private static final UnaryOperator<BlockBehaviour.Properties> SACRED_RUBBER_SAPLING_PROPERTIES = p -> p
             .mapColor(MapColor.PLANT)
-            .noCollission()
+            .noCollision()
             .instabreak()
             .sound(SoundType.GRASS)
             .pushReaction(PushReaction.DESTROY);
-            
-    // properties for rubber wood blocks, for reuse
-    private static final BlockBehaviour.Properties RUBBER_WOOD_PROPERTIES = BlockBehaviour.Properties.of()
+
+    private static final UnaryOperator<BlockBehaviour.Properties> RUBBER_WOOD_PROPERTIES = p -> p
             .mapColor(MapColor.WOOD)
             .strength(2.0f)
             .sound(SoundType.WOOD);
-            
-    private static final BlockBehaviour.Properties RUBBER_PLANKS_PROPERTIES = BlockBehaviour.Properties.of()
+
+    private static final UnaryOperator<BlockBehaviour.Properties> RUBBER_PLANKS_PROPERTIES = p -> p
             .mapColor(MapColor.WOOD)
             .strength(2.0f, 3.0f)
             .sound(SoundType.WOOD);
-            
-    // Standard placeable block (visible in the creative tab)
+
     public static final DeferredBlock<RubberLogBlock> RUBBER_LOG = BLOCKS.register("rubber_log",
-            () -> new RubberLogBlock(RUBBER_LOG_PROPERTIES));
-            
-    // Stripped Rubber Log
+            key -> new RubberLogBlock(assignBlockId(key, RUBBER_LOG_PROPERTIES)));
+
     public static final DeferredBlock<StrippedRubberLogBlock> STRIPPED_RUBBER_LOG = BLOCKS.register("stripped_rubber_log",
-            () -> new StrippedRubberLogBlock(RUBBER_LOG_PROPERTIES));
-            
-    // Rubber Wood (6 faces with bark)
+            key -> new StrippedRubberLogBlock(assignBlockId(key, RUBBER_LOG_PROPERTIES)));
+
     public static final DeferredBlock<RubberWoodBlock> RUBBER_WOOD = BLOCKS.register("rubber_wood",
-            () -> new RubberWoodBlock(RUBBER_WOOD_PROPERTIES));
+            key -> new RubberWoodBlock(assignBlockId(key, RUBBER_WOOD_PROPERTIES)));
 
-    // Stripped Rubber Wood (6 faces without bark)
     public static final DeferredBlock<StrippedRubberWoodBlock> STRIPPED_RUBBER_WOOD = BLOCKS.register("stripped_rubber_wood",
-            () -> new StrippedRubberWoodBlock(RUBBER_WOOD_PROPERTIES));
+            key -> new StrippedRubberWoodBlock(assignBlockId(key, RUBBER_WOOD_PROPERTIES)));
 
-    // Rubber Planks
     public static final DeferredBlock<RubberPlanksBlock> RUBBER_PLANKS = BLOCKS.register("rubber_planks",
-            () -> new RubberPlanksBlock(RUBBER_PLANKS_PROPERTIES));
-            
-    // Filled block with sap
+            key -> new RubberPlanksBlock(assignBlockId(key, RUBBER_PLANKS_PROPERTIES)));
+
     public static final DeferredBlock<RubberLogFilledBlock> RUBBER_LOG_FILLED = BLOCKS.register("rubber_log_filled",
-            () -> new RubberLogFilledBlock(RUBBER_LOG_SAP_PROPERTIES));
-            
-    // Empty block with sap
+            key -> new RubberLogFilledBlock(assignBlockId(key, RUBBER_LOG_SAP_PROPERTIES)));
+
     public static final DeferredBlock<RubberLogEmptyBlock> RUBBER_LOG_EMPTY = BLOCKS.register("rubber_log_empty",
-            () -> new RubberLogEmptyBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.WOOD)
-                    .strength(2.0f)
-                    .sound(SoundType.WOOD)));
-            
+            key -> new RubberLogEmptyBlock(assignBlockId(key, RUBBER_LOG_PROPERTIES)));
+
     public static final DeferredBlock<LeavesBlock> RUBBER_LEAVES = BLOCKS.register("rubber_leaves",
-            () -> new RubberLeavesBlock(RUBBER_LEAVES_PROPERTIES));
+            key -> new RubberLeavesBlock(assignBlockId(key, RUBBER_LEAVES_PROPERTIES)));
 
-    // Dye bush (full block, leaves-like): empty refills over time to filled; filled harvest with dye_berry
     public static final DeferredBlock<DyeBushEmptyBlock> DYE_BUSH_EMPTY = BLOCKS.register("dye_bush_empty",
-            () -> new DyeBushEmptyBlock(RUBBER_LEAVES_PROPERTIES));
+            key -> new DyeBushEmptyBlock(assignBlockId(key, RUBBER_LEAVES_PROPERTIES)));
     public static final DeferredBlock<DyeBushFilledBlock> DYE_BUSH_FILLED = BLOCKS.register("dye_bush_filled",
-            () -> new DyeBushFilledBlock(RUBBER_LEAVES_PROPERTIES));
-            
-    public static final DeferredBlock<RubberSaplingBlock> RUBBER_SAPLING = BLOCKS.register("rubber_sapling",
-            () -> new RubberSaplingBlock(RUBBER_SAPLING_PROPERTIES));
-            
-    // Sacred Rubber Sapling (without tree growth)
-    public static final DeferredBlock<SacredRubberSaplingBlock> SACRED_RUBBER_SAPLING = BLOCKS.register("sacred_rubber_sapling",
-            () -> new SacredRubberSaplingBlock(SACRED_RUBBER_SAPLING_PROPERTIES));
-    
-    // Sacred Rubber Root (replaces sapling when growth completes)
-    public static final DeferredBlock<SacredRubberRootBlock> SACRED_RUBBER_ROOT = BLOCKS.register("sacred_rubber_root",
-            () -> new SacredRubberRootBlock(SACRED_RUBBER_ROOT_PROPERTIES));
-    
-    // Sacred Rubber Log (for grid structure, not visible in creative tab, drops normal rubber_log)
-    public static final DeferredBlock<RubberLogSacredBlock> RUBBER_LOG_SACRED = BLOCKS.register("rubber_log_sacred",
-            () -> new RubberLogSacredBlock(RUBBER_LOG_PROPERTIES));
+            key -> new DyeBushFilledBlock(assignBlockId(key, RUBBER_LEAVES_PROPERTIES)));
 
-    // Rubber Block
+    public static final DeferredBlock<RubberSaplingBlock> RUBBER_SAPLING = BLOCKS.register("rubber_sapling",
+            key -> new RubberSaplingBlock(assignBlockId(key, RUBBER_SAPLING_PROPERTIES)));
+
+    public static final DeferredBlock<SacredRubberSaplingBlock> SACRED_RUBBER_SAPLING = BLOCKS.register("sacred_rubber_sapling",
+            key -> new SacredRubberSaplingBlock(assignBlockId(key, SACRED_RUBBER_SAPLING_PROPERTIES)));
+
+    public static final DeferredBlock<SacredRubberRootBlock> SACRED_RUBBER_ROOT = BLOCKS.register("sacred_rubber_root",
+            key -> new SacredRubberRootBlock(assignBlockId(key, SACRED_RUBBER_ROOT_PROPERTIES)));
+
+    public static final DeferredBlock<RubberLogSacredBlock> RUBBER_LOG_SACRED = BLOCKS.register("rubber_log_sacred",
+            key -> new RubberLogSacredBlock(assignBlockId(key, RUBBER_LOG_PROPERTIES)));
+
     public static final DeferredBlock<RubberBlock> RUBBER_BLOCK = BLOCKS.register("rubber_block",
-            () -> new RubberBlock(BlockBehaviour.Properties.of()
+            key -> new RubberBlock(assignBlockId(key, p -> p
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(2.0f)
-                    .sound(SoundType.TUFF)));
+                    .sound(SoundType.TUFF))));
 
     public static final DeferredBlock<PlasticBlock> PLASTIC_BLOCK = BLOCKS.register("plastic_block",
-            () -> new PlasticBlock(BlockBehaviour.Properties.of()
+            key -> new PlasticBlock(assignBlockId(key, p -> p
                     .mapColor(MapColor.COLOR_LIGHT_GRAY)
                     .strength(2.0f, 3.0f)
                     .sound(SoundType.STONE)
-                    .requiresCorrectToolForDrops()));
+                    .requiresCorrectToolForDrops())));
 
     public static final DeferredBlock<PlasticBlock> PLASTIC_BRICKS = BLOCKS.register("plastic_bricks",
-            () -> new PlasticBlock(BlockBehaviour.Properties.of()
+            key -> new PlasticBlock(assignBlockId(key, p -> p
                     .mapColor(MapColor.COLOR_LIGHT_GRAY)
                     .strength(2.0f, 3.0f)
                     .sound(SoundType.STONE)
-                    .requiresCorrectToolForDrops()));
-                    
-    // ===== RUBBER WOOD VARIANTS =====
-    // Stairs, slabs, fences, fence gates, buttons, pressure plates, doors, trapdoors
-    
-    // Rubber Stairs
-    public static final DeferredBlock<RubberStairsBlock> RUBBER_STAIRS = BLOCKS.register("rubber_stairs",
-            () -> new RubberStairsBlock(RUBBER_PLANKS.get().defaultBlockState(), RUBBER_PLANKS_PROPERTIES));
-            
-    // Rubber Slab
-    public static final DeferredBlock<RubberSlabBlock> RUBBER_SLAB = BLOCKS.register("rubber_slab",
-            () -> new RubberSlabBlock(RUBBER_PLANKS_PROPERTIES));
-            
-    // Rubber Fence
-    public static final DeferredBlock<RubberFenceBlock> RUBBER_FENCE = BLOCKS.register("rubber_fence",
-            () -> new RubberFenceBlock(RUBBER_PLANKS_PROPERTIES));
-            
-    // Rubber Fence Gate
-    public static final DeferredBlock<RubberFenceGateBlock> RUBBER_FENCE_GATE = BLOCKS.register("rubber_fence_gate",
-            () -> new RubberFenceGateBlock(RUBBER_PLANKS_PROPERTIES));
-            
-    // Rubber Button
-    public static final DeferredBlock<RubberButtonBlock> RUBBER_BUTTON = BLOCKS.register("rubber_button",
-            () -> new RubberButtonBlock(RUBBER_PLANKS_PROPERTIES.noCollission()));
-            
-    // Rubber Pressure Plate
-    public static final DeferredBlock<RubberPressurePlateBlock> RUBBER_PRESSURE_PLATE = BLOCKS.register("rubber_pressure_plate",
-            () -> new RubberPressurePlateBlock(RUBBER_PLANKS_PROPERTIES.noCollission()));
-            
-    // Rubber Door
-    public static final DeferredBlock<RubberDoorBlock> RUBBER_DOOR = BLOCKS.register("rubber_door",
-            () -> new RubberDoorBlock(RUBBER_PLANKS_PROPERTIES.noOcclusion()));
-            
-    // Rubber Trapdoor
-    public static final DeferredBlock<RubberTrapDoorBlock> RUBBER_TRAPDOOR = BLOCKS.register("rubber_trapdoor",
-            () -> new RubberTrapDoorBlock(RUBBER_PLANKS_PROPERTIES.noOcclusion()));
+                    .requiresCorrectToolForDrops())));
 
-    private static final BlockBehaviour.Properties RUBBER_SIGN_PROPERTIES = BlockBehaviour.Properties.of()
+    public static final DeferredBlock<RubberStairsBlock> RUBBER_STAIRS = BLOCKS.register("rubber_stairs",
+            key -> new RubberStairsBlock(baseBlockStateForStairs("rubber_planks"), assignBlockId(key, RUBBER_PLANKS_PROPERTIES)));
+
+    public static final DeferredBlock<RubberSlabBlock> RUBBER_SLAB = BLOCKS.register("rubber_slab",
+            key -> new RubberSlabBlock(assignBlockId(key, RUBBER_PLANKS_PROPERTIES)));
+
+    public static final DeferredBlock<RubberFenceBlock> RUBBER_FENCE = BLOCKS.register("rubber_fence",
+            key -> new RubberFenceBlock(assignBlockId(key, RUBBER_PLANKS_PROPERTIES)));
+
+    public static final DeferredBlock<RubberFenceGateBlock> RUBBER_FENCE_GATE = BLOCKS.register("rubber_fence_gate",
+            key -> new RubberFenceGateBlock(assignBlockId(key, RUBBER_PLANKS_PROPERTIES)));
+
+    public static final DeferredBlock<RubberButtonBlock> RUBBER_BUTTON = BLOCKS.register("rubber_button",
+            key -> new RubberButtonBlock(assignBlockId(key, p -> RUBBER_PLANKS_PROPERTIES.apply(p).noCollision())));
+
+    public static final DeferredBlock<RubberPressurePlateBlock> RUBBER_PRESSURE_PLATE = BLOCKS.register("rubber_pressure_plate",
+            key -> new RubberPressurePlateBlock(assignBlockId(key, p -> RUBBER_PLANKS_PROPERTIES.apply(p).noCollision())));
+
+    public static final DeferredBlock<RubberDoorBlock> RUBBER_DOOR = BLOCKS.register("rubber_door",
+            key -> new RubberDoorBlock(assignBlockId(key, p -> RUBBER_PLANKS_PROPERTIES.apply(p).noOcclusion())));
+
+    public static final DeferredBlock<RubberTrapDoorBlock> RUBBER_TRAPDOOR = BLOCKS.register("rubber_trapdoor",
+            key -> new RubberTrapDoorBlock(assignBlockId(key, p -> RUBBER_PLANKS_PROPERTIES.apply(p).noOcclusion())));
+
+    private static final UnaryOperator<BlockBehaviour.Properties> RUBBER_SIGN_PROPERTIES = p -> p
             .mapColor(MapColor.WOOD)
             .forceSolidOn()
             .instrument(NoteBlockInstrument.BASS)
             .noCollision()
             .strength(1.0F)
-            .ignitedByLava();
+            .noOcclusion();
 
     public static final DeferredBlock<StandingSignBlock> RUBBER_SIGN = BLOCKS.register("rubber_sign",
-            () -> new StandingSignBlock(ModWoodTypes.RUBBER, RUBBER_SIGN_PROPERTIES));
+            key -> new StandingSignBlock(ModWoodTypes.RUBBER, assignBlockId(key, RUBBER_SIGN_PROPERTIES)));
 
     public static final DeferredBlock<WallSignBlock> RUBBER_WALL_SIGN = BLOCKS.register("rubber_wall_sign",
-            () -> new WallSignBlock(ModWoodTypes.RUBBER, RUBBER_SIGN_PROPERTIES));
+            key -> new WallSignBlock(ModWoodTypes.RUBBER, assignBlockId(key, RUBBER_SIGN_PROPERTIES)));
 
     public static final DeferredBlock<CeilingHangingSignBlock> RUBBER_HANGING_SIGN = BLOCKS.register("rubber_hanging_sign",
-            () -> new CeilingHangingSignBlock(ModWoodTypes.RUBBER, RUBBER_SIGN_PROPERTIES));
+            key -> new CeilingHangingSignBlock(ModWoodTypes.RUBBER, assignBlockId(key, RUBBER_SIGN_PROPERTIES)));
 
     public static final DeferredBlock<WallHangingSignBlock> RUBBER_WALL_HANGING_SIGN = BLOCKS.register("rubber_wall_hanging_sign",
-            () -> new WallHangingSignBlock(ModWoodTypes.RUBBER, RUBBER_SIGN_PROPERTIES));
+            key -> new WallHangingSignBlock(ModWoodTypes.RUBBER, assignBlockId(key, RUBBER_SIGN_PROPERTIES)));
 
-    // ===== PLATE BASE BLOCK (vector type, texture above and below plate_base) =====
     public static final DeferredBlock<PlateBaseBlock> PLATE_BASE_BLOCK = BLOCKS.register("plate_base_block",
-            () -> new PlateBaseBlock(VECTOR_PROPERTIES));
+            key -> new PlateBaseBlock(assignBlockId(key, VECTOR_PROPERTIES)));
 
     // ===== CRYSTAL TRAP PLATE (special non-JSON plate – captures mobs into Crystal Cage) =====
     public static final DeferredBlock<net.unfamily.iskautils.block.CrystalCageTrapPlateBlock> CRYSTAL_CAGE_TRAP_PLATE =
             BLOCKS.register("crystal_cage_trap_plate",
-                    () -> new net.unfamily.iskautils.block.CrystalCageTrapPlateBlock(VECTOR_PROPERTIES));
-            
-    // ===== RAFT BLOCK (floating wood block) =====
-    private static final BlockBehaviour.Properties RAFT_PROPERTIES = BlockBehaviour.Properties.of()
+                    key -> new net.unfamily.iskautils.block.CrystalCageTrapPlateBlock(assignBlockId(key, VECTOR_PROPERTIES)));
+
+    private static final UnaryOperator<BlockBehaviour.Properties> RAFT_PROPERTIES = p -> p
             .mapColor(MapColor.WOOD)
             .strength(0.5f, 1.0f)
             .sound(SoundType.WOOD)
             .dynamicShape()
             .isSuffocating((state, level, pos) -> false);
-            
+
     public static final DeferredBlock<RaftBlock> RAFT = BLOCKS.register("raft",
-            () -> new RaftBlock(RAFT_PROPERTIES));
-            
-    // ===== RAFT NO DROP BLOCK (non-droppable version) =====
+            key -> new RaftBlock(assignBlockId(key, RAFT_PROPERTIES)));
+
     public static final DeferredBlock<RaftNoDropBlock> RAFT_NO_DROP = BLOCKS.register("raft_no_drop",
-            () -> new RaftNoDropBlock(RAFT_PROPERTIES));
+            key -> new RaftNoDropBlock(assignBlockId(key, RAFT_PROPERTIES)));
 
-    // ===== TAR BLOCK =====
     public static final DeferredBlock<TarSlimeBlock> TAR_SLIME_BLOCK = BLOCKS.register("tar_slime_block",
-            () -> new TarSlimeBlock(BlockBehaviour.Properties.of()
+            key -> new TarSlimeBlock(assignBlockId(key, p -> p
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(0.5f, 1.0f)
                     .sound(SoundType.SLIME_BLOCK)
                     .friction(0.8f)
                     .jumpFactor(0.5f)
-                    .noOcclusion()));
-    
-    // ===== SAP BLOCK =====
-    public static final DeferredBlock<SapBlock> SAP_BLOCK = BLOCKS.register("sap_block",
-            () -> new SapBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_BLACK)
-                    .strength(0.5f, 1.0f)
-                    .sound(SoundType.SLIME_BLOCK)
-                    .friction(0.8f)
-                    .jumpFactor(0.5f)
-                    .noOcclusion()));
+                    .noOcclusion())));
 
-    // ===== WEATHER DETECTOR =====
+    public static final DeferredBlock<SapBlock> SAP_BLOCK = BLOCKS.register("sap_block",
+            key -> new SapBlock(assignBlockId(key, p -> p
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(0.5f, 1.0f)
+                    .sound(SoundType.SLIME_BLOCK)
+                    .friction(0.8f)
+                    .jumpFactor(0.5f)
+                    .noOcclusion())));
+
     public static final DeferredBlock<WeatherDetectorBlock> WEATHER_DETECTOR = BLOCKS.register("weather_detector",
-            () -> new WeatherDetectorBlock(BlockBehaviour.Properties.of()
+            key -> new WeatherDetectorBlock(assignBlockId(key, p -> p
                     .strength(0.5f, 1.0f)
                     .sound(SoundType.COPPER)
-                    .noOcclusion()));
+                    .noOcclusion())));
 
-    // ===== SOUND MUFFLER =====
     public static final DeferredBlock<SoundMufflerBlock> SOUND_MUFFLER = BLOCKS.register("sound_muffler",
-            () -> new SoundMufflerBlock(BlockBehaviour.Properties.of()
+            key -> new SoundMufflerBlock(assignBlockId(key, p -> p
                     .mapColor(MapColor.WOOL)
                     .strength(0.8f, 1.0f)
-                    .sound(SoundType.WOOL)));
-                    
-    // Weather Alterer Block
+                    .sound(SoundType.WOOL))));
+
     public static final DeferredBlock<WeatherAltererBlock> WEATHER_ALTERER = BLOCKS.register("weather_alterer",
-        () -> new WeatherAltererBlock(BlockBehaviour.Properties.of()
-            .strength(1.5F)
-            .sound(SoundType.COPPER)
-            .lightLevel((state) -> 3)
-            .noOcclusion()));
+            key -> new WeatherAltererBlock(assignBlockId(key, p -> p
+                    .strength(1.5F)
+                    .sound(SoundType.COPPER)
+                    .lightLevel((state) -> 3)
+                    .noOcclusion())));
 
-    // Time Alterer Block
     public static final DeferredBlock<TimeAltererBlock> TIME_ALTERER = BLOCKS.register("time_alterer",
-        () -> new TimeAltererBlock(BlockBehaviour.Properties.of()
-            .strength(1.5F)
-            .sound(SoundType.TRIAL_SPAWNER)
-            .lightLevel((state) -> 3)
-            .noOcclusion()));
+            key -> new TimeAltererBlock(assignBlockId(key, p -> p
+                    .strength(1.5F)
+                    .sound(SoundType.TRIAL_SPAWNER)
+                    .lightLevel((state) -> 3)
+                    .noOcclusion())));
 
-    // Temporal Overclocker Block
     public static final DeferredBlock<TemporalOverclockerBlock> TEMPORAL_OVERCLOCKER = BLOCKS.register("temporal_overclocker",
-        () -> new TemporalOverclockerBlock(BlockBehaviour.Properties.of()
-            .strength(3.0f, 6.0f)
-            .sound(SoundType.NETHERITE_BLOCK)
-            .requiresCorrectToolForDrops()
-            .lightLevel((state) -> state.getValue(TemporalOverclockerBlock.POWERED) ? 7 : 0)));
+            key -> new TemporalOverclockerBlock(assignBlockId(key, p -> p
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .requiresCorrectToolForDrops()
+                    .lightLevel((state) -> state.getValue(TemporalOverclockerBlock.POWERED) ? 7 : 0))));
 
     public static final DeferredBlock<EntropicSpawnerBlock> ENTROPIC_SPAWNER = BLOCKS.register("entropic_spawner",
-        () -> new EntropicSpawnerBlock(BlockBehaviour.Properties.of()
-            .strength(5.0f, 1200.0f)
-            .sound(SoundType.METAL)
-            .requiresCorrectToolForDrops()
-            .noOcclusion()
-            .isSuffocating((state, level, pos) -> false)
-            .isViewBlocking((state, level, pos) -> false)));
+            key -> new EntropicSpawnerBlock(assignBlockId(key, p -> p
+                    .strength(5.0f, 1200.0f)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .isSuffocating((state, level, pos) -> false)
+                    .isViewBlocking((state, level, pos) -> false))));
 
-    // ===== ANGEL BLOCK =====
-    // Un blocco che può essere piazzato in aria e si rompe facilmente
     public static final DeferredBlock<AngelBlock> ANGEL_BLOCK = BLOCKS.register("angel_block",
-        () -> new AngelBlock(BlockBehaviour.Properties.of()
-            .mapColor(MapColor.STONE)
-            .strength(0.0F)
-            .sound(SoundType.STONE)
-            .noOcclusion()
-            .isRedstoneConductor((state, level, pos) -> false)
-            .pushReaction(PushReaction.DESTROY)
-            .isViewBlocking((state, level, pos) -> false)));
+            key -> new AngelBlock(assignBlockId(key, p -> p
+                    .mapColor(MapColor.STONE)
+                    .strength(0.0F)
+                    .sound(SoundType.STONE)
+                    .noOcclusion()
+                    .isRedstoneConductor((state, level, pos) -> false)
+                    .pushReaction(PushReaction.DESTROY)
+                    .isViewBlocking((state, level, pos) -> false))));
 
-    // Entropy TNT Block (massive explosion with various triggers)
     public static final DeferredBlock<EntropyTntBlock> ENTROPY_TNT = BLOCKS.register("entropy_tnt",
-            () -> new EntropyTntBlock());
+            key -> new EntropyTntBlock(assignBlockId(key, p -> p.strength(0.0F).sound(SoundType.GRASS).ignitedByLava())));
 
-    // ===== BURNING FLAME BLOCK =====
-    private static final BlockBehaviour.Properties BURNING_FLAME_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> BURNING_FLAME_PROPERTIES = p -> p
             .mapColor(MapColor.COLOR_ORANGE)
-            .noCollission()
+            .noCollision()
             .instabreak()
             .sound(SoundType.WOOL)
             .lightLevel((state) -> 15)
@@ -707,14 +658,13 @@ public class ModBlocks {
             .isSuffocating((state, level, pos) -> false)
             .isViewBlocking((state, level, pos) -> false);
 
-    // Burning Flame Block (provides light like a torch, fragile to liquids)
     public static final DeferredBlock<BurningFlameBlock> BURNING_FLAME = BLOCKS.register("burning_flame",
-            () -> new BurningFlameBlock(BURNING_FLAME_PROPERTIES));
+            key -> new BurningFlameBlock(assignBlockId(key, BURNING_FLAME_PROPERTIES)));
 
     public static final DeferredBlock<CursedBurningFlameBlock> CURSED_BURNING_FLAME = BLOCKS.register("cursed_burning_flame",
-            () -> new CursedBurningFlameBlock(BURNING_FLAME_PROPERTIES));
+            key -> new CursedBurningFlameBlock(assignBlockId(key, BURNING_FLAME_PROPERTIES)));
 
-    private static final BlockBehaviour.Properties BLAZING_ALTAR_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> BLAZING_ALTAR_PROPERTIES = p -> p
             .mapColor(MapColor.NETHER)
             .strength(1.5f, 6.0f)
             .requiresCorrectToolForDrops()
@@ -723,12 +673,11 @@ public class ModBlocks {
             .noOcclusion();
 
     public static final DeferredBlock<BlazingAltarBlock> BLAZING_ALTAR = BLOCKS.register("blazing_altar",
-            () -> new BlazingAltarBlock(BLAZING_ALTAR_PROPERTIES));
+            key -> new BlazingAltarBlock(assignBlockId(key, BLAZING_ALTAR_PROPERTIES)));
 
-    // ===== REDSTONE SIGNAL BLOCK =====
-    private static final BlockBehaviour.Properties REDSTONE_SIGNAL_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> REDSTONE_SIGNAL_PROPERTIES = p -> p
             .mapColor(MapColor.NONE)
-            .noCollission()
+            .noCollision()
             .instabreak()
             .sound(SoundType.STONE)
             .noOcclusion()
@@ -736,47 +685,30 @@ public class ModBlocks {
             .isSuffocating((state, level, pos) -> false)
             .isViewBlocking((state, level, pos) -> false);
 
-    // Redstone Activator Signal Block (invisible block with small hitbox that emits redstone signal, removes itself after 3 seconds)
     public static final DeferredBlock<RedstoneSignalBlock> REDSTONE_ACTIVATOR_SIGNAL = BLOCKS.register("redstone_activator_signal",
-            () -> new RedstoneSignalBlock(REDSTONE_SIGNAL_PROPERTIES));
+            key -> new RedstoneSignalBlock(assignBlockId(key, REDSTONE_SIGNAL_PROPERTIES)));
 
-    // ===== DEEP DRAWERS =====
-    private static final BlockBehaviour.Properties DEEP_DRAWERS_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> DEEP_DRAWERS_PROPERTIES = p -> p
             .mapColor(MapColor.METAL)
             .strength(3.5f, 6.0f)
             .sound(SoundType.COPPER)
             .requiresCorrectToolForDrops()
             .isRedstoneConductor((state, level, pos) -> false);
 
-    // Deep Drawers Block (massive storage for non-stackable items)
-    public static final DeferredBlock<DeepDrawersBlock> DEEP_DRAWERS = BLOCKS.register("deep_drawers",
-            () -> new DeepDrawersBlock(DEEP_DRAWERS_PROPERTIES));
-    
-    // Deep Drawer Extractor Block (estrae item dal Deep Drawer adiacente)
+    public static final DeferredBlock<DeepDrawersBlock> DEEP_DRAWERS = BLOCKS.register("deep_drawer",
+            key -> new DeepDrawersBlock(assignBlockId(key, DEEP_DRAWERS_PROPERTIES)));
+
     public static final DeferredBlock<DeepDrawerExtractorBlock> DEEP_DRAWER_EXTRACTOR = BLOCKS.register("deep_drawer_extractor",
-            () -> new DeepDrawerExtractorBlock(DEEP_DRAWERS_PROPERTIES));
-    
-    // Deep Drawer Interface Block (base block entity, functionality to be implemented)
+            key -> new DeepDrawerExtractorBlock(assignBlockId(key, DEEP_DRAWERS_PROPERTIES)));
+
     public static final DeferredBlock<DeepDrawerInterfaceBlock> DEEP_DRAWER_INTERFACE = BLOCKS.register("deep_drawer_interface",
-            () -> new DeepDrawerInterfaceBlock(DEEP_DRAWERS_PROPERTIES));
-    
-    // Deep Drawer Extender Block (extends drawer presence for direct interactions)
+            key -> new DeepDrawerInterfaceBlock(assignBlockId(key, DEEP_DRAWERS_PROPERTIES)));
+
     public static final DeferredBlock<DeepDrawerExtenderBlock> DEEP_DRAWER_EXTENDER = BLOCKS.register("deep_drawer_extender",
-            () -> new DeepDrawerExtenderBlock(DEEP_DRAWERS_PROPERTIES));
+            key -> new DeepDrawerExtenderBlock(assignBlockId(key, DEEP_DRAWERS_PROPERTIES)));
 
-    // ===== THE DECEPTION BLOCK =====
-    private static final BlockBehaviour.Properties THE_DECEPTION_PROPERTIES = BlockBehaviour.Properties.of()
-            .mapColor(MapColor.TERRACOTTA_BROWN)
-            .strength(2.0f, 3.0f)
-            .sound(SoundType.WOOD)
-            .noOcclusion();
-
-    public static final DeferredBlock<TheDeceptionBlock> THE_DECEPTION = BLOCKS.register("the_deception",
-            () -> new TheDeceptionBlock(THE_DECEPTION_PROPERTIES));
-
-    // ===== GIFT BLOCK =====
-    private static final BlockBehaviour.Properties GIFT_PROPERTIES = BlockBehaviour.Properties.of()
-            .noCollission()
+    private static final UnaryOperator<BlockBehaviour.Properties> GIFT_PROPERTIES = p -> p
+            .noCollision()
             .instabreak()
             .sound(SoundType.WOOL)
             .pushReaction(PushReaction.DESTROY)
@@ -784,54 +716,85 @@ public class ModBlocks {
             .isSuffocating((state, level, pos) -> false)
             .isViewBlocking((state, level, pos) -> false);
 
-    // Gift Block (hidden cross model block with item texture)
     public static final DeferredBlock<Block> GIFT = BLOCKS.register("gift",
-            () -> new Block(GIFT_PROPERTIES));
+            key -> new Block(assignBlockId(key, GIFT_PROPERTIES)));
 
-    // ===== HARD ICE BLOCK =====
-    private static final BlockBehaviour.Properties HARD_ICE_PROPERTIES = BlockBehaviour.Properties.of()
-            .strength(-1.0f, 3600000.0f) // Indistruttibile (hardness < 0)
+    private static final UnaryOperator<BlockBehaviour.Properties> THE_DECEPTION_PROPERTIES = p -> p
+            .mapColor(MapColor.TERRACOTTA_BROWN)
+            .strength(2.0f, 3.0f)
+            .sound(SoundType.WOOD)
+            .noOcclusion();
+
+    public static final DeferredBlock<TheDeceptionBlock> THE_DECEPTION = BLOCKS.register("the_deception",
+            key -> new TheDeceptionBlock(assignBlockId(key, THE_DECEPTION_PROPERTIES)));
+
+    private static final UnaryOperator<BlockBehaviour.Properties> HARD_ICE_PROPERTIES = p -> p
+            .strength(-1.0f, 3600000.0f)
             .sound(SoundType.GLASS)
             .friction(0.98f);
 
-    // Hard Ice Block (indestructible, placed by gift after breaking)
     public static final DeferredBlock<HardIceBlock> HARD_ICE = BLOCKS.register("hard_ice",
-            () -> new HardIceBlock(HARD_ICE_PROPERTIES));
+            key -> new HardIceBlock(assignBlockId(key, HARD_ICE_PROPERTIES)));
+
+    // ===== ENTROPIC FUNGUS =====
+    private static final UnaryOperator<BlockBehaviour.Properties> ENTROPIC_FUNGUS_PROPERTIES = p -> p
+            .mapColor(MapColor.COLOR_PURPLE)
+            .noCollision()
+            .noOcclusion()
+            .instabreak()
+            .sound(SoundType.FUNGUS)
+            .pushReaction(PushReaction.DESTROY)
+            .randomTicks();
+
+    public static final DeferredBlock<EntropicFungusBlock> ENTROPIC_FUNGUS = BLOCKS.register("entropic_fungus",
+            key -> new EntropicFungusBlock(assignBlockId(key, ENTROPIC_FUNGUS_PROPERTIES)));
+
+    private static final UnaryOperator<BlockBehaviour.Properties> POTTED_ENTROPIC_FUNGUS_PROPERTIES = p -> p
+            .instabreak()
+            .noOcclusion()
+            .pushReaction(PushReaction.DESTROY);
+
+    public static final DeferredBlock<net.minecraft.world.level.block.FlowerPotBlock> POTTED_ENTROPIC_FUNGUS =
+            BLOCKS.register("potted_entropic_fungus",
+                    key -> new net.minecraft.world.level.block.FlowerPotBlock(
+                            () -> (net.minecraft.world.level.block.FlowerPotBlock) net.minecraft.world.level.block.Blocks.FLOWER_POT,
+                            ENTROPIC_FUNGUS,
+                            assignBlockId(key, POTTED_ENTROPIC_FUNGUS_PROPERTIES)));
 
     // ===== ENTROPIC SOILS =====
-    private static final BlockBehaviour.Properties ENTROPIC_SOIL_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> ENTROPIC_SOIL_PROPERTIES = p -> p
             .mapColor(MapColor.PLANT)
             .strength(0.6F)
             .sound(SoundType.GRASS);
 
-    private static final BlockBehaviour.Properties ENTROPIC_DIRT_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> ENTROPIC_DIRT_PROPERTIES = p -> p
             .mapColor(MapColor.DIRT)
             .strength(0.5F)
             .sound(SoundType.GRAVEL);
 
-    private static final BlockBehaviour.Properties GRAVEYARD_SOIL_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> GRAVEYARD_SOIL_PROPERTIES = p -> p
             .mapColor(MapColor.TERRACOTTA_BLACK)
             .strength(0.6F)
             .sound(SoundType.SOUL_SOIL);
 
-    private static final BlockBehaviour.Properties DRUIDIC_PODZOL_PROPERTIES = BlockBehaviour.Properties.of()
+    private static final UnaryOperator<BlockBehaviour.Properties> DRUIDIC_PODZOL_PROPERTIES = p -> p
             .mapColor(MapColor.PLANT)
             .strength(0.6F)
             .sound(SoundType.GRASS);
 
     public static final DeferredBlock<EntropicSoilBlock> ENTROPIC_SOIL = BLOCKS.register("entropic_soil",
-            () -> new EntropicSoilBlock(ENTROPIC_SOIL_PROPERTIES));
+            key -> new EntropicSoilBlock(assignBlockId(key, ENTROPIC_SOIL_PROPERTIES)));
 
     public static final DeferredBlock<EntropicDirtBlock> ENTROPIC_DIRT = BLOCKS.register("entropic_dirt",
-            () -> new EntropicDirtBlock(ENTROPIC_DIRT_PROPERTIES));
+            key -> new EntropicDirtBlock(assignBlockId(key, ENTROPIC_DIRT_PROPERTIES)));
 
     public static final DeferredBlock<GraveyardSoilBlock> GRAVEYARD_SOIL = BLOCKS.register("graveyard_soil",
-            () -> new GraveyardSoilBlock(GRAVEYARD_SOIL_PROPERTIES));
+            key -> new GraveyardSoilBlock(assignBlockId(key, GRAVEYARD_SOIL_PROPERTIES)));
 
     public static final DeferredBlock<DruidicPodzolBlock> DRUIDIC_PODZOL = BLOCKS.register("druidic_podzol",
-            () -> new DruidicPodzolBlock(DRUIDIC_PODZOL_PROPERTIES));
+            key -> new DruidicPodzolBlock(assignBlockId(key, DRUIDIC_PODZOL_PROPERTIES)));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }
-} 
+}

@@ -20,10 +20,15 @@ public final class ModMobEffects {
     public static final DeferredHolder<MobEffect, MobEffect> ENTROPIC_EMPOWERMENT =
             MOB_EFFECTS.register("entropic_empowerment", EntropicEmpowermentMobEffect::new);
 
+    public static final DeferredHolder<MobEffect, MobEffect> ENTROPIC_EMPOWERMENT_PLAYER =
+            MOB_EFFECTS.register("entropic_empowerment_player", EntropicEmpowermentMobEffect::new);
+
+    public static final DeferredHolder<MobEffect, MobEffect> ENTROPIC_DECAY =
+            MOB_EFFECTS.register("entropic_decay", EntropicDecayMobEffect::new);
+
     private ModMobEffects() {}
 
     public static void register(IEventBus bus) {
         MOB_EFFECTS.register(bus);
     }
 }
-

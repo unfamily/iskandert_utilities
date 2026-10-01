@@ -16,7 +16,7 @@ categories:
 ## How to obtain
 
 - **Suspicious Delivery** — one possible outcome when you open a package. See <ItemImage id="iska_utils:suspicious_delivery" /> **Suspicious Delivery**.
-- Recyclable into one <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy** like other delivery artifacts.
+- Recyclable into **three** <ItemImage id="iska_utils:drop_of_entropy" /> **Drops of Entropy** like other delivery artifacts.
 
 ## What it does
 

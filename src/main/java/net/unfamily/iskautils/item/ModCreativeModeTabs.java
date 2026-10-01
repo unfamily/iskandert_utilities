@@ -9,6 +9,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.data.PotionPlateRegistry;
+import net.unfamily.iskautils.fluid.ModFluids;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.unfamily.iskautils.integration.artifacts.ArtifactsCompat;
@@ -195,7 +196,7 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.MOB_REAPER.get());
                                 pOutput.accept(ModItems.COLLECTING_CRATE.get());
                                 pOutput.accept(ModItems.ESSENCE_OF_KNOLEDGE_GRATE.get());
-                                pOutput.accept(ModItems.CONDENSED_KNOWLEDGE_BUCKET.get());
+                                pOutput.accept(ModFluids.CONDENSED_KNOWLEDGE.bucketItem());
                                 pOutput.accept(ModItems.KNOWLEDGE_COMPRESSOR.get());
                                 pOutput.accept(ModItems.JELLY_OF_KNOWLEDGE.get());
                                 pOutput.accept(ModItems.ANGEL_BLOCK.get());
@@ -290,9 +291,28 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.ENTROPIC_BOOTS.get());
                                 pOutput.accept(ModItems.UNSTABLE_ENTROPY_CATALYST.get());
                                 pOutput.accept(ModItems.ENTROPY_TNT.get());
-                                pOutput.accept(ModItems.TNT_DEFUSER.get());
+                                pOutput.accept(ModItems.SABOTEUR_SCREWDRIVER.get());
+                                pOutput.accept(ModItems.ENTROPIC_FUNGUS.get());
+                                pOutput.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+                                        net.minecraft.world.item.Items.POTION,
+                                        net.unfamily.iskautils.potion.ModPotions.ENTROPIC));
+                                pOutput.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+                                        net.minecraft.world.item.Items.POTION,
+                                        net.unfamily.iskautils.potion.ModPotions.LONG_ENTROPIC));
+                                pOutput.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+                                        net.minecraft.world.item.Items.POTION,
+                                        net.unfamily.iskautils.potion.ModPotions.STRONG_ENTROPIC));
+                                pOutput.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+                                        net.minecraft.world.item.Items.SPLASH_POTION,
+                                        net.unfamily.iskautils.potion.ModPotions.ENTROPIC));
+                                pOutput.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+                                        net.minecraft.world.item.Items.LINGERING_POTION,
+                                        net.unfamily.iskautils.potion.ModPotions.ENTROPIC));
                                 pOutput.accept(ModItems.ENTROPIC_SOIL.get());
                                 pOutput.accept(ModItems.ENTROPIC_DIRT.get());
+                                if (ModItems.SILVERFISH_LARVA != null) {
+                                    pOutput.accept(ModItems.SILVERFISH_LARVA.get());
+                                }
                                 pOutput.accept(ModItems.GRAVEYARD_SOIL.get());
                                 pOutput.accept(ModItems.DRUIDIC_PODZOL.get());
 

@@ -81,7 +81,6 @@ public class EntropicAgglomerationItem extends Item {
         entropic.setYBodyRot(creeper.yBodyRot);
 
         creeper.discard();
-        entropic.setPersistenceRequired(false);
         server.addFreshEntity(entropic);
         server.playSound(null, entropic.getX(), entropic.getY(), entropic.getZ(),
                 SoundEvents.ZOMBIE_VILLAGER_CONVERTED, SoundSource.HOSTILE, 1.0F, 1.0F);

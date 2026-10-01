@@ -7,7 +7,8 @@ import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
-import net.unfamily.iskautils.world.EnderNullifierSpatialIndex;
+import net.unfamily.iskautils.util.NullifierEntityIgnore;
+import net.unfamily.iskautils.world.NullifierSpatialIndex;
 
 public final class EnderNullifierEvents {
     private EnderNullifierEvents() {}
@@ -15,14 +16,7 @@ public final class EnderNullifierEvents {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onEntityTeleport(EntityTeleportEvent event) {
         if (event instanceof EntityTeleportEvent.TeleportCommand
-                || event instanceof EntityTeleportEvent.SpreadPlayersCommand
-                || event instanceof EntityTeleportEvent.EnderPearl) {
-            return;
-        }
-        if (!(event.getEntity() instanceof Mob)) {
-            return;
-        }
-        if (event.getEntity() instanceof Player) {
+                || event instanceof EntityTeleportEvent.SpreadPlayersCommand) {
             return;
         }
         if (!(event.getEntity().level() instanceof ServerLevel serverLevel)) {
@@ -30,8 +24,21 @@ public final class EnderNullifierEvents {
         }
 
         Level level = serverLevel;
-        if (EnderNullifierSpatialIndex.isTeleportBlocked(level.dimension(), event.getPrev())
-                || EnderNullifierSpatialIndex.isTeleportBlocked(level.dimension(), event.getTarget())) {
+        boolean blocked;
+        if (event.getEntity() instanceof Player) {
+            blocked = NullifierSpatialIndex.isTeleportBlockedForPlayers(level.dimension(), event.getPrev())
+                    || NullifierSpatialIndex.isTeleportBlockedForPlayers(level.dimension(), event.getTarget());
+        } else if (event.getEntity() instanceof Mob mob) {
+            if (NullifierEntityIgnore.isIgnored(mob)) {
+                return;
+            }
+            blocked = NullifierSpatialIndex.isTeleportBlockedForMobs(level.dimension(), event.getPrev())
+                    || NullifierSpatialIndex.isTeleportBlockedForMobs(level.dimension(), event.getTarget());
+        } else {
+            return;
+        }
+
+        if (blocked) {
             event.setCanceled(true);
         }
     }

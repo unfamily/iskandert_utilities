@@ -1,0 +1,6 @@
+{
+  "type": "iska_utils:entropic_fungus_if_enabled",
+  "biomes": "#c:is_nether",
+  "features": "iska_utils:entropic_fungus_nether_placed",
+  "step": "underground_decoration"
+}
