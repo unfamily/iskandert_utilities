@@ -7,6 +7,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.unfamily.iskautils.command.MacroLoader;
 import net.unfamily.iskautils.command.StageActionsLoader;
 import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
+import net.unfamily.iskautils.data.DynamicToolBehaviorScanner;
 import net.unfamily.iskautils.iska_utils_stages.StageItemHandler;
 import net.unfamily.iskautils.item.CommandItemRegistry;
 import net.unfamily.iskautils.network.ModMessages;
@@ -109,6 +110,7 @@ public final class IskaUtilsPhasedReloadScheduler {
             case 0 -> {
                 CommandItemRegistry.reloadDefinitions();
                 DynamicPotionPlateScanner.loadAll(rm);
+                DynamicToolBehaviorScanner.loadAll(rm);
                 StructureMonouseLoader.loadAll(rm);
                 ShopLoader.loadAll(rm);
                 MacroLoader.reloadAllMacros();

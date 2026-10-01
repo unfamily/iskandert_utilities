@@ -144,6 +144,8 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
     
     // Edit mode: tracks which filter index is in edit mode (shows different view)
     private int editModeFilterIndex = -1; // -1 means no entry is in edit mode
+    /** Last synced filter string used to seed edit-mode ghost. */
+    private String editModeGhostSeedSource = "";
     
     // Edit buttons for each visible entry (recreated on scroll)
     private final java.util.List<Button> editButtons = new java.util.ArrayList<>();
@@ -1486,17 +1488,20 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
      * can cycle to tags / other variants. Leaves textbox unchanged.
      */
     private void seedGhostFromIdFilter(String filter) {
+        var registries = minecraft != null && minecraft.level != null ? minecraft.level.registryAccess() : null;
+        editModeGhostSeedSource = filter != null ? filter : "";
         ItemStack fromId = net.unfamily.iskautils.util.DeepDrawerFilterVariants.itemStackFromIdFilter(filter);
-        if (fromId.isEmpty()) {
-            ghostSlotItem = ItemStack.EMPTY;
-            filterVariants.clear();
-            currentFilterVariantIndex = 0;
+        if (!fromId.isEmpty()) {
+            ghostSlotItem = fromId.copyWithCount(1);
+            filterVariants = generateAllFilterVariants(ghostSlotItem);
+            currentFilterVariantIndex = net.unfamily.iskautils.util.DeepDrawerFilterVariants.indexOfVariant(
+                    filterVariants, filter);
             return;
         }
-        ghostSlotItem = fromId.copyWithCount(1);
-        filterVariants = generateAllFilterVariants(ghostSlotItem);
-        currentFilterVariantIndex = net.unfamily.iskautils.util.DeepDrawerFilterVariants.indexOfVariant(
-                filterVariants, filter);
+        ItemStack preview = net.unfamily.iskautils.util.FilterDisplayItems.forFilter(filter, registries);
+        ghostSlotItem = preview.isEmpty() ? ItemStack.EMPTY : preview.copyWithCount(1);
+        filterVariants.clear();
+        currentFilterVariantIndex = 0;
     }
     
     /**
@@ -1530,6 +1535,7 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         ghostSlotItem = ItemStack.EMPTY;
         filterVariants.clear();
         currentFilterVariantIndex = 0;
+        editModeGhostSeedSource = "";
     }
     
     /**
@@ -2043,6 +2049,19 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         }
         
         // No need to update entries - they are rendered directly from cachedFilterFields
+
+        if (inEditMode() && editModeFilterIndex >= 0 && editModeFilterIndex < cachedFilterFields.size()) {
+            String synced = cachedFilterFields.get(editModeFilterIndex);
+            if (synced == null) {
+                synced = "";
+            }
+            if (!synced.equals(editModeGhostSeedSource)) {
+                if (editModeTextBox != null && !editModeTextBox.isFocused()) {
+                    editModeTextBox.setValue(synced);
+                }
+                seedGhostFromIdFilter(synced);
+            }
+        }
         
         refreshListLogicButton();
     }

@@ -211,13 +211,13 @@ public final class SuspiciousDeliveryScriptRunner {
                     action.getMessage().send(source, anchor, LOGGER.unwrap(), CONTEXT);
                 }
             }
-            case DROP -> spawnDrop(level, action.getDropItemId(), anchor);
+            case DROP -> spawnDrop(level, action.getDropItemId(), action.getDropCount(), anchor);
             case ITEM -> LOGGER.warn("Suspicious Delivery ignored item action: {}", action.getItemAction());
             case IF, DELAY -> LOGGER.warn("Suspicious Delivery unexpected action type {}", action.getType());
         }
     }
 
-    private static void spawnDrop(ServerLevel level, ResourceLocation itemId, Vec3 origin) {
+    private static void spawnDrop(ServerLevel level, ResourceLocation itemId, int count, Vec3 origin) {
         if (itemId == null) {
             return;
         }
@@ -226,7 +226,7 @@ public final class SuspiciousDeliveryScriptRunner {
             LOGGER.warn("Unknown drop '{}' in suspicious delivery", itemId);
             return;
         }
-        ItemEntity ent = new ItemEntity(level, origin.x, origin.y, origin.z, new ItemStack(item));
+        ItemEntity ent = new ItemEntity(level, origin.x, origin.y, origin.z, new ItemStack(item, Math.max(1, count)));
         level.addFreshEntity(ent);
     }
 
@@ -275,7 +275,12 @@ public final class SuspiciousDeliveryScriptRunner {
         switch (action.getType()) {
             case EXECUTE -> obj.addProperty("execute", action.getCommand());
             case DELAY -> obj.addProperty("delay", action.getDelay());
-            case DROP -> obj.addProperty("drop", action.getDropItemId().toString());
+            case DROP -> {
+                obj.addProperty("drop", action.getDropItemId().toString());
+                if (action.getDropCount() != 1) {
+                    obj.addProperty("count", action.getDropCount());
+                }
+            }
             case MESSAGE -> obj.add("message", messageToJson(action.getMessage()));
             case ITEM -> obj.addProperty("item", action.getItemAction().name().toLowerCase());
             case IF -> {

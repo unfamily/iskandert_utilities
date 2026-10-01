@@ -75,7 +75,15 @@ public final class NullifierSpatialIndex {
     }
 
     public static boolean isTeleportBlocked(ResourceKey<Level> dimension, Vec3 position) {
+        return isTeleportBlockedForMobs(dimension, position);
+    }
+
+    public static boolean isTeleportBlockedForMobs(ResourceKey<Level> dimension, Vec3 position) {
         return matches(dimension, position, Kind.ENDER, NullifierTargetMode::affectsMobs);
+    }
+
+    public static boolean isTeleportBlockedForPlayers(ResourceKey<Level> dimension, Vec3 position) {
+        return matches(dimension, position, Kind.ENDER, NullifierTargetMode::affectsPlayers);
     }
 
     public static boolean shouldBlockMobClimbing(ResourceKey<Level> dimension, Vec3 position) {
@@ -86,8 +94,12 @@ public final class NullifierSpatialIndex {
         return matches(dimension, position, Kind.FLIGHT, NullifierTargetMode::blocksPlayerFlightInZone);
     }
 
+    public static boolean shouldBlockMobFlight(ResourceKey<Level> dimension, Vec3 position) {
+        return matches(dimension, position, Kind.FLIGHT, NullifierTargetMode::affectsMobs);
+    }
+
     public static boolean shouldBlockPlayerGauntletClimb(ResourceKey<Level> dimension, Vec3 position) {
-        return matches(dimension, position, Kind.CLIMBING, NullifierTargetMode::affectsMobs);
+        return matches(dimension, position, Kind.CLIMBING, NullifierTargetMode::affectsPlayers);
     }
 
     private static boolean matches(

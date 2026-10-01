@@ -13,10 +13,10 @@
   ],
   "key": {
     "A": {
-      "tag": "c:ingots/deorum"
+      "tag": "c:gems/arcane_crystal"
     },
     "B": {
-      "tag": "c:gems/arcane_crystal"
+      "tag": "c:ingots/deorum"
     }
   },
   "result": {

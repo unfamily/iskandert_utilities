@@ -1,8 +1,17 @@
 {
-  "render_type": "minecraft:translucent",
+  "loader": "fusion:model",
+  "type": "connecting",
   "parent": "minecraft:block/template_glass_pane_noside_alt",
   "textures": {
     "pane": "iska_utils:block/ethereal_glass/ethereal_glass",
     "edge": "iska_utils:block/ethereal_glass/ethereal_glass_edge"
+  },
+  "connections": {
+    "type": "or",
+    "predicates": [
+      {
+        "type": "is_same_block"
+      }
+    ]
   }
 }

@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "  A",
+    "BA ",
+    "CB "
+  ],
+  "key": {
+    "A": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "tag": "minecraft:planks"
+    },
+    "C": {
+      "tag": "iska_utils:basic_resources"
+    }
+  },
+  "result": {
+    "id": "iska_utils:saboteur_screwdriver",
+    "count": 1
+  }
+}

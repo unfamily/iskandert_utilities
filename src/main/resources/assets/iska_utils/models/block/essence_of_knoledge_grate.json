@@ -1,20 +1,8 @@
 {
+  "parent": "iska_utils:block/plate_base",
+  "render_type": "minecraft:cutout_mipped",
   "textures": {
-    "particle": "iska_utils:block/essence_of_knoledge_grate",
-    "all": "iska_utils:block/essence_of_knoledge_grate"
-  },
-  "elements": [
-    {
-      "from": [0, 0, 0],
-      "to": [16, 2, 16],
-      "faces": {
-        "down": { "texture": "#all" },
-        "up": { "texture": "#all" },
-        "north": { "texture": "#all" },
-        "south": { "texture": "#all" },
-        "west": { "texture": "#all" },
-        "east": { "texture": "#all" }
-      }
-    }
-  ]
+    "top": "iska_utils:block/essence_of_knoledge_grate",
+    "bottom": "iska_utils:block/essence_of_knoledge_grate"
+  }
 }

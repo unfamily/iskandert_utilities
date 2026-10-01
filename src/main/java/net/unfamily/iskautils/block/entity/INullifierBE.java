@@ -25,9 +25,28 @@ public interface INullifierBE {
             };
         }
 
-        /** Ender, Flight and Climbing only cycle Disabled / Only mobs on the target button. */
+        /**
+         * Soul / Wander: target button locked to Only mobs.
+         * Ender / Flight / Climbing cycle Only mobs → Both → Only players (no Disabled).
+         */
+        public boolean locksTargetToMobsOnly() {
+            return this == SOUL || this == WANDER;
+        }
+
+        /** @deprecated use {@link #locksTargetToMobsOnly()} */
         public boolean hasLimitedTargetModes() {
-            return this == ENDER || this == FLIGHT || this == CLIMBING;
+            return locksTargetToMobsOnly();
+        }
+
+        /** Reject Disabled; soul/wander always Only mobs. */
+        public NullifierTargetMode sanitizeTargetMode(NullifierTargetMode mode) {
+            if (locksTargetToMobsOnly()) {
+                return NullifierTargetMode.ONLY_MOBS;
+            }
+            if (mode == null || mode == NullifierTargetMode.DISABLED) {
+                return NullifierTargetMode.ONLY_MOBS;
+            }
+            return mode;
         }
     }
 

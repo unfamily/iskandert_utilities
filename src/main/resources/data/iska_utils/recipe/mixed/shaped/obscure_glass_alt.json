@@ -13,7 +13,7 @@
       "tag": "minecraft:coals"
     },
     "C": {
-      "item": "iska_utils:green_sludge"
+      "tag": "iska_utils:basic_resources"
     }
   },
   "result": {

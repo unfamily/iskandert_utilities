@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "iska_utils:entropic_fungus"
+    }
+  ],
+  "result": {
+    "id": "iska_utils:drop_of_entropy",
+    "count": 1
+  }
+}

@@ -10,6 +10,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.custom.GauntletOfClimbingItem;
+import net.unfamily.iskautils.util.NullifierEntityIgnore;
 import net.unfamily.iskautils.world.NullifierSpatialIndex;
 
 @EventBusSubscriber(modid = IskaUtils.MOD_ID)
@@ -26,6 +27,9 @@ public final class ClimbingNullifierEvents {
 
         if (event.getEntity() instanceof Mob mob) {
             if (!mob.onClimbable()) {
+                return;
+            }
+            if (NullifierEntityIgnore.isIgnored(mob)) {
                 return;
             }
             if (!NullifierSpatialIndex.shouldBlockMobClimbing(level.dimension(), pos)) {

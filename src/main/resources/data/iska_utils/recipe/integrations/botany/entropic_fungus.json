@@ -1,0 +1,17 @@
+{
+  "type": "botanypots:block_derived_crop",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "botanypots"
+    }
+  ],
+  "block": "iska_utils:entropic_fungus",
+  "grow_time": 7200,
+  "drops": [
+    {
+      "type": "botanypots:loot_table",
+      "table_id": "iska_utils:integrations/entropic_fungus"
+    }
+  ]
+}

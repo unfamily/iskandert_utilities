@@ -7,7 +7,7 @@
   ],
   "key": {
     "A": {
-      "tag": "c:bars"
+      "tag": "c:bars/iron"
     },
     "B": {
       "item": "iska_utils:scanner_chip"

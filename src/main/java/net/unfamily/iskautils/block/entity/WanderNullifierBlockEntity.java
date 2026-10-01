@@ -59,6 +59,7 @@ public class WanderNullifierBlockEntity extends BlockEntity implements MenuProvi
 
     @Override
     public void setTargetMode(NullifierTargetMode mode) {
+        mode = getNullifierType().sanitizeTargetMode(mode);
         this.targetMode = mode;
         if (level != null && !level.isClientSide) {
             syncIndex(computeEffectiveActive(getBlockState().getValue(WanderNullifierBlock.POWERED)));
@@ -200,7 +201,7 @@ public class WanderNullifierBlockEntity extends BlockEntity implements MenuProvi
 
     private void syncIndex(boolean active) {
         if (!(level instanceof ServerLevel serverLevel)) return;
-        if (active && targetMode != NullifierTargetMode.DISABLED && targetMode.affectsMobs()) {
+        if (active && targetMode.affectsMobs()) {
             NullifierChunkIndex.refresh(serverLevel, worldPosition, NullifierChunkIndex.Kind.WANDER, getRange());
         } else {
             NullifierChunkIndex.remove(serverLevel, worldPosition, NullifierChunkIndex.Kind.WANDER);

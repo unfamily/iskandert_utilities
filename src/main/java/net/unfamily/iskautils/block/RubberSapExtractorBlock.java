@@ -124,10 +124,16 @@ public class RubberSapExtractorBlock extends HorizontalDirectionalBlock implemen
     }
 
     /**
-     * Handles the right click on the block
+     * Empty-hand right-click extracts stored sap. Must not consume clicks when holding an item
+     * (vanilla still routes main-hand item clicks through {@code useWithoutItem} via
+     * {@code PASS_TO_DEFAULT_BLOCK_INTERACTION}).
      */
     @Override   
     public InteractionResult useWithoutItem(BlockState blockstate, Level world, BlockPos pos, Player entity, BlockHitResult hit) {
+        if (!entity.getItemInHand(InteractionHand.MAIN_HAND).isEmpty()) {
+            return InteractionResult.PASS;
+        }
+
         if (world.isClientSide) {
             return InteractionResult.SUCCESS;
         }

@@ -21,9 +21,8 @@ public final class MobReaperCombatHelper {
         if (lastHurt == fakePlayer) {
             mob.setLastHurtByMob(null);
         }
-        if (mob.getLastHurtByPlayer() == fakePlayer) {
-            mob.setLastHurtByPlayer(null);
-        }
+        // 1.21.1: public setter only (no getter); clear memory so FakePlayer is not remembered.
+        mob.setLastHurtByPlayer(null);
         if (mob instanceof Creeper creeper && creeper.getTarget() == null && creeper.getLastHurtByMob() == null) {
             creeper.setSwellDir(-1);
         }

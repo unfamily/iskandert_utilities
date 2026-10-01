@@ -10,7 +10,7 @@
       "item": "iska_utils:obscure_glass"
     },
     "B": {
-      "item": "iska_utils:green_sludge"
+      "tag": "iska_utils:basic_resources"
     },
     "C": {
       "tag": "c:gems/lapis"

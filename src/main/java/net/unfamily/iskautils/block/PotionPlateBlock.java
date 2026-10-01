@@ -86,7 +86,7 @@ public class PotionPlateBlock extends VectorBlock {
 
         // slow (alias no_move) must run every tick on both sides so client prediction stays sticky
         if (config.getPlateType() == PotionPlateType.SPECIAL && config.isSlow()) {
-            applySlow(livingEntity);
+            applySlow(livingEntity, state);
             if (!level.isClientSide) {
                 EFFECT_COOLDOWNS.put(entity.getUUID(), level.getGameTime());
             }
@@ -220,7 +220,7 @@ public class PotionPlateBlock extends VectorBlock {
     private boolean applySpecialEffect(LivingEntity livingEntity, long currentTime) {
         try {
             if (config.isSlow()) {
-                return applySlow(livingEntity);
+                return applySlow(livingEntity, livingEntity.level().getBlockState(livingEntity.blockPosition()));
             }
 
             if (config.getFireDuration() > 0) {
@@ -257,22 +257,14 @@ public class PotionPlateBlock extends VectorBlock {
         }
     }
 
-    /** Horizontal (and soft vertical) slow factor; cobweb-like without makeStuckInBlock. */
-    private static final double SLOW_FACTOR = 0.35D;
-
     /**
-     * Slows the entity like cobweb: multiply velocity, soft-dampen jump.
-     * Does not use makeStuckInBlock (thin plate).
+     * Full immobilization via {@link Entity#makeStuckInBlock}.
+     * Multipliers must be non-zero: vanilla skips stuck handling when
+     * {@code stuckSpeedMultiplier.lengthSqr() <= 1.0E-7} (so {@link Vec3#ZERO} does nothing).
+     * Values far below cobweb (0.25/0.05) effectively pin the entity in place.
      */
-    private boolean applySlow(LivingEntity livingEntity) {
-        Vec3 motion = livingEntity.getDeltaMovement();
-        double vy = motion.y;
-        if (vy > 0.0D) {
-            vy *= SLOW_FACTOR;
-        }
-        livingEntity.setDeltaMovement(motion.x * SLOW_FACTOR, vy, motion.z * SLOW_FACTOR);
-        livingEntity.fallDistance = 0.0f;
-        livingEntity.hurtMarked = true;
+    private boolean applySlow(LivingEntity livingEntity, BlockState state) {
+        livingEntity.makeStuckInBlock(state, new Vec3(0.001D, 0.001D, 0.001D));
         return true;
     }
     

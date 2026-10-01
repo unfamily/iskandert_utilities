@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
+import net.minecraft.client.renderer.block.model.BlockModel;
 import net.minecraft.client.renderer.block.model.ItemOverrides;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
@@ -22,8 +23,13 @@ import net.unfamily.iskautils.IskaUtils;
 import java.util.function.Function;
 
 /**
- * Geometry loader that uses a Fusion connected model when Fusion is present,
- * otherwise falls back to a plain model (cube or glass pane template).
+ * Geometry loader that uses Fusion connected textures when Fusion is present,
+ * otherwise falls back to a plain model.
+ *
+ * <p>Fusion does <em>not</em> register {@code fusion:model} with NeoForge's
+ * {@code GeometryLoaderManager}; it intercepts {@link BlockModel} deserialization
+ * via mixin. When Fusion is loaded we therefore deserialize {@code connected_model}
+ * as a {@link BlockModel} so Fusion's mixin can take over.
  */
 public final class ConnectedTextureFallbackModelLoader implements IGeometryLoader<ConnectedTextureFallbackModelLoader.Geometry> {
 
@@ -39,36 +45,43 @@ public final class ConnectedTextureFallbackModelLoader implements IGeometryLoade
             throw new JsonParseException("ConnectedTextureFallbackModelLoader requires JSON object \"connected_model\".");
         }
 
-        UnbakedModel delegate;
         if (ModList.get().isLoaded("fusion")) {
-            delegate = deserializationContext.deserialize(connectedModelObj, UnbakedModel.class);
-        } else {
-            JsonElement fallbackModelEl = jsonObject.get("fallback_model");
-            if (fallbackModelEl instanceof JsonObject fallbackModelObj) {
-                delegate = deserializationContext.deserialize(fallbackModelObj, UnbakedModel.class);
-            } else {
-                JsonElement singleTextureEl = jsonObject.get("single_texture");
-                if (!(singleTextureEl instanceof JsonPrimitive prim) || !prim.isString()) {
-                    throw new JsonParseException(
-                            "ConnectedTextureFallbackModelLoader requires \"fallback_model\" or \"single_texture\" when Fusion is absent.");
-                }
-                JsonObject singleModelJson = new JsonObject();
-                singleModelJson.addProperty("parent", "minecraft:block/cube_all");
-                JsonObject textures = new JsonObject();
-                textures.addProperty("all", prim.getAsString());
-                singleModelJson.add("textures", textures);
-                delegate = deserializationContext.deserialize(singleModelJson, UnbakedModel.class);
-            }
+            // Fusion's BlockModelDeserializerMixin handles loader "fusion:model".
+            BlockModel fusionModel = deserializationContext.deserialize(connectedModelObj, BlockModel.class);
+            return new Geometry(fusionModel);
         }
 
-        return new Geometry(delegate);
+        JsonElement fallbackModelEl = jsonObject.get("fallback_model");
+        if (fallbackModelEl instanceof JsonObject fallbackModelObj) {
+            BlockModel fallback = deserializationContext.deserialize(fallbackModelObj, BlockModel.class);
+            return new Geometry(fallback);
+        }
+
+        JsonElement singleTextureEl = jsonObject.get("single_texture");
+        if (!(singleTextureEl instanceof JsonPrimitive prim) || !prim.isString()) {
+            throw new JsonParseException(
+                    "ConnectedTextureFallbackModelLoader requires \"fallback_model\" or \"single_texture\" when Fusion is absent.");
+        }
+
+        JsonObject singleModelJson = new JsonObject();
+        singleModelJson.addProperty("parent", "minecraft:block/cube_all");
+        JsonElement renderTypeEl = jsonObject.get("render_type");
+        if (renderTypeEl instanceof JsonPrimitive rtPrim && rtPrim.isString()) {
+            singleModelJson.addProperty("render_type", rtPrim.getAsString());
+        }
+        JsonObject textures = new JsonObject();
+        textures.addProperty("all", prim.getAsString());
+        singleModelJson.add("textures", textures);
+
+        BlockModel singleModel = deserializationContext.deserialize(singleModelJson, BlockModel.class);
+        return new Geometry(singleModel);
     }
 
     public static final class Geometry implements IUnbakedGeometry<Geometry> {
-        private final UnbakedModel delegate;
+        private final UnbakedModel modelDelegate;
 
-        private Geometry(UnbakedModel delegate) {
-            this.delegate = delegate;
+        private Geometry(UnbakedModel modelDelegate) {
+            this.modelDelegate = modelDelegate;
         }
 
         @Override
@@ -78,12 +91,12 @@ public final class ConnectedTextureFallbackModelLoader implements IGeometryLoade
                 Function<Material, TextureAtlasSprite> spriteGetter,
                 ModelState modelState,
                 ItemOverrides overrides) {
-            return delegate.bake(baker, spriteGetter, modelState);
+            return modelDelegate.bake(baker, spriteGetter, modelState);
         }
 
         @Override
         public void resolveParents(Function<ResourceLocation, UnbakedModel> modelGetter, IGeometryBakingContext context) {
-            delegate.resolveParents(modelGetter);
+            modelDelegate.resolveParents(modelGetter);
         }
     }
 }

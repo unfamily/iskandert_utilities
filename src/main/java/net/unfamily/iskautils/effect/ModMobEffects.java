@@ -4,7 +4,6 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.unfamily.iskautils.IskaUtils;
 
@@ -21,10 +20,15 @@ public final class ModMobEffects {
     public static final DeferredHolder<MobEffect, MobEffect> ENTROPIC_EMPOWERMENT =
             MOB_EFFECTS.register("entropic_empowerment", EntropicEmpowermentMobEffect::new);
 
+    public static final DeferredHolder<MobEffect, MobEffect> ENTROPIC_EMPOWERMENT_PLAYER =
+            MOB_EFFECTS.register("entropic_empowerment_player", EntropicEmpowermentMobEffect::new);
+
+    public static final DeferredHolder<MobEffect, MobEffect> ENTROPIC_DECAY =
+            MOB_EFFECTS.register("entropic_decay", EntropicDecayMobEffect::new);
+
     private ModMobEffects() {}
 
     public static void register(IEventBus bus) {
         MOB_EFFECTS.register(bus);
     }
 }
-

@@ -13,16 +13,21 @@ categories:
 ---
 # Ethereal Glass
 
-<ItemImage id="iska_utils:ethereal_glass" />
+## Variants
 
-## What it does
+<ItemImage id="iska_utils:ethereal_glass" /> **Ethereal Glass**
 
-**Ethereal Glass** is a special transparent block that **players can walk through**, while all other entities (mobs, projectiles, items) collide with it normally.
+- Players can walk through it freely; all other entities (mobs, projectiles, items) collide normally.
+- Standard hardness and explosion resistance — not wither-proof or blast-proof.
+- Use for player-only corridors, hidden passages, or anti-entity barriers that players pass freely.
 
-It is ordinary glass for hardness and explosions — **not** wither-proof or blast-proof.
+<ItemImage id="iska_utils:ethereal_glass_pane" /> **Ethereal Glass Pane**
 
-Use it to create **player-only corridors**, hidden passages, or anti-mob barriers that players can pass freely.
+- Thin pane variant with the same player pass-through property.
+- Connects to adjacent panes like standard glass panes.
 
-**Ethereal Obscure Glass** behaves identically for pass-through, but blocks sky light like Obscure Glass and **is** wither / dragon immune (like Obscure Glass).
+<ItemImage id="iska_utils:ethereal_obscure_glass" /> **Ethereal Obscure Glass**
 
-**Ethereal Glass Pane** is the thin pane variant of Ethereal Glass (same player pass-through). There is no obscure pane.
+- Same player pass-through as Ethereal Glass.
+- Additionally **blocks sky light** (like [Obscure Glass](obscure_glass.md)) and is **immune to Wither and Ender Dragon** destruction.
+- Useful for underground or enclosed ethereal corridors where sky-light leakage must be prevented.

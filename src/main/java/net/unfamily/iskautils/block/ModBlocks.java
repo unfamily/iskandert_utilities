@@ -302,11 +302,27 @@ public class ModBlocks {
     public static final DeferredBlock<SoulNullifierBlock> SOUL_NULLIFIER = BLOCKS.register("soul_nullifier",
             () -> new SoulNullifierBlock(SOUL_NULLIFIER_PROPERTIES));
 
+    private static final BlockBehaviour.Properties FLIGHT_NULLIFIER_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_PURPLE)
+            .strength(1.5f, 6.0f)
+            .sound(SoundType.DEEPSLATE)
+            .requiresCorrectToolForDrops()
+            .noOcclusion()
+            .lightLevel((state) -> state.getValue(FlightNullifierBlock.ON) ? 7 : 0);
+
     public static final DeferredBlock<FlightNullifierBlock> FLIGHT_NULLIFIER = BLOCKS.register("flight_nullifier",
-            () -> new FlightNullifierBlock(ENDER_NULLIFIER_PROPERTIES));
+            () -> new FlightNullifierBlock(FLIGHT_NULLIFIER_PROPERTIES));
+
+    private static final BlockBehaviour.Properties CLIMBING_NULLIFIER_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_PURPLE)
+            .strength(1.5f, 6.0f)
+            .sound(SoundType.DEEPSLATE)
+            .requiresCorrectToolForDrops()
+            .noOcclusion()
+            .lightLevel((state) -> state.getValue(ClimbingNullifierBlock.ON) ? 7 : 0);
 
     public static final DeferredBlock<ClimbingNullifierBlock> CLIMBING_NULLIFIER = BLOCKS.register("climbing_nullifier",
-            () -> new ClimbingNullifierBlock(ENDER_NULLIFIER_PROPERTIES));
+            () -> new ClimbingNullifierBlock(CLIMBING_NULLIFIER_PROPERTIES));
     
     // Fan (directional block with 6 directions placement)
     public static final DeferredBlock<FanBlock> FAN = BLOCKS.register("fan",
@@ -361,7 +377,7 @@ public class ModBlocks {
     private static final BlockBehaviour.Properties ESSENCE_OF_KNOWLEDGE_GRATE_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.METAL)
             .strength(2.0f, 6.0f)
-            .sound(SoundType.METAL)
+            .sound(SoundType.COPPER)
             .requiresCorrectToolForDrops()
             .noOcclusion();
 
@@ -797,6 +813,29 @@ public class ModBlocks {
     // Hard Ice Block (indestructible, placed by gift after breaking)
     public static final DeferredBlock<HardIceBlock> HARD_ICE = BLOCKS.register("hard_ice",
             () -> new HardIceBlock(HARD_ICE_PROPERTIES));
+
+    // ===== ENTROPIC FUNGUS =====
+    private static final BlockBehaviour.Properties ENTROPIC_FUNGUS_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_PURPLE)
+            .noCollission()
+            .noOcclusion()
+            .instabreak()
+            .sound(SoundType.FUNGUS)
+            .pushReaction(PushReaction.DESTROY)
+            .randomTicks();
+
+    public static final DeferredBlock<EntropicFungusBlock> ENTROPIC_FUNGUS = BLOCKS.register("entropic_fungus",
+            () -> new EntropicFungusBlock(ENTROPIC_FUNGUS_PROPERTIES));
+
+    public static final DeferredBlock<net.minecraft.world.level.block.FlowerPotBlock> POTTED_ENTROPIC_FUNGUS =
+            BLOCKS.register("potted_entropic_fungus",
+                    () -> new net.minecraft.world.level.block.FlowerPotBlock(
+                            () -> (net.minecraft.world.level.block.FlowerPotBlock) net.minecraft.world.level.block.Blocks.FLOWER_POT,
+                            ENTROPIC_FUNGUS,
+                            BlockBehaviour.Properties.of()
+                                    .instabreak()
+                                    .noOcclusion()
+                                    .pushReaction(PushReaction.DESTROY)));
 
     // ===== ENTROPIC SOILS =====
     private static final BlockBehaviour.Properties ENTROPIC_SOIL_PROPERTIES = BlockBehaviour.Properties.of()

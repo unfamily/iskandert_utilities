@@ -290,9 +290,28 @@ public class ModCreativeModeTabs {
                                 pOutput.accept(ModItems.ENTROPIC_BOOTS.get());
                                 pOutput.accept(ModItems.UNSTABLE_ENTROPY_CATALYST.get());
                                 pOutput.accept(ModItems.ENTROPY_TNT.get());
-                                pOutput.accept(ModItems.TNT_DEFUSER.get());
+                                pOutput.accept(ModItems.SABOTEUR_SCREWDRIVER.get());
+                                pOutput.accept(ModItems.ENTROPIC_FUNGUS.get());
+                                pOutput.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+                                        net.minecraft.world.item.Items.POTION,
+                                        net.unfamily.iskautils.potion.ModPotions.ENTROPIC));
+                                pOutput.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+                                        net.minecraft.world.item.Items.POTION,
+                                        net.unfamily.iskautils.potion.ModPotions.LONG_ENTROPIC));
+                                pOutput.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+                                        net.minecraft.world.item.Items.POTION,
+                                        net.unfamily.iskautils.potion.ModPotions.STRONG_ENTROPIC));
+                                pOutput.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+                                        net.minecraft.world.item.Items.SPLASH_POTION,
+                                        net.unfamily.iskautils.potion.ModPotions.ENTROPIC));
+                                pOutput.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+                                        net.minecraft.world.item.Items.LINGERING_POTION,
+                                        net.unfamily.iskautils.potion.ModPotions.ENTROPIC));
                                 pOutput.accept(ModItems.ENTROPIC_SOIL.get());
                                 pOutput.accept(ModItems.ENTROPIC_DIRT.get());
+                                if (ModItems.SILVERFISH_LARVA != null) {
+                                    pOutput.accept(ModItems.SILVERFISH_LARVA.get());
+                                }
                                 pOutput.accept(ModItems.GRAVEYARD_SOIL.get());
                                 pOutput.accept(ModItems.DRUIDIC_PODZOL.get());
 

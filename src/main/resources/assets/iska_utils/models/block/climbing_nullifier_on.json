@@ -1,8 +1,8 @@
 {
   "textures": {
-    "base": "iska_utils:block/climbing_nullifier_base",
+    "base": "iska_utils:block/wander_nullifier_base",
     "eye": "iska_utils:block/climbing_nullifier_on",
-    "particle": "iska_utils:block/climbing_nullifier_base"
+    "particle": "iska_utils:block/wander_nullifier_base"
   },
   "elements": [
     {

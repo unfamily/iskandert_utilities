@@ -7,7 +7,7 @@
   ],
   "key": {
     "A": {
-      "item": "minecraft:ladder"
+      "tag": "c:gems/amethyst"
     },
     "B": {
       "item": "iska_utils:base_module"

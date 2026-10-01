@@ -59,11 +59,7 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
 
     @Override
     public void setTargetMode(NullifierTargetMode mode) {
-        if (getNullifierType().hasLimitedTargetModes()
-                && mode != NullifierTargetMode.DISABLED
-                && mode != NullifierTargetMode.ONLY_MOBS) {
-            mode = NullifierTargetMode.ONLY_MOBS;
-        }
+        mode = getNullifierType().sanitizeTargetMode(mode);
         this.targetMode = mode;
         if (level != null && !level.isClientSide) {
             syncSpatialIndex(computeEffectiveActive(getBlockState().getValue(EnderNullifierBlock.POWERED)));

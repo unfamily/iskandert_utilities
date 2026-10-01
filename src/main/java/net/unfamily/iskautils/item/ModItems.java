@@ -28,7 +28,7 @@ import net.unfamily.iskautils.item.custom.ScannerItem;
 import net.unfamily.iskautils.item.custom.ScannerChipItem;
 import net.unfamily.iskautils.item.custom.NecroticCrystalHeartItem;
 import net.unfamily.iskautils.item.custom.SwissWrenchItem;
-import net.unfamily.iskautils.item.custom.TntDefuserItem;
+import net.unfamily.iskautils.item.custom.SaboteurScrewdriverItem;
 import net.unfamily.iskautils.item.custom.AngelBlockItem;
 import net.unfamily.iskautils.item.custom.StructurePlacerItem;
 import net.unfamily.iskautils.item.custom.BurningBrazierItem;
@@ -73,6 +73,9 @@ import net.unfamily.iskautils.item.custom.AncientTabletItem;
 import net.unfamily.iskautils.item.custom.UnstableEntropyCatalystItem;
 import net.unfamily.iskautils.item.custom.JellyOfKnowledgeItem;
 import net.unfamily.iskautils.item.custom.SuspiciousDeliveryItem;
+import net.unfamily.iskautils.item.custom.SilverfishLarvaItem;
+import net.unfamily.iskautils.Config;
+import org.jetbrains.annotations.Nullable;
 import net.unfamily.iskautils.item.custom.artifact.AncientStarItem;
 import net.unfamily.iskautils.item.custom.artifact.MiniatureTentItem;
 import net.unfamily.iskautils.item.custom.artifact.CallingBellItem;
@@ -133,17 +136,31 @@ public class ModItems {
             () -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_WALL.get(), ITEM_PROPERTIES, "tooltip.iska_utils.wither_proof"));
 
     public static final DeferredItem<Item> OBSCURE_GLASS = ITEMS.register("obscure_glass",
-            () -> new TranslatedTooltipBlockItem(ModBlocks.OBSCURE_GLASS.get(), ITEM_PROPERTIES, "tooltip.iska_utils.wither_proof"));
+            () -> new TranslatedTooltipBlockItem(
+                    ModBlocks.OBSCURE_GLASS.get(),
+                    ITEM_PROPERTIES,
+                    "tooltip.iska_utils.obscure_glass.desc0",
+                    "tooltip.iska_utils.obscure_glass.desc1"));
 
     // ===== ETHEREAL GLASS =====
     public static final DeferredItem<Item> ETHEREAL_GLASS = ITEMS.register("ethereal_glass",
-            () -> new BlockItem(ModBlocks.ETHEREAL_GLASS.get(), ITEM_PROPERTIES));
+            () -> new TranslatedTooltipBlockItem(
+                    ModBlocks.ETHEREAL_GLASS.get(),
+                    ITEM_PROPERTIES,
+                    "tooltip.iska_utils.ethereal_glass.desc0"));
 
     public static final DeferredItem<Item> ETHEREAL_GLASS_PANE = ITEMS.register("ethereal_glass_pane",
-            () -> new BlockItem(ModBlocks.ETHEREAL_GLASS_PANE.get(), ITEM_PROPERTIES));
+            () -> new TranslatedTooltipBlockItem(
+                    ModBlocks.ETHEREAL_GLASS_PANE.get(),
+                    ITEM_PROPERTIES,
+                    "tooltip.iska_utils.ethereal_glass_pane.desc0"));
 
     public static final DeferredItem<Item> ETHEREAL_OBSCURE_GLASS = ITEMS.register("ethereal_obscure_glass",
-            () -> new BlockItem(ModBlocks.ETHEREAL_OBSCURE_GLASS.get(), ITEM_PROPERTIES));
+            () -> new TranslatedTooltipBlockItem(
+                    ModBlocks.ETHEREAL_OBSCURE_GLASS.get(),
+                    ITEM_PROPERTIES,
+                    "tooltip.iska_utils.ethereal_obscure_glass.desc0",
+                    "tooltip.iska_utils.ethereal_obscure_glass.desc1"));
 
     // ===== ETHEREAL FRAME =====
     public static final DeferredItem<Item> ETHEREAL_FRAME = ITEMS.register("ethereal_frame",
@@ -535,8 +552,8 @@ public class ModItems {
     public static final DeferredItem<Item> RUBBER_HANGING_SIGN = ITEMS.register("rubber_hanging_sign",
             () -> new HangingSignItem(ModBlocks.RUBBER_HANGING_SIGN.get(), ModBlocks.RUBBER_WALL_HANGING_SIGN.get(), ITEM_PROPERTIES));
 
-    public static final DeferredItem<Item> TNT_DEFUSER = ITEMS.register("tnt_defuser",
-            () -> new TntDefuserItem(new Item.Properties().stacksTo(1).durability(128)));
+    public static final DeferredItem<Item> SABOTEUR_SCREWDRIVER = ITEMS.register("saboteur_screwdriver",
+            () -> new SaboteurScrewdriverItem(new Item.Properties().stacksTo(1).durability(128)));
 
     // ===== STANDARD VECTOR PLATE ITEMS =====
     
@@ -610,7 +627,8 @@ public class ModItems {
             () -> new TranslatedTooltipBlockItem(
                     ModBlocks.ESSENCE_OF_KNOLEDGE_GRATE.get(),
                     ITEM_PROPERTIES,
-                    "tooltip.iska_utils.essence_of_knoledge_grate.desc0"));
+                    "tooltip.iska_utils.essence_of_knoledge_grate.desc0",
+                    "tooltip.iska_utils.essence_of_knoledge_grate.desc1"));
 
     public static final DeferredItem<Item> CONDENSED_KNOWLEDGE_BUCKET = ITEMS.register("condensed_knowledge_bucket",
             () -> new BucketItem(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(),
@@ -759,6 +777,17 @@ public class ModItems {
     // Entropy TNT Block
     public static final DeferredItem<Item> ENTROPY_TNT = ITEMS.register("entropy_tnt",
             () -> new BlockItem(ModBlocks.ENTROPY_TNT.get(), ITEM_PROPERTIES));
+
+    public static final DeferredItem<Item> ENTROPIC_FUNGUS = ITEMS.register("entropic_fungus",
+            () -> new TranslatedTooltipBlockItem(
+                    ModBlocks.ENTROPIC_FUNGUS.get(),
+                    ITEM_PROPERTIES,
+                    "tooltip.iska_utils.entropic_fungus.desc0",
+                    "tooltip.iska_utils.entropic_fungus.desc1"));
+
+    public static final @Nullable DeferredItem<Item> SILVERFISH_LARVA = Config.shouldRegisterSilverfishLarva()
+            ? ITEMS.register("silverfish_larva", () -> new SilverfishLarvaItem(ITEM_PROPERTIES))
+            : null;
 
     public static final DeferredItem<Item> ENTROPIC_SOIL = ITEMS.register("entropic_soil",
             () -> new TranslatedTooltipBlockItem(

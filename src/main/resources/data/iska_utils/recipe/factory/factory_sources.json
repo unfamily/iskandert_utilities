@@ -46,6 +46,13 @@
       "input": "#iska_utils:delivery_recycle",
       "amount": 1,
       "select": [
+        { "output": "iska_utils:drop_of_entropy", "amount": 3 }
+      ]
+    },
+    {
+      "input": "iska_utils:entropic_fungus",
+      "amount": 1,
+      "select": [
         { "output": "iska_utils:drop_of_entropy", "amount": 1 }
       ]
     }

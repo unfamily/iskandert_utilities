@@ -21,7 +21,8 @@
           }
         },
         {
-          "drop": "iska_utils:drop_of_entropy"
+          "drop": "iska_utils:drop_of_entropy",
+          "count": 5
         }
       ],
       "quick_open": true

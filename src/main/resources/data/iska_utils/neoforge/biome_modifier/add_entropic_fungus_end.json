@@ -1,0 +1,6 @@
+{
+  "type": "iska_utils:entropic_fungus_if_enabled",
+  "biomes": "#c:is_end",
+  "features": "iska_utils:entropic_fungus_end_placed",
+  "step": "vegetal_decoration"
+}
