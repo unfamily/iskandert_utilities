@@ -1185,6 +1185,7 @@ public class ShopEditScreen extends AbstractContainerScreen<ShopEditMenu> implem
         draftEntry.sell = 0;
     }
 
+
     /** Icon slot Y in entry edit (resource types only; command/stage have no slot). */
     private int entryIconSlotY() {
         return 53;
