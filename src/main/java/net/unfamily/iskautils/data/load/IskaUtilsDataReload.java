@@ -50,7 +50,7 @@ public final class IskaUtilsDataReload {
         runPhase("structures", () -> StructureLoader.reloadAllDefinitions(true));
         runPhase("factory sources", () -> FactoryLoader.loadFromRecipeManager(server.getRecipeManager(), rm));
         runPhase("suspicious delivery", () -> SuspiciousDeliveryLoader.loadAll(rm));
-        runPhase("ancient tablet", () -> AncientTabletRecipeLoader.loadAll(rm));
+        runPhase("ancient tablet", () -> AncientTabletRecipeLoader.loadFromRecipeManager(server.getRecipeManager()));
         runPhase("arcane dictionary", () -> ArcaneDictionaryLoader.loadAll(rm));
 
         LOGGER.info("IskaUtils load/** reload finished in {} ms", elapsedMs(totalStart));

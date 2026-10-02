@@ -28,8 +28,7 @@ import net.unfamily.iskautils.script.LoadEntryIfParser;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Factory machine input/output mappings: server from {@link FactorySourcesRecipe}; client from merged
- * Scans all {@code recipe/} JSON; uses files with {@code type} {@code iska_utils:factory} or {@code iska_utils:factory_sources}.
+ * Factory machine input/output mappings from {@link FactorySourcesRecipe} via RecipeManager only.
  */
 public final class FactoryLoader {
     private static final ModLogger LOGGER = ModLogger.of(FactoryLoader.class);
@@ -141,31 +140,43 @@ public final class FactoryLoader {
 
     private FactoryLoader() {}
 
-    public static void loadFromRecipeManager(RecipeManager recipeManager, ResourceManager datapackResources) {
+    public static void loadFromRecipeManager(RecipeManager recipeManager) {
+        loadFromRecipeManager(recipeManager, null);
+    }
+
+    /**
+     * Loads Factory sources from registered {@code iska_utils:factory} recipes only.
+     * The {@code datapackResources} argument is ignored (kept for call-site compatibility).
+     */
+    public static void loadFromRecipeManager(RecipeManager recipeManager, @Nullable ResourceManager datapackResources) {
         List<Source> merged = new ArrayList<>();
-        var factoryType = ModFactoryRecipes.FACTORY_SOURCES_TYPE.get();
+        var factoryType = ModFactoryRecipes.FACTORY_TYPE.get();
         for (RecipeHolder<FactorySourcesRecipe> holder : recipeManager.getAllRecipesFor(factoryType)) {
             merged.addAll(holder.value().compiledSources());
         }
-        if (!merged.isEmpty()) {
-            SOURCES = List.copyOf(merged);
-            LOGGER.info("Loaded {} Factory sources from {} recipe(s)", SOURCES.size(), merged.size());
-            return;
-        }
-        LOGGER.warn("No Factory sources from RecipeManager type {}; falling back to merged recipe JSON", factoryType);
-        loadFromMergedRecipeResources(Objects.requireNonNull(datapackResources, "datapackResources"));
+        SOURCES = List.copyOf(merged);
+        LOGGER.info("Loaded {} Factory sources from {} recipe(s)", SOURCES.size(), merged.size());
     }
 
-    /** Client GUI/JEI and server fallback: parses factory recipe JSON from merged datapacks. */
+    /** @deprecated Bundle JSON is split by Library; use {@link #loadFromRecipeManager(RecipeManager)}. */
+    @Deprecated
     public static void loadFromMergedRecipeResources(ResourceManager rm) {
-        Map<ResourceLocation, JsonElement> merged =
-                IskaUtilsLoadJson.collectMergedJsonUnderDirectory(rm, "recipe", IskaUtilsLoadPaths::isJsonUnderRecipeTree);
-        List<Source> out = new ArrayList<>();
-        for (var entry : IskaUtilsLoadJson.orderedEntries(merged)) {
-            parseFactoryRecipeJson(entry.getKey(), entry.getValue(), out);
-        }
-        SOURCES = List.copyOf(out);
-        LOGGER.info("Loaded {} Factory sources from merged recipe datapacks", SOURCES.size());
+        LOGGER.warn("FactoryLoader.loadFromMergedRecipeResources is disabled; use RecipeManager only");
+        SOURCES = List.of();
+    }
+
+    /** Visible for {@link net.unfamily.iskautils.crafting.FactorySourcesRecipe} codec compile. */
+    public static List<FactoryIfBranch> parseIfBranchesPublic(
+            JsonArray ifArray,
+            SuspiciousDeliveryStageHost gateHost,
+            ResourceLocation fileId,
+            String input) {
+        return parseIfBranches(ifArray, gateHost, fileId, input);
+    }
+
+    /** Visible for {@link net.unfamily.iskautils.crafting.FactorySourcesRecipe} codec compile. */
+    public static List<Output> parseSelectArrayPublic(JsonArray selectArray, ResourceLocation fileId, String inputContext) {
+        return parseSelectArray(selectArray, fileId, inputContext);
     }
 
     public static Optional<Source> tryCompileSource(

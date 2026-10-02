@@ -1,11 +1,10 @@
 package net.unfamily.iskautils.client;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.unfamily.iskautils.data.load.FactoryLoader;
 
-/**
- * Loads Factory datapack sources on the dedicated client (recipe holders are not synced for {@code factory_sources}).
- */
+/** Ensures Factory sources are populated from the client RecipeManager (synced recipes). */
 public final class FactoryClientSourcesBootstrap {
 
     private FactoryClientSourcesBootstrap() {}
@@ -18,11 +17,15 @@ public final class FactoryClientSourcesBootstrap {
         if (mc == null) {
             return;
         }
+        RecipeManager recipes = null;
         var server = mc.getSingleplayerServer();
         if (server != null) {
-            FactoryLoader.loadFromRecipeManager(server.getRecipeManager(), server.getResourceManager());
-            return;
+            recipes = server.getRecipeManager();
+        } else if (mc.level != null) {
+            recipes = mc.level.getRecipeManager();
         }
-        FactoryLoader.loadFromMergedRecipeResources(mc.getResourceManager());
+        if (recipes != null) {
+            FactoryLoader.loadFromRecipeManager(recipes);
+        }
     }
 }

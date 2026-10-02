@@ -47,6 +47,7 @@ import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
 import net.unfamily.iskautils.command.MacroLoader;
 import net.unfamily.iskautils.command.MacroCommand;
 import net.unfamily.iskautils.crafting.FactorySourcesReloadListener;
+import net.unfamily.iskautils.crafting.ModAncientTabRecipes;
 import net.unfamily.iskautils.crafting.ModFactoryRecipes;
 import net.unfamily.iskautils.data.load.IskaUtilsDataReload;
 import net.unfamily.iskautils.data.load.IskaUtilsLoadReloadListener;
@@ -125,6 +126,7 @@ public class IskaUtils {
         net.unfamily.iskautils.fluid.ModFluids.register(modEventBus);
         net.unfamily.iskautils.worldgen.ModBiomeModifierSerializers.register(modEventBus);
         ModFactoryRecipes.register(modEventBus);
+        ModAncientTabRecipes.register(modEventBus);
         ModItems.register(modEventBus);
         ModParticles.register(modEventBus);
         ModMobEffects.register(modEventBus);

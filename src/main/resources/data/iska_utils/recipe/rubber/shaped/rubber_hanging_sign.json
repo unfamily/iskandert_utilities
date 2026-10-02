@@ -1,1 +1,14 @@
-{"type":"minecraft:crafting_shaped","category":"misc","group":"hanging_sign","pattern":["X X","###","###"],"key":{"#":{"item":"iska_utils:stripped_rubber_log"},"X":{"item":"minecraft:iron_chain"}},"result":{"count":6,"id":"iska_utils:rubber_hanging_sign"}}
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "hanging_sign",
+  "pattern": ["X X", "###", "###"],
+  "key": {
+    "#": { "item": "iska_utils:stripped_rubber_log" },
+    "X": { "item": "minecraft:chain" }
+  },
+  "result": {
+    "count": 6,
+    "id": "iska_utils:rubber_hanging_sign"
+  }
+}

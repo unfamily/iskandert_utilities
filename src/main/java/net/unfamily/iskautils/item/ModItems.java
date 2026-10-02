@@ -113,32 +113,37 @@ public class ModItems {
         }
     }
 
-    // Common properties for all items
-    private static final Item.Properties ITEM_PROPERTIES = new Item.Properties();
-    private static final Item.Properties REAPER_STACKABLE_MODULE = new Item.Properties().stacksTo(64);
+    /** Fresh properties per registration — never reuse a shared Item.Properties instance. */
+    private static Item.Properties props() {
+        return new Item.Properties();
+    }
+
+    private static Item.Properties reaperStackableModule() {
+        return new Item.Properties().stacksTo(64);
+    }
 
     // ===== WITHER PROOF BLOCKS =====
     
     // Wither Proof Block
     public static final DeferredItem<Item> WITHER_PROOF_BLOCK = ITEMS.register("wither_proof_block",
-            () -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_BLOCK.get(), ITEM_PROPERTIES, "tooltip.iska_utils.wither_proof"));
+            () -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_BLOCK.get(), props(), "tooltip.iska_utils.wither_proof"));
             
     // Wither Proof Stairs
     public static final DeferredItem<Item> WITHER_PROOF_STAIRS = ITEMS.register("wither_proof_stairs",
-            () -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_STAIRS.get(), ITEM_PROPERTIES, "tooltip.iska_utils.wither_proof"));
+            () -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_STAIRS.get(), props(), "tooltip.iska_utils.wither_proof"));
             
     // Wither Proof Slab
     public static final DeferredItem<Item> WITHER_PROOF_SLAB = ITEMS.register("wither_proof_slab",
-            () -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_SLAB.get(), ITEM_PROPERTIES, "tooltip.iska_utils.wither_proof"));
+            () -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_SLAB.get(), props(), "tooltip.iska_utils.wither_proof"));
 
     // Wither Proof Wall
     public static final DeferredItem<Item> WITHER_PROOF_WALL = ITEMS.register("wither_proof_wall",
-            () -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_WALL.get(), ITEM_PROPERTIES, "tooltip.iska_utils.wither_proof"));
+            () -> new TranslatedTooltipBlockItem(ModBlocks.WITHER_PROOF_WALL.get(), props(), "tooltip.iska_utils.wither_proof"));
 
     public static final DeferredItem<Item> OBSCURE_GLASS = ITEMS.register("obscure_glass",
             () -> new TranslatedTooltipBlockItem(
                     ModBlocks.OBSCURE_GLASS.get(),
-                    ITEM_PROPERTIES,
+                    props(),
                     "tooltip.iska_utils.obscure_glass.desc0",
                     "tooltip.iska_utils.obscure_glass.desc1"));
 
@@ -146,50 +151,50 @@ public class ModItems {
     public static final DeferredItem<Item> ETHEREAL_GLASS = ITEMS.register("ethereal_glass",
             () -> new TranslatedTooltipBlockItem(
                     ModBlocks.ETHEREAL_GLASS.get(),
-                    ITEM_PROPERTIES,
+                    props(),
                     "tooltip.iska_utils.ethereal_glass.desc0"));
 
     public static final DeferredItem<Item> ETHEREAL_GLASS_PANE = ITEMS.register("ethereal_glass_pane",
             () -> new TranslatedTooltipBlockItem(
                     ModBlocks.ETHEREAL_GLASS_PANE.get(),
-                    ITEM_PROPERTIES,
+                    props(),
                     "tooltip.iska_utils.ethereal_glass_pane.desc0"));
 
     public static final DeferredItem<Item> ETHEREAL_OBSCURE_GLASS = ITEMS.register("ethereal_obscure_glass",
             () -> new TranslatedTooltipBlockItem(
                     ModBlocks.ETHEREAL_OBSCURE_GLASS.get(),
-                    ITEM_PROPERTIES,
+                    props(),
                     "tooltip.iska_utils.ethereal_obscure_glass.desc0",
                     "tooltip.iska_utils.ethereal_obscure_glass.desc1"));
 
     // ===== ETHEREAL FRAME =====
     public static final DeferredItem<Item> ETHEREAL_FRAME = ITEMS.register("ethereal_frame",
-            () -> new BlockItem(ModBlocks.ETHEREAL_FRAME.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.ETHEREAL_FRAME.get(), props()));
 
     // Netherite Bars
     public static final DeferredItem<Item> NETHERITE_BARS = ITEMS.register("netherite_bars",
-            () -> new BlockItem(ModBlocks.NETHERITE_BARS.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.NETHERITE_BARS.get(), props()));
 
     // ===== CUSTOM ITEMS =====
     
     // Vector Modules
     public static final DeferredItem<Item> BASE_MODULE = ITEMS.register("base_module",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new Item(props()));
             
     public static final DeferredItem<Item> SLOW_MODULE = ITEMS.register("slow_module",
-            () -> new SlowModuleItem(ITEM_PROPERTIES));
+            () -> new SlowModuleItem(props()));
             
     public static final DeferredItem<Item> MODERATE_MODULE = ITEMS.register("moderate_module",
-            () -> new ModerateModuleItem(ITEM_PROPERTIES));
+            () -> new ModerateModuleItem(props()));
             
     public static final DeferredItem<Item> FAST_MODULE = ITEMS.register("fast_module",
-            () -> new FastModuleItem(ITEM_PROPERTIES));
+            () -> new FastModuleItem(props()));
             
     public static final DeferredItem<Item> EXTREME_MODULE = ITEMS.register("extreme_module",
-            () -> new ExtremeModuleItem(ITEM_PROPERTIES));
+            () -> new ExtremeModuleItem(props()));
             
     public static final DeferredItem<Item> ULTRA_MODULE = ITEMS.register("ultra_module",
-            () -> new UltraModuleItem(ITEM_PROPERTIES));
+            () -> new UltraModuleItem(props()));
             
     // Vector Charm - Custom item with special functionality
     // Registered as a Curio charm when Curios is available
@@ -311,13 +316,13 @@ public class ModItems {
     
     // Sap item dropped from rubber logs
     public static final DeferredItem<Item> SAP = ITEMS.register("sap",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new Item(props()));
 
     // Dye bush items
     public static final DeferredItem<Item> DYE_BERRY = ITEMS.register("dye_berry",
             () -> new net.unfamily.iskautils.item.custom.DyeBerryItem(new Item.Properties().food(ModFoodProperties.DYE_BERRY)));
     public static final DeferredItem<Item> GREEN_SLUDGE = ITEMS.register("green_sludge",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new Item(props()));
 
     // ===== NEW ARTIFACTS (obtaining) =====
     public static final DeferredItem<Item> SUSPICIOUS_DELIVERY = ITEMS.register("suspicious_delivery",
@@ -329,35 +334,35 @@ public class ModItems {
             () -> new Item(new Item.Properties()));
 
     public static final DeferredItem<Item> DROP_OF_ENTROPY = ITEMS.register("drop_of_entropy",
-            () -> new net.unfamily.iskautils.item.custom.DropOfEntropyItem(ITEM_PROPERTIES));
+            () -> new net.unfamily.iskautils.item.custom.DropOfEntropyItem(props()));
 
     public static final DeferredItem<Item> CURSED_KEY = ITEMS.register("cursed_key",
-            () -> new net.unfamily.iskautils.item.custom.CursedKeyItem(ITEM_PROPERTIES));
+            () -> new net.unfamily.iskautils.item.custom.CursedKeyItem(props()));
 
     public static final DeferredItem<Item> ENTROPIC_AGGLOMERATION = ITEMS.register("entropic_agglomeration",
-            () -> new net.unfamily.iskautils.item.custom.EntropicAgglomerationItem(ITEM_PROPERTIES));
+            () -> new net.unfamily.iskautils.item.custom.EntropicAgglomerationItem(props()));
 
     public static final DeferredItem<Item> ENTROPIC_CREEPER_SPAWN_EGG = ITEMS.register("entropic_creeper_spawn_egg",
             () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(
                     net.unfamily.iskautils.entity.ModEntities.ENTROPIC_CREEPER,
                     0x995BC8,
                     0x1A0A2E,
-                    ITEM_PROPERTIES));
+                    props()));
 
     public static final DeferredItem<Item> ENTROPIC_EGG = ITEMS.register("entropic_egg",
-            () -> new net.unfamily.iskautils.item.custom.EntropicEggItem(ITEM_PROPERTIES));
+            () -> new net.unfamily.iskautils.item.custom.EntropicEggItem(props()));
 
     public static final DeferredItem<Item> DRUIDIC_AGGLOMERATION = ITEMS.register("druidic_agglomeration",
-            () -> new net.unfamily.iskautils.item.custom.DruidicAgglomerationItem(ITEM_PROPERTIES));
+            () -> new net.unfamily.iskautils.item.custom.DruidicAgglomerationItem(props()));
 
     public static final DeferredItem<Item> ANCIENT_TABLET = ITEMS.register("ancient_tablet",
             () -> new AncientTabletItem(new Item.Properties()));
 
     public static final DeferredItem<Item> UNSTABLE_ENTROPY_CATALYST = ITEMS.register("unstable_entropy_catalyst",
-            () -> new UnstableEntropyCatalystItem(ITEM_PROPERTIES));
+            () -> new UnstableEntropyCatalystItem(props()));
 
     public static final DeferredItem<Item> ENTROPY_CRYSTAL = ITEMS.register("entropy_crystal",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new Item(props()));
 
     // ===== ENTROPIC GEAR (indestructible) =====
     public static final DeferredItem<Item> ENTROPIC_SMITHING_TEMPLATE = ITEMS.register("entropic_smithing_template",
@@ -443,15 +448,15 @@ public class ModItems {
 
     // Rubber chunk item created from rubber
     public static final DeferredItem<Item> RUBBER_CHUNK = ITEMS.register("rubber_chunk",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new Item(props()));
             
     // Plastic sheet item created from rubber
     public static final DeferredItem<Item> PLASTIC_INGOT = ITEMS.register("plastic_ingot",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new Item(props()));
 
     // Rubber item created from sap
     public static final DeferredItem<Item> RUBBER = ITEMS.register("rubber",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new Item(props()));
             
     // Tree tap for collecting sap
     public static final DeferredItem<Item> TREE_TAP = ITEMS.register("treetap",
@@ -463,19 +468,19 @@ public class ModItems {
             
     // Rubber tree blocks
     public static final DeferredItem<Item> RUBBER_LOG = ITEMS.register("rubber_log",
-            () -> new BlockItem(ModBlocks.RUBBER_LOG.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_LOG.get(), props()));
             
     public static final DeferredItem<Item> STRIPPED_RUBBER_LOG = ITEMS.register("stripped_rubber_log",
-            () -> new BlockItem(ModBlocks.STRIPPED_RUBBER_LOG.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.STRIPPED_RUBBER_LOG.get(), props()));
             
     public static final DeferredItem<Item> RUBBER_WOOD = ITEMS.register("rubber_wood",
-            () -> new BlockItem(ModBlocks.RUBBER_WOOD.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_WOOD.get(), props()));
             
     public static final DeferredItem<Item> STRIPPED_RUBBER_WOOD = ITEMS.register("stripped_rubber_wood",
-            () -> new BlockItem(ModBlocks.STRIPPED_RUBBER_WOOD.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.STRIPPED_RUBBER_WOOD.get(), props()));
             
     public static final DeferredItem<Item> RUBBER_PLANKS = ITEMS.register("rubber_planks",
-            () -> new BlockItem(ModBlocks.RUBBER_PLANKS.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_PLANKS.get(), props()));
             
     public static final DeferredItem<Item> RUBBER_LOG_FILLED = ITEMS.register("rubber_log_filled",
             () -> new BlockItem(ModBlocks.RUBBER_LOG_FILLED.get(), new Item.Properties().stacksTo(64)));
@@ -484,7 +489,7 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.RUBBER_LOG_EMPTY.get(), new Item.Properties().stacksTo(64)));
             
     public static final DeferredItem<Item> RUBBER_LEAVES = ITEMS.register("rubber_leaves",
-            () -> new BlockItem(ModBlocks.RUBBER_LEAVES.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_LEAVES.get(), props()));
 
     public static final DeferredItem<Item> DYE_BUSH_EMPTY = ITEMS.register("dye_bush_empty",
             () -> new BlockItem(ModBlocks.DYE_BUSH_EMPTY.get(), new Item.Properties().stacksTo(64)));
@@ -493,64 +498,64 @@ public class ModItems {
 
     // Dye Extractor machine block item
     public static final DeferredItem<Item> FACTORY = ITEMS.register("factory",
-            () -> new BlockItem(ModBlocks.FACTORY.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.FACTORY.get(), props()));
 
     public static final DeferredItem<Item> ANCIENT_TABLE = ITEMS.register("ancient_table",
-            () -> new BlockItem(ModBlocks.ANCIENT_TABLE.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.ANCIENT_TABLE.get(), props()));
             
     public static final DeferredItem<Item> RUBBER_SAPLING = ITEMS.register("rubber_sapling",
-            () -> new BlockItem(ModBlocks.RUBBER_SAPLING.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_SAPLING.get(), props()));
             
     public static final DeferredItem<Item> SACRED_RUBBER_SAPLING = ITEMS.register("sacred_rubber_sapling",
-            () -> new SacredRubberSaplingBlockItem(ModBlocks.SACRED_RUBBER_SAPLING.get(), ITEM_PROPERTIES));
+            () -> new SacredRubberSaplingBlockItem(ModBlocks.SACRED_RUBBER_SAPLING.get(), props()));
             
     public static final DeferredItem<Item> SACRED_RUBBER_ROOT = ITEMS.register("sacred_rubber_root",
-            () -> new BlockItem(ModBlocks.SACRED_RUBBER_ROOT.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.SACRED_RUBBER_ROOT.get(), props()));
             // Not added to creative tab - hidden item
             
     public static final DeferredItem<Item> RUBBER_LOG_SACRED = ITEMS.register("rubber_log_sacred",
-            () -> new BlockItem(ModBlocks.RUBBER_LOG_SACRED.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_LOG_SACRED.get(), props()));
             // Not added to creative tab - hidden item
 
     public static final DeferredItem<Item> RUBBER_BLOCK = ITEMS.register("rubber_block",
-            () -> new BlockItem(ModBlocks.RUBBER_BLOCK.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_BLOCK.get(), props()));
 
     public static final DeferredItem<Item> PLASTIC_BLOCK = ITEMS.register("plastic_block",
-            () -> new BlockItem(ModBlocks.PLASTIC_BLOCK.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.PLASTIC_BLOCK.get(), props()));
 
     public static final DeferredItem<Item> PLASTIC_BRICKS = ITEMS.register("plastic_bricks",
-            () -> new BlockItem(ModBlocks.PLASTIC_BRICKS.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.PLASTIC_BRICKS.get(), props()));
             
     // Rubber block variants
     public static final DeferredItem<Item> RUBBER_STAIRS = ITEMS.register("rubber_stairs",
-            () -> new BlockItem(ModBlocks.RUBBER_STAIRS.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_STAIRS.get(), props()));
             
     public static final DeferredItem<Item> RUBBER_SLAB = ITEMS.register("rubber_slab",
-            () -> new BlockItem(ModBlocks.RUBBER_SLAB.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_SLAB.get(), props()));
             
     public static final DeferredItem<Item> RUBBER_FENCE = ITEMS.register("rubber_fence",
-            () -> new BlockItem(ModBlocks.RUBBER_FENCE.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_FENCE.get(), props()));
             
     public static final DeferredItem<Item> RUBBER_FENCE_GATE = ITEMS.register("rubber_fence_gate",
-            () -> new BlockItem(ModBlocks.RUBBER_FENCE_GATE.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_FENCE_GATE.get(), props()));
             
     public static final DeferredItem<Item> RUBBER_BUTTON = ITEMS.register("rubber_button",
-            () -> new BlockItem(ModBlocks.RUBBER_BUTTON.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_BUTTON.get(), props()));
             
     public static final DeferredItem<Item> RUBBER_PRESSURE_PLATE = ITEMS.register("rubber_pressure_plate",
-            () -> new BlockItem(ModBlocks.RUBBER_PRESSURE_PLATE.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_PRESSURE_PLATE.get(), props()));
             
     public static final DeferredItem<Item> RUBBER_DOOR = ITEMS.register("rubber_door",
-            () -> new BlockItem(ModBlocks.RUBBER_DOOR.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_DOOR.get(), props()));
             
     public static final DeferredItem<Item> RUBBER_TRAPDOOR = ITEMS.register("rubber_trapdoor",
-            () -> new BlockItem(ModBlocks.RUBBER_TRAPDOOR.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RUBBER_TRAPDOOR.get(), props()));
 
     public static final DeferredItem<Item> RUBBER_SIGN_ITEM = ITEMS.register("rubber_sign",
-            () -> new SignItem(ITEM_PROPERTIES, ModBlocks.RUBBER_SIGN.get(), ModBlocks.RUBBER_WALL_SIGN.get(), Direction.DOWN));
+            () -> new SignItem(props(), ModBlocks.RUBBER_SIGN.get(), ModBlocks.RUBBER_WALL_SIGN.get(), Direction.DOWN));
 
     public static final DeferredItem<Item> RUBBER_HANGING_SIGN = ITEMS.register("rubber_hanging_sign",
-            () -> new HangingSignItem(ModBlocks.RUBBER_HANGING_SIGN.get(), ModBlocks.RUBBER_WALL_HANGING_SIGN.get(), ITEM_PROPERTIES));
+            () -> new HangingSignItem(ModBlocks.RUBBER_HANGING_SIGN.get(), ModBlocks.RUBBER_WALL_HANGING_SIGN.get(), props()));
 
     public static final DeferredItem<Item> SABOTEUR_SCREWDRIVER = ITEMS.register("saboteur_screwdriver",
             () -> new SaboteurScrewdriverItem(new Item.Properties().stacksTo(1).durability(128)));
@@ -559,74 +564,74 @@ public class ModItems {
     
     // Items for Vector Plates
     public static final DeferredItem<Item> SLOW_VECT = ITEMS.register("slow_vect",
-            () -> new BlockItem(ModBlocks.SLOW_VECT.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.SLOW_VECT.get(), props()));
             
     public static final DeferredItem<Item> MODERATE_VECT = ITEMS.register("moderate_vect",
-            () -> new BlockItem(ModBlocks.MODERATE_VECT.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.MODERATE_VECT.get(), props()));
             
     public static final DeferredItem<Item> FAST_VECT = ITEMS.register("fast_vect",
-            () -> new BlockItem(ModBlocks.FAST_VECT.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.FAST_VECT.get(), props()));
             
     public static final DeferredItem<Item> EXTREME_VECT = ITEMS.register("extreme_vect",
-            () -> new BlockItem(ModBlocks.EXTREME_VECT.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.EXTREME_VECT.get(), props()));
             
     public static final DeferredItem<Item> ULTRA_VECT = ITEMS.register("ultra_vect",
-            () -> new BlockItem(ModBlocks.ULTRA_VECT.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.ULTRA_VECT.get(), props()));
             
     // ===== PLAYER VECTOR PLATE ITEMS =====
     
     // Items for Player Vector Plates
     public static final DeferredItem<Item> PLAYER_SLOW_VECT = ITEMS.register("player_slow_vect",
-            () -> new BlockItem(ModBlocks.PLAYER_SLOW_VECT.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.PLAYER_SLOW_VECT.get(), props()));
             
     public static final DeferredItem<Item> PLAYER_MODERATE_VECT = ITEMS.register("player_moderate_vect",
-            () -> new BlockItem(ModBlocks.PLAYER_MODERATE_VECT.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.PLAYER_MODERATE_VECT.get(), props()));
             
     public static final DeferredItem<Item> PLAYER_FAST_VECT = ITEMS.register("player_fast_vect",
-            () -> new BlockItem(ModBlocks.PLAYER_FAST_VECT.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.PLAYER_FAST_VECT.get(), props()));
             
     public static final DeferredItem<Item> PLAYER_EXTREME_VECT = ITEMS.register("player_extreme_vect",
-            () -> new BlockItem(ModBlocks.PLAYER_EXTREME_VECT.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.PLAYER_EXTREME_VECT.get(), props()));
             
     public static final DeferredItem<Item> PLAYER_ULTRA_VECT = ITEMS.register("player_ultra_vect",
-            () -> new BlockItem(ModBlocks.PLAYER_ULTRA_VECT.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.PLAYER_ULTRA_VECT.get(), props()));
             
     // ===== UTILITY ITEMS =====
     
     // Item for the Hellfire Igniter
     public static final DeferredItem<Item> HELLFIRE_IGNITER = ITEMS.register("hellfire_igniter",
-            () -> new HellfireIgniterBlockItem(ModBlocks.HELLFIRE_IGNITER.get(), ITEM_PROPERTIES));
+            () -> new HellfireIgniterBlockItem(ModBlocks.HELLFIRE_IGNITER.get(), props()));
 
     public static final DeferredItem<Item> ENDER_NULLIFIER = ITEMS.register("ender_nullifier",
-            () -> new EnderNullifierBlockItem(ModBlocks.ENDER_NULLIFIER.get(), ITEM_PROPERTIES));
+            () -> new EnderNullifierBlockItem(ModBlocks.ENDER_NULLIFIER.get(), props()));
 
     public static final DeferredItem<Item> WANDER_NULLIFIER = ITEMS.register("wander_nullifier",
-            () -> new NullifierBlockItem(ModBlocks.WANDER_NULLIFIER.get(), ITEM_PROPERTIES, "wander_nullifier"));
+            () -> new NullifierBlockItem(ModBlocks.WANDER_NULLIFIER.get(), props(), "wander_nullifier"));
 
     public static final DeferredItem<Item> SOUL_NULLIFIER = ITEMS.register("soul_nullifier",
-            () -> new NullifierBlockItem(ModBlocks.SOUL_NULLIFIER.get(), ITEM_PROPERTIES, "soul_nullifier"));
+            () -> new NullifierBlockItem(ModBlocks.SOUL_NULLIFIER.get(), props(), "soul_nullifier"));
 
     public static final DeferredItem<Item> FLIGHT_NULLIFIER = ITEMS.register("flight_nullifier",
-            () -> new NullifierBlockItem(ModBlocks.FLIGHT_NULLIFIER.get(), ITEM_PROPERTIES, "flight_nullifier"));
+            () -> new NullifierBlockItem(ModBlocks.FLIGHT_NULLIFIER.get(), props(), "flight_nullifier"));
 
     public static final DeferredItem<Item> CLIMBING_NULLIFIER = ITEMS.register("climbing_nullifier",
-            () -> new NullifierBlockItem(ModBlocks.CLIMBING_NULLIFIER.get(), ITEM_PROPERTIES, "climbing_nullifier"));
+            () -> new NullifierBlockItem(ModBlocks.CLIMBING_NULLIFIER.get(), props(), "climbing_nullifier"));
     
     // Item for the Fan
     public static final DeferredItem<Item> FAN = ITEMS.register("fan",
-            () -> new FanBlockItem(ModBlocks.FAN.get(), ITEM_PROPERTIES));
+            () -> new FanBlockItem(ModBlocks.FAN.get(), props()));
 
     public static final DeferredItem<Item> MOB_REAPER = ITEMS.register("mob_reaper",
-            () -> new BlockItem(ModBlocks.MOB_REAPER.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.MOB_REAPER.get(), props()));
 
     public static final DeferredItem<Item> COLLECTING_CRATE = ITEMS.register("collecting_crate",
             () -> new net.unfamily.iskautils.item.custom.CollectingCrateBlockItem(
-                    ModBlocks.COLLECTING_CRATE.get(), ITEM_PROPERTIES));
+                    ModBlocks.COLLECTING_CRATE.get(), props()));
 
     public static final DeferredItem<Item> ESSENCE_OF_KNOLEDGE_GRATE = ITEMS.register("essence_of_knoledge_grate",
             () -> new TranslatedTooltipBlockItem(
                     ModBlocks.ESSENCE_OF_KNOLEDGE_GRATE.get(),
-                    ITEM_PROPERTIES,
+                    props(),
                     "tooltip.iska_utils.essence_of_knoledge_grate.desc0",
                     "tooltip.iska_utils.essence_of_knoledge_grate.desc1"));
 
@@ -636,67 +641,67 @@ public class ModItems {
 
     // Fan upgrade modules
     public static final DeferredItem<Item> RANGE_MODULE = ITEMS.register("range_module",
-            () -> new RangeModuleItem(ITEM_PROPERTIES));
+            () -> new RangeModuleItem(props()));
 
     public static final DeferredItem<Item> GHOST_MODULE = ITEMS.register("ghost_module",
-            () -> new GhostModuleItem(ITEM_PROPERTIES));
+            () -> new GhostModuleItem(props()));
 
     public static final DeferredItem<Item> LOGIC_MODULE = ITEMS.register("logic_module",
-            () -> new LogicModuleItem(ITEM_PROPERTIES));
+            () -> new LogicModuleItem(props()));
 
     public static final DeferredItem<Item> PRODUCTION_MODULE = ITEMS.register("production_module",
-            () -> new ProductionModuleItem(ITEM_PROPERTIES));
+            () -> new ProductionModuleItem(props()));
 
     public static final DeferredItem<Item> CAPACITOR_MODULE = ITEMS.register("capacitor_module",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new Item(props()));
 
     // Mob Reaper modules
     public static final DeferredItem<Item> NORMAL_DAMAGE_MODULE = ITEMS.register("normal_damage_module",
-            () -> new NormalDamageModuleItem(REAPER_STACKABLE_MODULE));
+            () -> new NormalDamageModuleItem(reaperStackableModule()));
     public static final DeferredItem<Item> LETHAL_DAMAGE_MODULE = ITEMS.register("lethal_damage_module",
             () -> new LethalDamageModuleItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<Item> ENCHANT_MODULE = ITEMS.register("enchant_module",
             () -> new EnchantModuleItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<Item> BEHEADING_MODULE = ITEMS.register("beheading_module",
-            () -> new BeheadingModuleItem(REAPER_STACKABLE_MODULE));
+            () -> new BeheadingModuleItem(reaperStackableModule()));
     public static final DeferredItem<Item> LUCK_MODULE = ITEMS.register("luck_module",
-            () -> new LuckModuleItem(REAPER_STACKABLE_MODULE));
+            () -> new LuckModuleItem(reaperStackableModule()));
     public static final DeferredItem<Item> EXPERIENCE_MODULE = ITEMS.register("experience_module",
-            () -> new ExperienceModuleItem(REAPER_STACKABLE_MODULE));
+            () -> new ExperienceModuleItem(reaperStackableModule()));
 
     public static final DeferredItem<Item> SMOOTH_BLACKSTONE = ITEMS.register("smooth_blackstone",
-            () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE.get(), props()));
     public static final DeferredItem<Item> SMOOTH_BLACKSTONE_SLAB = ITEMS.register("smooth_blackstone_slab",
-            () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE_SLAB.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE_SLAB.get(), props()));
     public static final DeferredItem<Item> SMOOTH_BLACKSTONE_STAIRS = ITEMS.register("smooth_blackstone_stairs",
-            () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE_STAIRS.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE_STAIRS.get(), props()));
     public static final DeferredItem<Item> SMOOTH_BLACKSTONE_WALL = ITEMS.register("smooth_blackstone_wall",
-            () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE_WALL.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.SMOOTH_BLACKSTONE_WALL.get(), props()));
     public static final DeferredItem<Item> PLATE_BASE_BLOCK = ITEMS.register("plate_base_block",
-            () -> new BlockItem(ModBlocks.PLATE_BASE_BLOCK.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.PLATE_BASE_BLOCK.get(), props()));
 
     // ===== CRYSTAL TRAP PLATE item =====
     public static final DeferredItem<Item> CRYSTAL_CAGE_TRAP_PLATE = ITEMS.register("crystal_cage_trap_plate",
-            () -> new BlockItem(ModBlocks.CRYSTAL_CAGE_TRAP_PLATE.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.CRYSTAL_CAGE_TRAP_PLATE.get(), props()));
 
     // ===== CRYSTAL CAGE item =====
     public static final DeferredItem<Item> CRYSTAL_CAGE = ITEMS.register("crystal_cage",
             () -> new net.unfamily.iskautils.item.custom.CrystalCageItem(new Item.Properties().stacksTo(16)));
     public static final DeferredItem<Item> RAFT = ITEMS.register("raft",
-            () -> new BlockItem(ModBlocks.RAFT.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RAFT.get(), props()));
     public static final DeferredItem<Item> RAFT_NO_DROP = ITEMS.register("raft_no_drop",
-            () -> new BlockItem(ModBlocks.RAFT_NO_DROP.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.RAFT_NO_DROP.get(), props()));
 
     // ===== TAR =====
     public static final DeferredItem<Item> TAR_SLIME_BLOCK = ITEMS.register("tar_slime_block",
-            () -> new BlockItem(ModBlocks.TAR_SLIME_BLOCK.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.TAR_SLIME_BLOCK.get(), props()));
     
     // ===== SAP =====
     public static final DeferredItem<Item> SAP_BLOCK = ITEMS.register("sap_block",
-            () -> new BlockItem(ModBlocks.SAP_BLOCK.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.SAP_BLOCK.get(), props()));
 
     public static final DeferredItem<Item> TAR_SLIMEBALL = ITEMS.register("tar_slimeball",
-            () -> new Item(ITEM_PROPERTIES));
+            () -> new Item(props()));
 
     // ===== RUBBER ARMOR =====
     public static final DeferredItem<Item> RUBBER_BOOTS = ITEMS.register("rubber_boots",
@@ -705,22 +710,22 @@ public class ModItems {
             
     // ===== UTILITY BLOCKS =====
     public static final DeferredItem<Item> RUBBER_SAP_EXTRACTOR = ITEMS.register("rubber_sap_extractor",
-            () -> new RubberSapExtractorBlockItem(ModBlocks.RUBBER_SAP_EXTRACTOR.get(), ITEM_PROPERTIES));
+            () -> new RubberSapExtractorBlockItem(ModBlocks.RUBBER_SAP_EXTRACTOR.get(), props()));
 
     public static final DeferredItem<Item> KNOWLEDGE_COMPRESSOR = ITEMS.register("knowledge_compressor",
-            () -> new BlockItem(ModBlocks.KNOWLEDGE_COMPRESSOR.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.KNOWLEDGE_COMPRESSOR.get(), props()));
 
     public static final DeferredItem<Item> WEATHER_DETECTOR = ITEMS.register("weather_detector",
-            () -> new BlockItem(ModBlocks.WEATHER_DETECTOR.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.WEATHER_DETECTOR.get(), props()));
 
     public static final DeferredItem<Item> SOUND_MUFFLER = ITEMS.register("sound_muffler",
-            () -> new BlockItem(ModBlocks.SOUND_MUFFLER.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.SOUND_MUFFLER.get(), props()));
             
     public static final DeferredItem<Item> WEATHER_ALTERER = ITEMS.register("weather_alterer",
-            () -> new BlockItem(ModBlocks.WEATHER_ALTERER.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.WEATHER_ALTERER.get(), props()));
 
     public static final DeferredItem<Item> TIME_ALTERER = ITEMS.register("time_alterer",
-            () -> new BlockItem(ModBlocks.TIME_ALTERER.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.TIME_ALTERER.get(), props()));
     
     // Temporal Overclocker
     public static final DeferredItem<Item> TEMPORAL_OVERCLOCKER = ITEMS.register("temporal_overclocker",
@@ -739,31 +744,31 @@ public class ModItems {
 
     // ===== STRUCTURE SYSTEM =====
     public static final DeferredItem<Item> STRUCTURE_PLACER_MACHINE = ITEMS.register("structure_placer_machine",
-            () -> new StructurePlacerMachineBlockItem(ModBlocks.STRUCTURE_PLACER_MACHINE.get(), ITEM_PROPERTIES));
+            () -> new StructurePlacerMachineBlockItem(ModBlocks.STRUCTURE_PLACER_MACHINE.get(), props()));
     
     public static final DeferredItem<Item> STRUCTURE_SAVER_MACHINE = ITEMS.register("structure_saver_machine",
-            () -> new StructureSaverMachineBlockItem(ModBlocks.STRUCTURE_SAVER_MACHINE.get(), ITEM_PROPERTIES));
+            () -> new StructureSaverMachineBlockItem(ModBlocks.STRUCTURE_SAVER_MACHINE.get(), props()));
 
     public static final DeferredItem<Item> PATTERN_CRAFTER = ITEMS.register("pattern_crafter",
-            () -> new BlockItem(ModBlocks.PATTERN_CRAFTER.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.PATTERN_CRAFTER.get(), props()));
 
     public static final DeferredItem<Item> IMPROVED_PATTERN_CRAFTER = ITEMS.register("improved_pattern_crafter",
-            () -> new BlockItem(ModBlocks.IMPROVED_PATTERN_CRAFTER.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.IMPROVED_PATTERN_CRAFTER.get(), props()));
 
     public static final DeferredItem<Item> PATTERN_CRAFTER_IMPROVER = ITEMS.register("pattern_crafter_improver",
-            () -> new PatternCrafterImproverItem(ITEM_PROPERTIES));
+            () -> new PatternCrafterImproverItem(props()));
 
     public static final DeferredItem<Item> SHOP = ITEMS.register("shop",
-            () -> new ShopBlockItem(ModBlocks.SHOP.get(), ITEM_PROPERTIES));
+            () -> new ShopBlockItem(ModBlocks.SHOP.get(), props()));
 
     public static final DeferredItem<Item> AUTO_SHOP = ITEMS.register("auto_shop",
-            () -> new AutoShopItem(ModBlocks.AUTO_SHOP.get(), ITEM_PROPERTIES));
+            () -> new AutoShopItem(ModBlocks.AUTO_SHOP.get(), props()));
 
     public static final DeferredItem<Item> PORTABLE_SHOP = ITEMS.register("portable_shop",
-            () -> new PortableShopItem(ITEM_PROPERTIES.stacksTo(1)));
+            () -> new PortableShopItem(props().stacksTo(1)));
 
     public static final DeferredItem<Item> SMART_TIMER = ITEMS.register("smart_timer",
-            () -> new BlockItem(ModBlocks.SMART_TIMER.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.SMART_TIMER.get(), props()));
 
     public static final DeferredItem<Item> STRUCTURE_PLACER = ITEMS.register("structure_placer",
             () -> new StructurePlacerItem(new Item.Properties().stacksTo(1)));
@@ -776,43 +781,43 @@ public class ModItems {
 
     // Entropy TNT Block
     public static final DeferredItem<Item> ENTROPY_TNT = ITEMS.register("entropy_tnt",
-            () -> new BlockItem(ModBlocks.ENTROPY_TNT.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.ENTROPY_TNT.get(), props()));
 
     public static final DeferredItem<Item> ENTROPIC_FUNGUS = ITEMS.register("entropic_fungus",
             () -> new TranslatedTooltipBlockItem(
                     ModBlocks.ENTROPIC_FUNGUS.get(),
-                    ITEM_PROPERTIES,
+                    props(),
                     "tooltip.iska_utils.entropic_fungus.desc0",
                     "tooltip.iska_utils.entropic_fungus.desc1"));
 
     public static final @Nullable DeferredItem<Item> SILVERFISH_LARVA = Config.shouldRegisterSilverfishLarva()
-            ? ITEMS.register("silverfish_larva", () -> new SilverfishLarvaItem(ITEM_PROPERTIES))
+            ? ITEMS.register("silverfish_larva", () -> new SilverfishLarvaItem(props()))
             : null;
 
     public static final DeferredItem<Item> ENTROPIC_SOIL = ITEMS.register("entropic_soil",
             () -> new TranslatedTooltipBlockItem(
                     ModBlocks.ENTROPIC_SOIL.get(),
-                    ITEM_PROPERTIES,
+                    props(),
                     "tooltip.iska_utils.entropic_soil.desc0",
                     "tooltip.iska_utils.entropic_soil.desc1"));
 
     public static final DeferredItem<Item> ENTROPIC_DIRT = ITEMS.register("entropic_dirt",
             () -> new TranslatedTooltipBlockItem(
                     ModBlocks.ENTROPIC_DIRT.get(),
-                    ITEM_PROPERTIES,
+                    props(),
                     "tooltip.iska_utils.entropic_dirt.desc0",
                     "tooltip.iska_utils.entropic_dirt.desc1"));
 
     public static final DeferredItem<Item> GRAVEYARD_SOIL = ITEMS.register("graveyard_soil",
             () -> new TranslatedTooltipBlockItem(
                     ModBlocks.GRAVEYARD_SOIL.get(),
-                    ITEM_PROPERTIES,
+                    props(),
                     "tooltip.iska_utils.graveyard_soil.desc0"));
 
     public static final DeferredItem<Item> DRUIDIC_PODZOL = ITEMS.register("druidic_podzol",
             () -> new TranslatedTooltipBlockItem(
                     ModBlocks.DRUIDIC_PODZOL.get(),
-                    ITEM_PROPERTIES,
+                    props(),
                     "tooltip.iska_utils.druidic_podzol.desc0",
                     "tooltip.iska_utils.druidic_podzol.desc1"));
 
@@ -823,18 +828,18 @@ public class ModItems {
             () -> new BurningBrazierItem(new Item.Properties().stacksTo(1).durability(BurningBrazierItem.MAX_DURABILITY)));
 
     public static final DeferredItem<Item> BLAZING_ALTAR = ITEMS.register("blazing_altar",
-            () -> new net.unfamily.iskautils.item.custom.BlazingAltarBlockItem(ModBlocks.BLAZING_ALTAR.get(), ITEM_PROPERTIES));
+            () -> new net.unfamily.iskautils.item.custom.BlazingAltarBlockItem(ModBlocks.BLAZING_ALTAR.get(), props()));
     
     public static final DeferredItem<Item> REDSTONE_ACTIVATOR = ITEMS.register("redstone_activator",
             () -> new RedstoneSignalItem(new Item.Properties().stacksTo(1)));
     
     // Redstone Activator Signal Block Item (not indexed in creative tab)
     public static final DeferredItem<Item> REDSTONE_ACTIVATOR_SIGNAL = ITEMS.register("redstone_activator_signal",
-            () -> new BlockItem(ModBlocks.REDSTONE_ACTIVATOR_SIGNAL.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.REDSTONE_ACTIVATOR_SIGNAL.get(), props()));
 
     // Burning Flame Block Item (not indexed in creative tab)
     public static final DeferredItem<Item> BURNING_FLAME = ITEMS.register("burning_flame",
-            () -> new BlockItem(ModBlocks.BURNING_FLAME.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.BURNING_FLAME.get(), props()));
 
     // ===== GHOST BRAZIER ITEM =====
 
@@ -850,21 +855,21 @@ public class ModItems {
 
     // ===== DEEP DRAWERS =====
     public static final DeferredItem<Item> DEEP_DRAWERS = ITEMS.register("deep_drawers",
-            () -> new net.unfamily.iskautils.item.custom.DeepDrawersBlockItem(ModBlocks.DEEP_DRAWERS.get(), ITEM_PROPERTIES));
+            () -> new net.unfamily.iskautils.item.custom.DeepDrawersBlockItem(ModBlocks.DEEP_DRAWERS.get(), props()));
     
     public static final DeferredItem<Item> DEEP_DRAWER_EXTRACTOR = ITEMS.register("deep_drawer_extractor",
-            () -> new BlockItem(ModBlocks.DEEP_DRAWER_EXTRACTOR.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.DEEP_DRAWER_EXTRACTOR.get(), props()));
     
     public static final DeferredItem<Item> DEEP_DRAWER_INTERFACE = ITEMS.register("deep_drawer_interface",
-            () -> new BlockItem(ModBlocks.DEEP_DRAWER_INTERFACE.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.DEEP_DRAWER_INTERFACE.get(), props()));
     
     public static final DeferredItem<Item> DEEP_DRAWER_EXTENDER = ITEMS.register("deep_drawer_extender",
-            () -> new BlockItem(ModBlocks.DEEP_DRAWER_EXTENDER.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.DEEP_DRAWER_EXTENDER.get(), props()));
 
     // ===== GIFT BLOCK =====
     // Hidden block (not in creative tab)
     public static final DeferredItem<Item> GIFT = ITEMS.register("gift",
-            () -> new GiftItem(ModBlocks.GIFT.get(), ITEM_PROPERTIES));
+            () -> new GiftItem(ModBlocks.GIFT.get(), props()));
 
     // ===== ENTROPIC CHAMPAGNE (seasonal curio, Jan 1–10, not in creative tab) =====
     public static final DeferredItem<Item> ENTROPIC_CHAMPAGNE = ITEMS.register("entropic_champagne",
@@ -877,7 +882,7 @@ public class ModItems {
     // ===== HARD ICE BLOCK =====
     // Hidden block (not in creative tab) - indestructible, placed by gift
     public static final DeferredItem<Item> HARD_ICE = ITEMS.register("hard_ice",
-            () -> new BlockItem(ModBlocks.HARD_ICE.get(), ITEM_PROPERTIES));
+            () -> new BlockItem(ModBlocks.HARD_ICE.get(), props()));
 
     // ===== FOOD ITEMS =====
     // Lapis Ice Cream - Food item with 8 nutrition and 1.0f saturation modifier

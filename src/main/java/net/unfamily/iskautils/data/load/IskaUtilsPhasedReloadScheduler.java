@@ -120,7 +120,7 @@ public final class IskaUtilsPhasedReloadScheduler {
             case 2 -> FactoryLoader.loadFromRecipeManager(server.getRecipeManager(), rm);
             case 3 -> {
                 SuspiciousDeliveryLoader.loadAll(rm);
-                AncientTabletRecipeLoader.loadAll(rm);
+                AncientTabletRecipeLoader.loadFromRecipeManager(server.getRecipeManager());
                 ArcaneDictionaryLoader.loadAll(rm);
             }
             case 4 -> {

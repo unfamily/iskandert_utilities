@@ -2,6 +2,7 @@
   "type": "iska_utils:factory",
   "recipes": [
     {
+      "id": "dye_berry",
       "input": "iska_utils:dye_berry",
       "amount": 3,
       "select": [
@@ -43,6 +44,7 @@
       ]
     },
     {
+      "id": "delivery_recycle",
       "input": "#iska_utils:delivery_recycle",
       "amount": 1,
       "select": [
@@ -50,6 +52,7 @@
       ]
     },
     {
+      "id": "entropic_fungus",
       "input": "iska_utils:entropic_fungus",
       "amount": 1,
       "select": [

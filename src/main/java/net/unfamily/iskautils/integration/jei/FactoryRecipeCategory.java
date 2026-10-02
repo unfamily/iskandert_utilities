@@ -74,4 +74,9 @@ public class FactoryRecipeCategory implements IRecipeCategory<FactoryJeiRecipe> 
             builder.addSlot(RecipeIngredientRole.OUTPUT, x, y).addItemStack(outs.get(i));
         }
     }
+
+    @Override
+    public @Nullable ResourceLocation getRegistryName(FactoryJeiRecipe recipe) {
+        return recipe.recipeId();
+    }
 }

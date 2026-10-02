@@ -29,6 +29,18 @@ import net.unfamily.iskautils.integration.recipeviewer.PatternCrafterRecipeViewe
 public final class IskaUtilsReiClientPlugin implements REIClientPlugin {
 
     @Override
+    public void registerCategories(me.shedaniel.rei.api.client.registry.category.CategoryRegistry registry) {
+        FactoryReiCategory.registerCategory(registry);
+        AncientTabReiCategory.registerCategory(registry);
+    }
+
+    @Override
+    public void registerDisplays(me.shedaniel.rei.api.client.registry.display.DisplayRegistry registry) {
+        FactoryReiCategory.registerDisplays(registry);
+        AncientTabReiCategory.registerDisplays(registry);
+    }
+
+    @Override
     public void registerTransferHandlers(TransferHandlerRegistry registry) {
         if (!ModList.get().isLoaded("roughlyenoughitems")
                 || !PatternCrafterRecipeViewerTransfer.isTransferEnabled()) {

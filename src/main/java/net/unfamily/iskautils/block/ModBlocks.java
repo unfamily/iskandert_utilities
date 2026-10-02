@@ -631,7 +631,7 @@ public class ModBlocks {
             
     // ===== RAFT NO DROP BLOCK (non-droppable version) =====
     public static final DeferredBlock<RaftNoDropBlock> RAFT_NO_DROP = BLOCKS.register("raft_no_drop",
-            () -> new RaftNoDropBlock(RAFT_PROPERTIES));
+            () -> new RaftNoDropBlock(BlockBehaviour.Properties.ofFullCopy(RAFT.get()).noLootTable()));
 
     // ===== TAR BLOCK =====
     public static final DeferredBlock<TarSlimeBlock> TAR_SLIME_BLOCK = BLOCKS.register("tar_slime_block",
@@ -754,6 +754,7 @@ public class ModBlocks {
             .sound(SoundType.STONE)
             .noOcclusion()
             .replaceable()
+            .noLootTable()
             .isSuffocating((state, level, pos) -> false)
             .isViewBlocking((state, level, pos) -> false);
 
@@ -813,7 +814,8 @@ public class ModBlocks {
     private static final BlockBehaviour.Properties HARD_ICE_PROPERTIES = BlockBehaviour.Properties.of()
             .strength(-1.0f, 3600000.0f) // Indistruttibile (hardness < 0)
             .sound(SoundType.GLASS)
-            .friction(0.98f);
+            .friction(0.98f)
+            .noLootTable();
 
     // Hard Ice Block (indestructible, placed by gift after breaking)
     public static final DeferredBlock<HardIceBlock> HARD_ICE = BLOCKS.register("hard_ice",

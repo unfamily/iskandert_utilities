@@ -52,13 +52,19 @@ public final class RecipeViewerClientBridge {
     }
 
     private static void openEmiFactoryOrStonecutter(boolean factoryEmpty) {
-        // No EMI Factory category is registered; open stonecutting when Factory has no recipes.
-        if (!factoryEmpty || !Config.factoryStonecutterEnabled) {
-            return;
-        }
         try {
             Class<?> emiApi = Class.forName("dev.emi.emi.api.EmiApi");
             Class<?> emiRecipeCategory = Class.forName("dev.emi.emi.api.recipe.EmiRecipeCategory");
+            if (!factoryEmpty) {
+                Object factoryCat = Class.forName("net.unfamily.iskautils.integration.emi.FactoryEmiRecipe")
+                        .getField("CATEGORY")
+                        .get(null);
+                emiApi.getMethod("displayRecipeCategory", emiRecipeCategory).invoke(null, factoryCat);
+                return;
+            }
+            if (!Config.factoryStonecutterEnabled) {
+                return;
+            }
             Object stonecutting = Class.forName("dev.emi.emi.api.recipe.VanillaEmiRecipeCategories")
                     .getField("STONECUTTING")
                     .get(null);
@@ -69,18 +75,23 @@ public final class RecipeViewerClientBridge {
     }
 
     private static void openReiFactoryOrStonecutter(boolean factoryEmpty) {
-        // No REI Factory category is registered; open stonecutting when Factory has no recipes.
-        if (!factoryEmpty || !Config.factoryStonecutterEnabled) {
-            return;
-        }
         try {
             Class<?> categoryId = Class.forName("me.shedaniel.rei.api.common.category.CategoryIdentifier");
-            Object stonecuttingId = Class.forName("me.shedaniel.rei.plugin.common.BuiltinPlugin")
-                    .getField("STONECUTTING")
-                    .get(null);
             Class<?> viewSearchBuilder = Class.forName("me.shedaniel.rei.api.client.view.ViewSearchBuilder");
             Object builder = viewSearchBuilder.getMethod("builder").invoke(null);
-            viewSearchBuilder.getMethod("addCategory", categoryId).invoke(builder, stonecuttingId);
+            Object id;
+            if (!factoryEmpty) {
+                id = Class.forName("net.unfamily.iskautils.integration.rei.FactoryReiCategory")
+                        .getField("ID")
+                        .get(null);
+            } else if (Config.factoryStonecutterEnabled) {
+                id = Class.forName("me.shedaniel.rei.plugin.common.BuiltinPlugin")
+                        .getField("STONECUTTING")
+                        .get(null);
+            } else {
+                return;
+            }
+            viewSearchBuilder.getMethod("addCategory", categoryId).invoke(builder, id);
             viewSearchBuilder.getMethod("open").invoke(builder);
         } catch (ReflectiveOperationException | LinkageError ignored) {
             // REI absent or API mismatch — ignore.

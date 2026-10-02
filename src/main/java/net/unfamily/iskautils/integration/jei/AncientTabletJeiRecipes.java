@@ -4,10 +4,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.data.load.CraftingEntryPools;
-import net.unfamily.iskautils.data.load.IskaUtilsLoadJson;
-import net.unfamily.iskautils.data.load.IskaUtilsLoadPaths;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeEntry;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeLoader;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeMatcher;
@@ -24,7 +23,7 @@ public final class AncientTabletJeiRecipes {
     private AncientTabletJeiRecipes() {}
 
     public static void reloadForClient(Minecraft mc) {
-        ensureLoaded();
+        ensureLoaded(mc);
         CACHE = buildAll(mc);
     }
 
@@ -33,7 +32,7 @@ public final class AncientTabletJeiRecipes {
     }
 
     public static List<AncientTabletJeiRecipe> buildAll(Minecraft mc) {
-        ensureLoaded();
+        ensureLoaded(mc);
         ServerPlayer player = CraftingEntryPools.resolveJeiPlayer();
         List<AncientTabletJeiRecipe> out = new ArrayList<>();
         for (AncientTabletRecipeEntry entry : AncientTabletRecipeLoader.getEntries()) {
@@ -66,6 +65,7 @@ public final class AncientTabletJeiRecipes {
             List<AncientTabletRequirement> require,
             List<AncientTabletRequirement> produce) {
         return new AncientTabletJeiRecipe(
+                entry.sourceId(),
                 groupedStacks(require),
                 groupedStacks(produce),
                 entry.mustOrdered(),
@@ -77,17 +77,20 @@ public final class AncientTabletJeiRecipes {
         return CACHE;
     }
 
-    private static void ensureLoaded() {
+    private static void ensureLoaded(Minecraft mc) {
         if (!AncientTabletRecipeLoader.getEntries().isEmpty()) {
             return;
         }
+        RecipeManager recipes = null;
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
-            AncientTabletRecipeLoader.loadAll(server.getResourceManager());
-            return;
+            recipes = server.getRecipeManager();
+        } else if (mc != null && mc.level != null) {
+            recipes = mc.level.getRecipeManager();
         }
-        AncientTabletRecipeLoader.loadAllMerged(
-                IskaUtilsLoadJson.collectFromModJarOnlyUnderDataDir("recipe", IskaUtilsLoadPaths::isJsonUnderRecipeTree));
+        if (recipes != null) {
+            AncientTabletRecipeLoader.loadFromRecipeManager(recipes);
+        }
     }
 
     private static List<ItemStack> groupedStacks(List<AncientTabletRequirement> flat) {

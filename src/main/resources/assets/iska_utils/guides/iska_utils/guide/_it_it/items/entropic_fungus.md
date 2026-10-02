@@ -30,7 +30,7 @@ Pianta simile a un fungo legata alla progressione entropica. Si pianta su **qual
 
 ## Opzionale: Botany Pots
 
-Con **Botany Pots** installato, il **Fungo entropico** si coltiva in vaso con la ricetta del mod (tempo di crescita lungo; loot come il drop del blocco).
+Con **Botany Pots** installato, il **Fungo entropico** si coltiva in vaso come crop di Botany Pots (tempo di crescita lungo; loot come il drop del blocco).
 
 ## Pagine correlate
 

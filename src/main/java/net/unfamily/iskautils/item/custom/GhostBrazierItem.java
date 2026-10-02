@@ -10,6 +10,7 @@ import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.unfamily.iskautils.client.KeyBindings;
+import net.unfamily.iskautils.util.ArtifactTooltipUtil;
 import net.unfamily.iskautils.util.KeybindTooltipUtil;
 import net.unfamily.iskautils.data.GhostBrazierData;
 import net.unfamily.iskautils.network.ModMessages;
@@ -60,14 +61,9 @@ public class GhostBrazierItem extends Item {
     @OnlyIn(Dist.CLIENT)
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-
-        // Get the keybind name
         Component keybindName = KeybindTooltipUtil.keybindOrTranslation(
                 "key.iska_utils.ghost_brazier_toggle", "GHOST_BRAZIER_TOGGLE_KEY");
-
-        // Show description
-        tooltip.add(Component.translatable("tooltip.iska_utils.ghost_brazier.desc0"));
-        tooltip.add(Component.translatable("tooltip.iska_utils.ghost_brazier.desc1", keybindName));
+        ArtifactTooltipUtil.appendDescLines(tooltip, "ghost_brazier", 1, 1, keybindName);
     }
 
     @Override

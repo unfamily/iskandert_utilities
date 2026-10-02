@@ -30,7 +30,7 @@ A mushroom-like plant tied to the entropy progression. It can be planted on **an
 
 ## Optional: Botany Pots
 
-When **Botany Pots** is installed, **Entropic Fungus** can be grown in a pot using the mod’s crop recipe (long grow time; loot matches the block drop table).
+When **Botany Pots** is installed, **Entropic Fungus** can be grown in a pot as a Botany Pots crop (long grow time; loot matches the block drop table).
 
 ## Related pages
 
