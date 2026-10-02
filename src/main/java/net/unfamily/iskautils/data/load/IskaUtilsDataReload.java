@@ -45,7 +45,7 @@ public final class IskaUtilsDataReload {
         StructureLoader.reloadAllDefinitions(true);
         FactoryLoader.loadFromRecipeManager(server.getRecipeManager(), rm);
         SuspiciousDeliveryLoader.loadAll(rm);
-        AncientTabletRecipeLoader.loadAll(rm);
+        AncientTabletRecipeLoader.loadFromRecipeManager(server.getRecipeManager());
         ArcaneDictionaryLoader.loadAll(rm);
     }
 }

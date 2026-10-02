@@ -2,6 +2,7 @@
   "type": "iska_utils:ancient_tab",
   "entries": [
     {
+      "id": "entropy_crystal",
       "fuel_cost": 10,
       "require": [
         { "id": "#c:gems/amethyst", "count": 6 },
@@ -10,6 +11,7 @@
       "produce": [ "iska_utils:entropy_crystal" ]
     },
     {
+      "id": "unstable_catalyst",
       "fuel_cost": 10,
       "require": [
         { "id": "#c:ingots/copper", "count": 8 },
@@ -20,6 +22,7 @@
       "produce": [ "iska_utils:unstable_entropy_catalyst" ]
     },
     {
+      "id": "spawner",
       "fuel_cost": 10,
       "require": [
         { "id": "#c:bars/netherite", "count": 12 },

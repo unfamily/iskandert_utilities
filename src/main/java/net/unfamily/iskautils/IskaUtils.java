@@ -151,6 +151,7 @@ public class IskaUtils {
         ModItems.register(modEventBus);
         ModFluids.register(modEventBus);
         net.unfamily.iskautils.crafting.ModFactoryRecipes.register(modEventBus);
+        net.unfamily.iskautils.crafting.ModAncientTabRecipes.register(modEventBus);
         net.unfamily.iskautils.particle.ModParticles.register(modEventBus);
         ModMobEffects.register(modEventBus);
         net.unfamily.iskautils.potion.ModPotions.register(modEventBus);

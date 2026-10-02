@@ -572,7 +572,7 @@ public class ModBlocks {
             key -> new RaftBlock(assignBlockId(key, RAFT_PROPERTIES)));
 
     public static final DeferredBlock<RaftNoDropBlock> RAFT_NO_DROP = BLOCKS.register("raft_no_drop",
-            key -> new RaftNoDropBlock(assignBlockId(key, RAFT_PROPERTIES)));
+            key -> new RaftNoDropBlock(assignBlockId(key, p -> RAFT_PROPERTIES.apply(p).noLootTable())));
 
     public static final DeferredBlock<TarSlimeBlock> TAR_SLIME_BLOCK = BLOCKS.register("tar_slime_block",
             key -> new TarSlimeBlock(assignBlockId(key, p -> p
@@ -682,6 +682,7 @@ public class ModBlocks {
             .sound(SoundType.STONE)
             .noOcclusion()
             .replaceable()
+            .noLootTable()
             .isSuffocating((state, level, pos) -> false)
             .isViewBlocking((state, level, pos) -> false);
 
@@ -731,7 +732,8 @@ public class ModBlocks {
     private static final UnaryOperator<BlockBehaviour.Properties> HARD_ICE_PROPERTIES = p -> p
             .strength(-1.0f, 3600000.0f)
             .sound(SoundType.GLASS)
-            .friction(0.98f);
+            .friction(0.98f)
+            .noLootTable();
 
     public static final DeferredBlock<HardIceBlock> HARD_ICE = BLOCKS.register("hard_ice",
             key -> new HardIceBlock(assignBlockId(key, HARD_ICE_PROPERTIES)));

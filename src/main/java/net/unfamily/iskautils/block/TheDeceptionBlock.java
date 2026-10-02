@@ -114,7 +114,7 @@ public class TheDeceptionBlock extends HorizontalDirectionalBlock {
                 element(11, 0, 3, 13, 7, 5, facing),
                 element(3, 8, 14, 4, 14, 15, facing),
                 element(12, 8, 14, 13, 14, 15, facing),
-                element(1.5, 13.5, 13.5, 13.5, 23.5, 15.5, facing));
+                element(2, 13.5, 13.5, 14, 23.5, 15.5, facing));
     }
 
     private static VoxelShape element(

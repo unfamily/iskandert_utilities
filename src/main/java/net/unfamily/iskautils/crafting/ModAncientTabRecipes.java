@@ -9,27 +9,21 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.unfamily.iskautils.IskaUtils;
 
-public final class ModFactoryRecipes {
+public final class ModAncientTabRecipes {
     public static final DeferredRegister<RecipeType<?>> RECIPE_TYPES =
             DeferredRegister.create(Registries.RECIPE_TYPE, IskaUtils.MOD_ID);
     public static final DeferredRegister<RecipeSerializer<?>> SERIALIZERS =
             DeferredRegister.create(Registries.RECIPE_SERIALIZER, IskaUtils.MOD_ID);
 
-    /** Single serializer instance (NeoForge rejects registering the same serializer twice). */
-    public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<FactorySourcesRecipe>> FACTORY_SERIALIZER =
-            SERIALIZERS.register("factory", () -> FactorySourcesRecipe.SERIALIZER);
+    public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<AncientTabRecipe>> ANCIENT_TAB_SERIALIZER =
+            SERIALIZERS.register("ancient_tab", () -> AncientTabRecipe.SERIALIZER);
 
-    public static final DeferredHolder<RecipeType<?>, RecipeType<FactorySourcesRecipe>> FACTORY_TYPE =
+    public static final DeferredHolder<RecipeType<?>, RecipeType<AncientTabRecipe>> ANCIENT_TAB_TYPE =
             RECIPE_TYPES.register(
-                    "factory",
-                    () -> RecipeType.simple(Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "factory")));
+                    "ancient_tab",
+                    () -> RecipeType.simple(Identifier.fromNamespaceAndPath(IskaUtils.MOD_ID, "ancient_tab")));
 
-    /** @deprecated Use {@link #FACTORY_TYPE}. */
-    @Deprecated
-    public static final DeferredHolder<RecipeType<?>, RecipeType<FactorySourcesRecipe>> FACTORY_SOURCES_TYPE =
-            FACTORY_TYPE;
-
-    private ModFactoryRecipes() {}
+    private ModAncientTabRecipes() {}
 
     public static void register(IEventBus modEventBus) {
         RECIPE_TYPES.register(modEventBus);

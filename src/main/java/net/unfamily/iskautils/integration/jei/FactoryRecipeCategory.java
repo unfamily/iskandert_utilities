@@ -86,4 +86,9 @@ public class FactoryRecipeCategory implements IRecipeCategory<FactoryJeiRecipe> 
     public void draw(FactoryJeiRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphicsExtractor guiGraphics, double mouseX, double mouseY) {
         background.draw(guiGraphics, 0, 0);
     }
+
+    @Override
+    public @Nullable Identifier getRegistryName(FactoryJeiRecipe recipe) {
+        return recipe.recipeId();
+    }
 }

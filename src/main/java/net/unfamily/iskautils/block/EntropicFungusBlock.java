@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class EntropicFungusBlock extends BushBlock {
     public static final MapCodec<EntropicFungusBlock> CODEC = simpleCodec(EntropicFungusBlock::new);
-    private static final VoxelShape SHAPE = Block.column(6.0D, 0.0D, 6.0D);
+    private static final VoxelShape SHAPE = Block.column(10.0D, 0.0D, 12.0D);
 
     public EntropicFungusBlock(Properties properties) {
         super(properties);

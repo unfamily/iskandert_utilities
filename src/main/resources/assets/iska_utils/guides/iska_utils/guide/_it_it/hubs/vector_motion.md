@@ -9,7 +9,7 @@ categories:
 ---
 # Movimento vector
 
-Vector Charm, Fanpack, piastre vector e componenti correlati. Le ricette del modulo velocità sono in **Moduli** → **Moduli vector**.
+Vector Charm, Fanpack, piastre vector e componenti correlati. I moduli velocità sono in **Moduli** → **Moduli vector**.
 
 
 <SubPages icons={true} alphabetical={true} />

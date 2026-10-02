@@ -24,4 +24,4 @@ Carica la tavoletta con **6× ametiste** e **1× Agglomerazione entropica** (o c
 ## Usi
 
 - **Tavolo da forgia**: con <ItemImage id="iska_utils:entropic_smithing_template" /> **Modello di forgia entropica** e equip **netherite** → strumenti e armatura **entropici**.
-- Componente per <ItemImage id="iska_utils:entropy_tnt" /> **TNT entropica** e altre ricette entropiche.
+- Componente per <ItemImage id="iska_utils:entropy_tnt" /> **TNT entropica** e altri craft entropici.

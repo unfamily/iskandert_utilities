@@ -15,7 +15,7 @@ categories:
 
 ## A cosa serve
 
-Risorsa rara — non si indossa. Si usa sulla <ItemImage id="iska_utils:ancient_tablet" /> **Tavoletta antica**, nelle ricette entropiche e nel resto della progressione.
+Risorsa rara — non si indossa. Si usa sulla <ItemImage id="iska_utils:ancient_tablet" /> **Tavoletta antica**, nei craft entropici e nel resto della progressione.
 
 ## Come ottenerla
 

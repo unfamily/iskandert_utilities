@@ -121,4 +121,9 @@ public class AncientTabletRecipeCategory implements IRecipeCategory<AncientTable
             builder.addSlot(role, x, y).addItemStack(stacks.get(i));
         }
     }
+
+    @Override
+    public @Nullable Identifier getRegistryName(AncientTabletJeiRecipe recipe) {
+        return recipe.recipeId();
+    }
 }

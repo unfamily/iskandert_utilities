@@ -16,6 +16,7 @@ import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.util.CurioEquipUtil;
 import net.unfamily.iskautils.util.ModUtils;
+import net.unfamily.iskautils.util.ArtifactTooltipUtil;
 import net.unfamily.iskautils.util.KeybindTooltipUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.component.TooltipDisplay;
@@ -59,11 +60,8 @@ public class GhostBrazierItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay tooltipDisplay, Consumer<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
-
-        Component keybindName = KeybindTooltipUtil.keybindOrTranslation("key.iska_utils.ghost_brazier_toggle", "GHOST_BRAZIER_TOGGLE_KEY");
-
-        // Show description
-        tooltip.accept(Component.translatable("tooltip.iska_utils.ghost_brazier.desc0"));
-        tooltip.accept(Component.translatable("tooltip.iska_utils.ghost_brazier.desc1", keybindName));
+        Component keybindName = KeybindTooltipUtil.keybindOrTranslation(
+                "key.iska_utils.ghost_brazier_toggle", "GHOST_BRAZIER_TOGGLE_KEY");
+        ArtifactTooltipUtil.appendDescLines(tooltip, "ghost_brazier", 1, 1, keybindName);
     }
 }

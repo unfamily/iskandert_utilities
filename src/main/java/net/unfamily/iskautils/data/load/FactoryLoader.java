@@ -8,7 +8,6 @@ import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -21,6 +20,7 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.crafting.FactorySourcesRecipe;
+import net.unfamily.iskautils.crafting.ModFactoryRecipes;
 import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryStageHost;
 import net.unfamily.iskautils.script.LoadEntryIfParser;
@@ -140,34 +140,43 @@ public final class FactoryLoader {
 
     private FactoryLoader() {}
 
-    public static void loadFromRecipeManager(RecipeManager recipeManager, ResourceManager datapackResources) {
-        List<Source> merged = new ArrayList<>();
-        for (RecipeHolder<?> holder : recipeManager.getRecipes()) {
-            if (holder.value() instanceof FactorySourcesRecipe r) {
-                merged.addAll(r.compiledSources());
-            }
-        }
-        if (!merged.isEmpty()) {
-            SOURCES = List.copyOf(merged);
-            LOGGER.info("Loaded {} Factory sources from recipe holders", SOURCES.size());
-            return;
-        }
-        LOGGER.warn(
-                "No Factory sources from RecipeManager ({} holders); falling back to merged recipe JSON",
-                recipeManager.getRecipes().size());
-        loadFromMergedRecipeResources(Objects.requireNonNull(datapackResources, "datapackResources"));
+    public static void loadFromRecipeManager(RecipeManager recipeManager) {
+        loadFromRecipeManager(recipeManager, null);
     }
 
-    /** Client GUI/JEI and server fallback: parses factory recipe JSON from merged datapacks. */
-    public static void loadFromMergedRecipeResources(ResourceManager rm) {
-        Map<Identifier, JsonElement> merged =
-                IskaUtilsLoadJson.collectMergedJsonUnderDirectory(rm, "recipe", IskaUtilsLoadPaths::isJsonUnderRecipeTree);
-        List<Source> out = new ArrayList<>();
-        for (var entry : IskaUtilsLoadJson.orderedEntries(merged)) {
-            parseFactoryRecipeJson(entry.getKey(), entry.getValue(), out);
+    /**
+     * Loads Factory sources from registered {@code iska_utils:factory} recipes only.
+     * The {@code datapackResources} argument is ignored (kept for call-site compatibility).
+     */
+    public static void loadFromRecipeManager(RecipeManager recipeManager, @Nullable ResourceManager datapackResources) {
+        List<Source> merged = new ArrayList<>();
+        var factoryType = ModFactoryRecipes.FACTORY_TYPE.get();
+        for (RecipeHolder<FactorySourcesRecipe> holder : RecipeManagerRecipes.holdersOfType(recipeManager, factoryType)) {
+            merged.addAll(holder.value().compiledSources());
         }
-        SOURCES = List.copyOf(out);
-        LOGGER.info("Loaded {} Factory sources from merged recipe datapacks", SOURCES.size());
+        SOURCES = List.copyOf(merged);
+        LOGGER.info("Loaded {} Factory sources from {} recipe(s)", SOURCES.size(), merged.size());
+    }
+
+    /** @deprecated Bundle JSON is split by Library; use {@link #loadFromRecipeManager(RecipeManager)}. */
+    @Deprecated
+    public static void loadFromMergedRecipeResources(ResourceManager rm) {
+        LOGGER.warn("FactoryLoader.loadFromMergedRecipeResources is disabled; use RecipeManager only");
+        SOURCES = List.of();
+    }
+
+    /** Visible for {@link FactorySourcesRecipe} codec compile. */
+    public static List<FactoryIfBranch> parseIfBranchesPublic(
+            JsonArray ifArray,
+            SuspiciousDeliveryStageHost gateHost,
+            Identifier fileId,
+            String input) {
+        return parseIfBranches(ifArray, gateHost, fileId, input);
+    }
+
+    /** Visible for {@link FactorySourcesRecipe} codec compile. */
+    public static List<Output> parseSelectArrayPublic(JsonArray selectArray, Identifier fileId, String inputContext) {
+        return parseSelectArray(selectArray, fileId, inputContext);
     }
 
     public static Optional<Source> tryCompileSource(

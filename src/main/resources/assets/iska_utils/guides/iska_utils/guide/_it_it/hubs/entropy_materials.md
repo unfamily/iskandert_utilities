@@ -9,7 +9,7 @@ categories:
 ---
 # Materiali entropici
 
-Progressione centrata sulla <ItemImage id="iska_utils:ancient_tablet" /> **Tavoletta antica**: crafter portatile con ingredienti e ricette speciali.
+Progressione centrata sulla <ItemImage id="iska_utils:ancient_tablet" /> **Tavoletta antica**: crafter portatile con ingredienti e craft speciali.
 
 Ti servono <ItemImage id="iska_utils:drop_of_entropy" /> **Gocce di entropia** — aprendo una **Consegna sospetta** (**cinque** gocce sull'esito primitivo), **riciclando** oggetti da consegna (**tre** gocce ciascuno al banco o in **Fabbrica**), **loot** (streghe, dungeon, endermite), craftando **<ItemImage id="iska_utils:entropic_fungus" /> Fungo entropico**, e opzionalmente con **Ex Deorum** e **Larva di silverfish** (pagine dedicate).
 
