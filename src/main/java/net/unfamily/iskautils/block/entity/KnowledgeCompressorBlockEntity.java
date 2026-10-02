@@ -77,6 +77,69 @@ public class KnowledgeCompressorBlockEntity extends BlockEntity {
         return itemTransferHandler;
     }
 
+    /**
+     * Bucket / fluid container: fill experience tank from item, or fill empty container from tank.
+     * Colossal Resource Port / AutoShop pattern (NeoForge 26 ResourceHandler).
+     */
+    public boolean interactWithItemFluidHandler(ResourceHandler<FluidResource> itemHandler,
+                                               net.minecraft.world.entity.player.Player player) {
+        if (itemHandler == null || itemHandler.size() == 0) {
+            return false;
+        }
+        experienceTank.updateCapacity();
+        for (int slot = 0; slot < itemHandler.size(); slot++) {
+            FluidResource resource = itemHandler.getResource(slot);
+            int amount = itemHandler.getAmountAsInt(slot);
+            if (!resource.isEmpty() && amount > 0) {
+                FluidStack inItem = resource.toStack(amount);
+                int accepted = experienceTank.fill(inItem, IFluidHandler.FluidAction.SIMULATE);
+                if (accepted > 0) {
+                    try (net.neoforged.neoforge.transfer.transaction.Transaction transaction =
+                                 net.neoforged.neoforge.transfer.transaction.Transaction.openRoot()) {
+                        int extracted = itemHandler.extract(slot, resource, accepted, transaction);
+                        if (extracted <= 0) {
+                            return false;
+                        }
+                        int filled = experienceTank.fill(resource.toStack(extracted), IFluidHandler.FluidAction.EXECUTE);
+                        if (filled != extracted) {
+                            experienceTank.drain(filled, IFluidHandler.FluidAction.EXECUTE);
+                            return false;
+                        }
+                        transaction.commit();
+                    }
+                    resource.getFluid().getPickupSound().ifPresent(player::playSound);
+                    setChanged();
+                    return true;
+                }
+                return false;
+            }
+        }
+        FluidStack inBlock = experienceTank.getFluid();
+        if (!inBlock.isEmpty()) {
+            FluidResource resource = FluidResource.of(inBlock);
+            int inserted;
+            try (net.neoforged.neoforge.transfer.transaction.Transaction transaction =
+                         net.neoforged.neoforge.transfer.transaction.Transaction.openRoot()) {
+                inserted = itemHandler.insert(resource, inBlock.getAmount(), transaction);
+                if (inserted <= 0) {
+                    return false;
+                }
+                experienceTank.drain(inserted, IFluidHandler.FluidAction.EXECUTE);
+                transaction.commit();
+            }
+            if (inserted > 0) {
+                var soundEvent = inBlock.getFluid().getFluidType()
+                        .getSound(net.neoforged.neoforge.common.SoundActions.BUCKET_EMPTY);
+                if (soundEvent != null) {
+                    player.playSound(soundEvent);
+                }
+                setChanged();
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static void serverTick(
             Level level, BlockPos pos, BlockState state, KnowledgeCompressorBlockEntity blockEntity) {
         if (state.getValue(KnowledgeCompressorBlock.POWERED)) {
@@ -86,16 +149,35 @@ public class KnowledgeCompressorBlockEntity extends BlockEntity {
             blockEntity.conversionCooldown--;
             return;
         }
-        ItemStack jelly = new ItemStack(ModItems.JELLY_OF_KNOWLEDGE.get());
-        if (!blockEntity.outputHandler.insertItem(0, jelly, true).isEmpty()) {
-            return;
-        }
         int cost = ExperienceFluidMath.jellyMbCost();
-        if (blockEntity.experienceTank.getFluidAmount() < cost) {
+        if (cost <= 0) {
             return;
         }
-        blockEntity.experienceTank.drain(cost, IFluidHandler.FluidAction.EXECUTE);
-        blockEntity.outputHandler.insertItem(0, jelly, false);
+        int fluid = blockEntity.experienceTank.getFluidAmount();
+        int maxByFluid = fluid / cost;
+        if (maxByFluid <= 0) {
+            return;
+        }
+        ItemStack existing = blockEntity.outputHandler.getStackInSlot(0);
+        int maxStack = new ItemStack(ModItems.JELLY_OF_KNOWLEDGE.get()).getMaxStackSize();
+        int space;
+        if (existing.isEmpty()) {
+            space = maxStack;
+        } else if (existing.is(ModItems.JELLY_OF_KNOWLEDGE.get())) {
+            space = maxStack - existing.getCount();
+        } else {
+            return;
+        }
+        int toCraft = Math.min(maxByFluid, space);
+        if (toCraft <= 0) {
+            return;
+        }
+        ItemStack batch = new ItemStack(ModItems.JELLY_OF_KNOWLEDGE.get(), toCraft);
+        if (!blockEntity.outputHandler.insertItem(0, batch, true).isEmpty()) {
+            return;
+        }
+        blockEntity.experienceTank.drain(toCraft * cost, IFluidHandler.FluidAction.EXECUTE);
+        blockEntity.outputHandler.insertItem(0, batch, false);
         blockEntity.conversionCooldown = Math.max(1, Config.knowledgeCompressorConversionIntervalTicks);
         blockEntity.setChanged();
     }

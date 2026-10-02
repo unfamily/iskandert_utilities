@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -78,6 +79,11 @@ public class PotionPlateBlock extends VectorBlock {
 
         // Only affect living entities
         if (!(entity instanceof LivingEntity livingEntity)) {
+            return;
+        }
+
+        // entityInside can fire for the whole cell; plates are thin — require real shape contact
+        if (!entityTouchesPlateShape(state, level, pos, entity)) {
             return;
         }
 
@@ -273,6 +279,26 @@ public class PotionPlateBlock extends VectorBlock {
     private boolean applySlow(LivingEntity livingEntity, BlockState state) {
         livingEntity.makeStuckInBlock(state, new Vec3(0.001D, 0.001D, 0.001D));
         return true;
+    }
+
+    /** True only when the entity AABB intersects the thin plate voxel (not just the block cell). */
+    private boolean entityTouchesPlateShape(BlockState state, Level level, BlockPos pos, Entity entity) {
+        VoxelShape shape = getShape(state, level, pos, CollisionContext.of(entity));
+        if (shape.isEmpty()) {
+            return false;
+        }
+        return Shapes.joinIsNotEmpty(
+                shape,
+                Shapes.create(entity.getBoundingBox().move(-pos.getX(), -pos.getY(), -pos.getZ())),
+                BooleanOp.AND);
+    }
+
+    /**
+     * Default is a full cube; use the thin plate shape so vanilla only treats real contact as "inside".
+     */
+    @Override
+    protected VoxelShape getEntityInsideCollisionShape(BlockState state, BlockGetter level, BlockPos pos, Entity entity) {
+        return getShape(state, level, pos, CollisionContext.of(entity));
     }
     
     /**

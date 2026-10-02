@@ -7,9 +7,11 @@ import net.minecraft.world.entity.InsideBlockEffectApplier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -49,6 +51,15 @@ public class CrystalCageTrapPlateBlock extends VectorBlock {
         if (living instanceof Player) return;
         if (living.isRemoved()) return;
 
+        VoxelShape shape = getShape(state, level, pos, CollisionContext.of(entity));
+        if (shape.isEmpty()
+                || !Shapes.joinIsNotEmpty(
+                        shape,
+                        Shapes.create(entity.getBoundingBox().move(-pos.getX(), -pos.getY(), -pos.getZ())),
+                        BooleanOp.AND)) {
+            return;
+        }
+
         if (!(level instanceof net.minecraft.server.level.ServerLevel serverLevel)) return;
 
         if (CrystalCageItem.isCaptureBlacklisted(living)) return;
@@ -75,9 +86,14 @@ public class CrystalCageTrapPlateBlock extends VectorBlock {
 
     @Override
     public VoxelShape getCollisionShape(BlockState state,
-                                        net.minecraft.world.level.BlockGetter level,
+                                        BlockGetter level,
                                         BlockPos pos,
                                         CollisionContext context) {
         return Shapes.empty();
+    }
+
+    @Override
+    protected VoxelShape getEntityInsideCollisionShape(BlockState state, BlockGetter level, BlockPos pos, Entity entity) {
+        return getShape(state, level, pos, CollisionContext.of(entity));
     }
 }

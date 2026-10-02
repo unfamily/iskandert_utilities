@@ -118,6 +118,74 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
         return fluidTransferHandler;
     }
 
+    /**
+     * Bucket / fluid container: fill insertion buffer from item, or fill empty container from accumulation.
+     * Colossal Resource Port / AutoShop pattern (NeoForge 26 ResourceHandler).
+     */
+    public boolean interactWithItemFluidHandler(ResourceHandler<FluidResource> itemHandler, Player player) {
+        if (itemHandler == null || itemHandler.size() == 0) {
+            return false;
+        }
+        for (int slot = 0; slot < itemHandler.size(); slot++) {
+            FluidResource resource = itemHandler.getResource(slot);
+            int amount = itemHandler.getAmountAsInt(slot);
+            if (!resource.isEmpty() && amount > 0) {
+                FluidStack inItem = resource.toStack(amount);
+                int accepted = insertionBufferTank.fill(inItem, IFluidHandler.FluidAction.SIMULATE);
+                if (accepted > 0) {
+                    try (net.neoforged.neoforge.transfer.transaction.Transaction transaction =
+                                 net.neoforged.neoforge.transfer.transaction.Transaction.openRoot()) {
+                        int extracted = itemHandler.extract(slot, resource, accepted, transaction);
+                        if (extracted <= 0) {
+                            return false;
+                        }
+                        int filled = insertionBufferTank.fill(resource.toStack(extracted), IFluidHandler.FluidAction.EXECUTE);
+                        if (filled != extracted) {
+                            insertionBufferTank.drain(filled, IFluidHandler.FluidAction.EXECUTE);
+                            return false;
+                        }
+                        transaction.commit();
+                    }
+                    resource.getFluid().getPickupSound().ifPresent(player::playSound);
+                    setChanged();
+                    return true;
+                }
+                return false;
+            }
+        }
+        FluidStack inBlock = accumulationTank.getFluid();
+        if (inBlock.isEmpty()) {
+            inBlock = insertionBufferTank.getFluid();
+        }
+        if (!inBlock.isEmpty()) {
+            FluidResource resource = FluidResource.of(inBlock);
+            int inserted;
+            try (net.neoforged.neoforge.transfer.transaction.Transaction transaction =
+                         net.neoforged.neoforge.transfer.transaction.Transaction.openRoot()) {
+                inserted = itemHandler.insert(resource, inBlock.getAmount(), transaction);
+                if (inserted <= 0) {
+                    return false;
+                }
+                if (!accumulationTank.getFluid().isEmpty()) {
+                    accumulationTank.drain(inserted, IFluidHandler.FluidAction.EXECUTE);
+                } else {
+                    insertionBufferTank.drain(inserted, IFluidHandler.FluidAction.EXECUTE);
+                }
+                transaction.commit();
+            }
+            if (inserted > 0) {
+                var soundEvent = inBlock.getFluid().getFluidType()
+                        .getSound(net.neoforged.neoforge.common.SoundActions.BUCKET_EMPTY);
+                if (soundEvent != null) {
+                    player.playSound(soundEvent);
+                }
+                setChanged();
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** @deprecated Use {@link #getInsertionBufferTank()} */
     @Deprecated
     public FluidTank getExperienceTank() {

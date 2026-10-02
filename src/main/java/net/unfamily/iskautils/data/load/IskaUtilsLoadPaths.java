@@ -34,7 +34,6 @@ public final class IskaUtilsLoadPaths {
     public static final String TYPE_SUSPICIOUS_DELIVERY = "iska_utils:suspicious_delivery";
     public static final String TYPE_ANCIENT_TAB = "iska_utils:ancient_tab";
     public static final String TYPE_ARCANE_DICTIONARY = "iska_utils:arcane_dictionary";
-    public static final String TYPE_TOOLS = "iska_utils:tools";
 
     public static final String COMMAND_ITEMS = "iska_utils_command_items";
     public static final String PLATES = "iska_utils_plates";
@@ -49,8 +48,6 @@ public final class IskaUtilsLoadPaths {
     public static final String SUSPICIOUS_DELIVERY = "iska_utils_suspicious_delivery";
     /** Arcane Dictionary trait pool ({@code iska_utils:arcane_dictionary}). */
     public static final String ARCANE_DICTIONARY = "iska_utils_arcane_dictionary";
-    /** Datapack AOE tool behaviors ({@code iska_utils:tools}). */
-    public static final String TOOLS = "iska_utils_tools";
 
     private static final Map<String, Set<String>> TYPES_BY_SUBDIR = Map.ofEntries(
             Map.entry(COMMAND_ITEMS, Set.of(TYPE_COMMAND_ITEM)),
@@ -62,8 +59,7 @@ public final class IskaUtilsLoadPaths {
             Map.entry(STAGE_ITEMS, Set.of(TYPE_STAGE_ITEM)),
             Map.entry(STRUCTURE_DEFINITIONS, Set.of(TYPE_STRUCTURE)),
             Map.entry(SUSPICIOUS_DELIVERY, Set.of(TYPE_SUSPICIOUS_DELIVERY)),
-            Map.entry(ARCANE_DICTIONARY, Set.of(TYPE_ARCANE_DICTIONARY)),
-            Map.entry(TOOLS, Set.of(TYPE_TOOLS))
+            Map.entry(ARCANE_DICTIONARY, Set.of(TYPE_ARCANE_DICTIONARY))
     );
 
     public static String loadSubdirPrefix(String subdir) {

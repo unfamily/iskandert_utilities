@@ -29,7 +29,11 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.access.ItemAccess;
+import net.neoforged.neoforge.transfer.fluid.FluidResource;
 import net.unfamily.iskautils.block.entity.KnowledgeCompressorBlockEntity;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import org.jetbrains.annotations.Nullable;
@@ -70,6 +74,27 @@ public class KnowledgeCompressorBlock extends HorizontalDirectionalBlock impleme
     @Override
     public RenderShape getRenderShape(BlockState state) {
         return RenderShape.MODEL;
+    }
+
+    /**
+     * Bucket / fluid-container click: fill compressor tank from item or drain tank into item
+     * (same pattern as Colossal Resource Port / AutoShop).
+     */
+    @Override
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+                                          Player player, InteractionHand hand, BlockHitResult hitResult) {
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
+        }
+        if (!(level.getBlockEntity(pos) instanceof KnowledgeCompressorBlockEntity blockEntity)) {
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
+        }
+        ItemAccess itemAccess = ItemAccess.forPlayerInteraction(player, hand).oneByOne();
+        ResourceHandler<FluidResource> fluidHandler = itemAccess.getCapability(Capabilities.Fluid.ITEM);
+        if (fluidHandler != null && blockEntity.interactWithItemFluidHandler(fluidHandler, player)) {
+            return InteractionResult.SUCCESS_SERVER;
+        }
+        return InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
     /**

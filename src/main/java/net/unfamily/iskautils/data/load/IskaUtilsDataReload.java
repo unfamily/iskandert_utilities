@@ -10,7 +10,6 @@ import net.unfamily.iskautils.command.CommandItemLoader;
 import net.unfamily.iskautils.item.CommandItemRegistry;
 import net.unfamily.iskautils.command.StageActionsLoader;
 import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
-import net.unfamily.iskautils.data.DynamicToolBehaviorScanner;
 import net.unfamily.iskautils.iska_utils_stages.StageItemHandler;
 import net.unfamily.iskautils.shop.ShopLoader;
 import net.unfamily.iskautils.structure.StructureMonouseLoader;
@@ -37,7 +36,7 @@ public final class IskaUtilsDataReload {
         CommandItemLoader.loadAll(rm);
         CommandItemRegistry.reloadDefinitions();
         DynamicPotionPlateScanner.loadAll(rm);
-        DynamicToolBehaviorScanner.loadAll(rm);
+        net.unfamily.iskalib.tool.ToolBehaviorLoader.loadAll(rm);
         StructureMonouseLoader.loadAll(rm);
         ShopLoader.loadAll(rm);
         MacroLoader.reloadAllMacros();

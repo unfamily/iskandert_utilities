@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -22,6 +23,10 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.access.ItemAccess;
+import net.neoforged.neoforge.transfer.fluid.FluidResource;
 import net.unfamily.iskautils.block.entity.CollectingCrateBlockEntity;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import org.jetbrains.annotations.Nullable;
@@ -69,6 +74,28 @@ public class CollectingCrateBlock extends BaseEntityBlock {
             return null;
         }
         return createTickerHelper(type, ModBlockEntities.COLLECTING_CRATE_BE.get(), CollectingCrateBlockEntity::serverTick);
+    }
+
+    /**
+     * Bucket / fluid-container click: fill crate tanks from item or drain tanks into item
+     * (same pattern as Colossal Resource Port / AutoShop).
+     */
+    @Override
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+                                          Player player, InteractionHand hand, BlockHitResult hitResult) {
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
+        }
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (!(blockEntity instanceof CollectingCrateBlockEntity crate)) {
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
+        }
+        ItemAccess itemAccess = ItemAccess.forPlayerInteraction(player, hand).oneByOne();
+        ResourceHandler<FluidResource> fluidHandler = itemAccess.getCapability(Capabilities.Fluid.ITEM);
+        if (fluidHandler != null && crate.interactWithItemFluidHandler(fluidHandler, player)) {
+            return InteractionResult.SUCCESS_SERVER;
+        }
+        return InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
     @Override

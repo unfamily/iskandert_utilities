@@ -20,8 +20,8 @@ Il **Compressore della conoscenza** memorizza l’esperienza come fluido in un s
 ## Come usarlo
 
 1. Invia o inserisci **fluido esperienza** nel blocco (stessa famiglia di fluido usata altrove in Iskandert's Utilities).
-2. Quando il serbatoio contiene abbastanza XP per una gelatina, la macchina produce automaticamente uno stack di gelatine.
-3. Le modalità redstone sono come le altre macchine di lavorazione (manual / high / low / pulse) tramite il pulsante laterale.
+2. Ogni batch di conversione trasforma tutto il fluido possibile in gelatine (fino a uno stack in output). Capacità serbatoio di default: **64000 mB** (uno stack di gelatine ai costi di default).
+3. Il segnale di redstone **mette in pausa** la conversione (alimentato = idle).
 
 ## Suggerimenti
 
