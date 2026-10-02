@@ -9,6 +9,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -42,6 +43,16 @@ public class CrystalCageTrapPlateBlock extends VectorBlock {
         if (!(entity instanceof LivingEntity living)) return;
         if (living instanceof Player) return;
         if (living.isRemoved()) return;
+
+        // entityInside fires for the whole block cell; plates are thin — require real shape contact
+        VoxelShape shape = getShape(state, level, pos, CollisionContext.of(entity));
+        if (shape.isEmpty()
+                || !Shapes.joinIsNotEmpty(
+                        shape,
+                        Shapes.create(entity.getBoundingBox().move(-pos.getX(), -pos.getY(), -pos.getZ())),
+                        BooleanOp.AND)) {
+            return;
+        }
 
         if (!(level instanceof net.minecraft.server.level.ServerLevel serverLevel)) return;
 

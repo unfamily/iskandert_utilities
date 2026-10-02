@@ -58,6 +58,50 @@ public class KnowledgeCompressorBlockEntity extends BlockEntity {
         return itemHandler;
     }
 
+    /**
+     * Bucket / fluid container: fill experience tank from item, or fill empty container from tank.
+     * Colossal Resource Port / AutoShop pattern.
+     */
+    public boolean interactWithItemFluidHandler(
+            net.neoforged.neoforge.fluids.capability.IFluidHandlerItem itemHandler,
+            net.minecraft.world.entity.player.Player player) {
+        if (itemHandler == null || itemHandler.getTanks() == 0) {
+            return false;
+        }
+        experienceTank.updateCapacity();
+        FluidStack inItem = itemHandler.getFluidInTank(0);
+        if (!inItem.isEmpty()) {
+            if (experienceTank.fill(inItem.copy(), IFluidHandler.FluidAction.SIMULATE) > 0) {
+                int filled = experienceTank.fill(inItem.copy(), IFluidHandler.FluidAction.EXECUTE);
+                if (filled > 0) {
+                    itemHandler.drain(filled, IFluidHandler.FluidAction.EXECUTE);
+                    inItem.getFluid().getPickupSound().ifPresent(player::playSound);
+                    setChanged();
+                    return true;
+                }
+            }
+            return false;
+        }
+        FluidStack inBlock = experienceTank.getFluid();
+        if (!inBlock.isEmpty() && itemHandler.isFluidValid(0, inBlock)) {
+            int capacity = itemHandler.getTankCapacity(0);
+            FluidStack toFill = inBlock.copy();
+            toFill.setAmount(Math.min(inBlock.getAmount(), capacity));
+            int filled = itemHandler.fill(toFill, IFluidHandler.FluidAction.EXECUTE);
+            if (filled > 0) {
+                experienceTank.drain(filled, IFluidHandler.FluidAction.EXECUTE);
+                var soundEvent = inBlock.getFluid().getFluidType()
+                        .getSound(net.neoforged.neoforge.common.SoundActions.BUCKET_EMPTY);
+                if (soundEvent != null) {
+                    player.playSound(soundEvent);
+                }
+                setChanged();
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static void serverTick(Level level, BlockPos pos, BlockState state, KnowledgeCompressorBlockEntity blockEntity) {
         if (state.getValue(KnowledgeCompressorBlock.POWERED)) {
             return;
@@ -66,16 +110,35 @@ public class KnowledgeCompressorBlockEntity extends BlockEntity {
             blockEntity.conversionCooldown--;
             return;
         }
-        ItemStack jelly = new ItemStack(ModItems.JELLY_OF_KNOWLEDGE.get());
-        if (!blockEntity.outputHandler.insertItem(0, jelly, true).isEmpty()) {
-            return;
-        }
         int cost = ExperienceFluidMath.jellyMbCost();
-        if (blockEntity.experienceTank.getFluidAmount() < cost) {
+        if (cost <= 0) {
             return;
         }
-        blockEntity.experienceTank.drain(cost, IFluidHandler.FluidAction.EXECUTE);
-        blockEntity.outputHandler.insertItem(0, jelly, false);
+        int fluid = blockEntity.experienceTank.getFluidAmount();
+        int maxByFluid = fluid / cost;
+        if (maxByFluid <= 0) {
+            return;
+        }
+        ItemStack existing = blockEntity.outputHandler.getStackInSlot(0);
+        int maxStack = new ItemStack(ModItems.JELLY_OF_KNOWLEDGE.get()).getMaxStackSize();
+        int space;
+        if (existing.isEmpty()) {
+            space = maxStack;
+        } else if (existing.is(ModItems.JELLY_OF_KNOWLEDGE.get())) {
+            space = maxStack - existing.getCount();
+        } else {
+            return;
+        }
+        int toCraft = Math.min(maxByFluid, space);
+        if (toCraft <= 0) {
+            return;
+        }
+        ItemStack batch = new ItemStack(ModItems.JELLY_OF_KNOWLEDGE.get(), toCraft);
+        if (!blockEntity.outputHandler.insertItem(0, batch, true).isEmpty()) {
+            return;
+        }
+        blockEntity.experienceTank.drain(toCraft * cost, IFluidHandler.FluidAction.EXECUTE);
+        blockEntity.outputHandler.insertItem(0, batch, false);
         blockEntity.conversionCooldown = Math.max(1, Config.knowledgeCompressorConversionIntervalTicks);
         blockEntity.setChanged();
     }

@@ -1722,5 +1722,6 @@
   "effect.iska_utils.entropic_empowerment_player.desc": "Increases damage dealt and reduces damage taken. Always paired with Entropic Decay.",
   "effect.iska_utils.entropic_empowerment_player.description": "Increases damage dealt and reduces damage taken. Always paired with Entropic Decay.",
   "effect.iska_utils.entropic_decay.desc": "When a harmful effect or curse expires, 30% chance to reapply it briefly. Lasts twice as long as Empowerment.",
-  "effect.iska_utils.entropic_decay.description": "When a harmful effect or curse expires, 30% chance to reapply it briefly. Lasts twice as long as Empowerment."
+  "effect.iska_utils.entropic_decay.description": "When a harmful effect or curse expires, 30% chance to reapply it briefly. Lasts twice as long as Empowerment.",
+  "block.iska_utils.condensed_knowledge": "Condensed Knowledge"
 }

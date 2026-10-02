@@ -344,8 +344,8 @@ public class Config
     }
 
     private static final ModConfigSpec.IntValue KNOWLEDGE_COMPRESSOR_TANK_CAPACITY_MB = BUILDER
-            .comment("Internal experience fluid tank capacity in millibuckets")
-            .defineInRange("000_tank_capacity_mb", 1000, 1, Integer.MAX_VALUE);
+            .comment("Internal experience fluid tank capacity in millibuckets (default 64000 = 64 jellies at default costs)")
+            .defineInRange("000_tank_capacity_mb", 64000, 1, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue KNOWLEDGE_COMPRESSOR_JELLY_XP_POINTS = BUILDER
             .comment("Player experience points granted per jelly of knowledge")
@@ -356,7 +356,7 @@ public class Config
             .defineInRange("002_mb_per_xp_point", 20, 1, 10_000);
 
     private static final ModConfigSpec.IntValue KNOWLEDGE_COMPRESSOR_CONVERSION_INTERVAL_TICKS = BUILDER
-            .comment("Server ticks between jelly conversion attempts")
+            .comment("Server ticks between jelly conversion batches (each batch converts as many jellies as fluid + output slot allow)")
             .defineInRange("003_conversion_interval_ticks", 10, 1, 72000);
 
     static {

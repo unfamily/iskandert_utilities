@@ -26,6 +26,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.Containers;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.fluids.capability.IFluidHandlerItem;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -111,6 +112,54 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
     /** Automation / pipes: insert into buffer, extract from accumulation. */
     public IFluidHandler getFluidHandler() {
         return fluidHandler;
+    }
+
+    /**
+     * Bucket / fluid container: fill insertion buffer from item, or fill empty container from accumulation.
+     * Colossal Resource Port / AutoShop pattern.
+     */
+    public boolean interactWithItemFluidHandler(IFluidHandlerItem itemHandler, Player player) {
+        if (itemHandler == null || itemHandler.getTanks() == 0) {
+            return false;
+        }
+        FluidStack inItem = itemHandler.getFluidInTank(0);
+        if (!inItem.isEmpty()) {
+            if (fluidHandler.fill(inItem.copy(), IFluidHandler.FluidAction.SIMULATE) > 0) {
+                int filled = fluidHandler.fill(inItem.copy(), IFluidHandler.FluidAction.EXECUTE);
+                if (filled > 0) {
+                    itemHandler.drain(filled, IFluidHandler.FluidAction.EXECUTE);
+                    inItem.getFluid().getPickupSound().ifPresent(player::playSound);
+                    setChanged();
+                    return true;
+                }
+            }
+            return false;
+        }
+        FluidStack inBlock = accumulationTank.getFluid();
+        if (inBlock.isEmpty()) {
+            inBlock = insertionBufferTank.getFluid();
+        }
+        if (!inBlock.isEmpty() && itemHandler.isFluidValid(0, inBlock)) {
+            int capacity = itemHandler.getTankCapacity(0);
+            FluidStack toFill = inBlock.copy();
+            toFill.setAmount(Math.min(inBlock.getAmount(), capacity));
+            int filled = itemHandler.fill(toFill, IFluidHandler.FluidAction.EXECUTE);
+            if (filled > 0) {
+                if (!accumulationTank.getFluid().isEmpty()) {
+                    accumulationTank.drain(filled, IFluidHandler.FluidAction.EXECUTE);
+                } else {
+                    insertionBufferTank.drain(filled, IFluidHandler.FluidAction.EXECUTE);
+                }
+                var soundEvent = inBlock.getFluid().getFluidType()
+                        .getSound(net.neoforged.neoforge.common.SoundActions.BUCKET_EMPTY);
+                if (soundEvent != null) {
+                    player.playSound(soundEvent);
+                }
+                setChanged();
+                return true;
+            }
+        }
+        return false;
     }
 
     /** @deprecated Use {@link #getInsertionBufferTank()} — kept for any external callers. */

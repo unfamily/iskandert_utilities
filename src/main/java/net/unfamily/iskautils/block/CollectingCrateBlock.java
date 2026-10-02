@@ -4,7 +4,9 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
@@ -22,6 +24,8 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.fluids.capability.IFluidHandlerItem;
 import net.unfamily.iskautils.block.entity.CollectingCrateBlockEntity;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import org.jetbrains.annotations.Nullable;
@@ -69,6 +73,40 @@ public class CollectingCrateBlock extends BaseEntityBlock {
             return null;
         }
         return createTickerHelper(type, ModBlockEntities.COLLECTING_CRATE.get(), CollectingCrateBlockEntity::serverTick);
+    }
+
+    /**
+     * Bucket / fluid-container click: fill crate tanks from item or drain tanks into item
+     * (same pattern as Colossal Resource Port / AutoShop).
+     */
+    @Override
+    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+                                              Player player, InteractionHand hand, BlockHitResult hitResult) {
+        if (level.isClientSide) {
+            return ItemInteractionResult.SUCCESS;
+        }
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (!(blockEntity instanceof CollectingCrateBlockEntity crate)) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        ItemStack singleStack = stack.copyWithCount(1);
+        IFluidHandlerItem fluidHandler = singleStack.getCapability(Capabilities.FluidHandler.ITEM);
+        if (fluidHandler == null) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        if (crate.interactWithItemFluidHandler(fluidHandler, player)) {
+            stack.shrink(1);
+            if (stack.isEmpty()) {
+                player.setItemInHand(hand, fluidHandler.getContainer());
+            } else {
+                player.setItemInHand(hand, stack);
+                if (!player.getInventory().add(fluidHandler.getContainer())) {
+                    player.drop(fluidHandler.getContainer(), false);
+                }
+            }
+            return ItemInteractionResult.SUCCESS;
+        }
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override

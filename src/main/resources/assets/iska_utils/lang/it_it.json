@@ -1722,5 +1722,6 @@
   "effect.iska_utils.entropic_empowerment_player.desc": "Aumenta i danni inflitti e riduce quelli subiti. Sempre accompagnato dal Decadimento entropico.",
   "effect.iska_utils.entropic_empowerment_player.description": "Aumenta i danni inflitti e riduce quelli subiti. Sempre accompagnato dal Decadimento entropico.",
   "effect.iska_utils.entropic_decay.desc": "Quando scade un effetto dannoso o una maledizione, 30% di probabilità di riapplicarlo per poco. Dura il doppio del Potenziamento.",
-  "effect.iska_utils.entropic_decay.description": "Quando scade un effetto dannoso o una maledizione, 30% di probabilità di riapplicarlo per poco. Dura il doppio del Potenziamento."
+  "effect.iska_utils.entropic_decay.description": "Quando scade un effetto dannoso o una maledizione, 30% di probabilità di riapplicarlo per poco. Dura il doppio del Potenziamento.",
+  "block.iska_utils.condensed_knowledge": "Conoscenza Condensata"
 }

@@ -20,8 +20,8 @@ The **Knowledge Compressor** stores experience as fluid in an internal tank and 
 ## How to use
 
 1. Pipe or insert **experience fluid** into the block (same fluid family used elsewhere in Iskandert's Utilities).
-2. When the tank holds enough XP for one jelly, the machine outputs a jelly stack automatically.
-3. Redstone modes match other processing machines (manual / high / low / pulse) via the side button.
+2. Each conversion batch turns as much fluid as possible into jellies (up to a full output stack). Default tank capacity is **64000 mB** (one stack of jelly at default costs).
+3. Redstone power **pauses** conversion (powered = idle).
 
 ## Tips
 

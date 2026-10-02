@@ -8,7 +8,6 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.iskautils.command.MacroLoader;
 import net.unfamily.iskautils.command.StageActionsLoader;
 import net.unfamily.iskautils.data.DynamicPotionPlateScanner;
-import net.unfamily.iskautils.data.DynamicToolBehaviorScanner;
 import net.unfamily.iskautils.iska_utils_stages.StageItemHandler;
 import net.unfamily.iskautils.item.CommandItemRegistry;
 import net.unfamily.iskautils.shop.ShopLoader;
@@ -42,7 +41,7 @@ public final class IskaUtilsDataReload {
             CommandItemRegistry.reloadDefinitions();
         });
         runPhase("potion plates", () -> DynamicPotionPlateScanner.loadAll(rm));
-        runPhase("tool behaviors", () -> DynamicToolBehaviorScanner.loadAll(rm));
+        runPhase("tool behaviors", () -> net.unfamily.iskalib.tool.ToolBehaviorLoader.loadAll(rm));
         runPhase("structure monouse", () -> StructureMonouseLoader.loadAll(rm));
         runPhase("shop", () -> ShopLoader.loadAll(rm));
         runPhase("macros", MacroLoader::reloadAllMacros);

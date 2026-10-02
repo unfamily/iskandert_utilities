@@ -162,7 +162,10 @@ public class IskaUtils {
         net.unfamily.iskautils.shop.ShopEntryTypeRegistry.ensureBuiltins();
         net.unfamily.iskautils.arcane.ArcaneDictionaryEffectsInit.registerBuiltins();
         net.unfamily.iskautils.arcane.ArcaneDictionaryLoader.loadAllBootstrap();
-        net.unfamily.iskautils.data.DynamicToolBehaviorScanner.loadAllBootstrap();
+        net.unfamily.iskalib.tool.ToolBehaviorLoader.register(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(MOD_ID, "entropic_paxel"),
+                net.unfamily.iskalib.tool.ToolBehaviorType.PAXEL,
+                1);
         
         // Register network messages
         ModMessages.register();

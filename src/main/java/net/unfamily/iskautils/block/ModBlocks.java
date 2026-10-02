@@ -388,9 +388,14 @@ public class ModBlocks {
     public static final DeferredBlock<LiquidBlock> CONDENSED_KNOWLEDGE_BLOCK = BLOCKS.register("condensed_knowledge",
             () -> new LiquidBlock(ModFluids.CONDENSED_KNOWLEDGE_SOURCE.get(), BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_LIGHT_GREEN)
+                    .replaceable()
                     .noCollission()
                     .strength(100.0f)
-                    .noLootTable()));
+                    .pushReaction(PushReaction.DESTROY)
+                    .noLootTable()
+                    .liquid()
+                    .sound(SoundType.EMPTY)
+                    .lightLevel(state -> 10)));
 
     // Smart Timer (emits redstone signal periodically)
     private static final BlockBehaviour.Properties SMART_TIMER_PROPERTIES = BlockBehaviour.Properties.of()
