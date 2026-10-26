@@ -1734,5 +1734,16 @@
   "effect.iska_utils.entropic_empowerment_player.description": "Increases damage dealt and reduces damage taken. Always paired with Entropic Decay.",
   "effect.iska_utils.entropic_decay.desc": "When a harmful effect or curse expires, 30% chance to reapply it briefly. Lasts twice as long as Empowerment.",
   "effect.iska_utils.entropic_decay.description": "When a harmful effect or curse expires, 30% chance to reapply it briefly. Lasts twice as long as Empowerment.",
-  "block.iska_utils.condensed_knowledge": "Condensed Knowledge"
+  "block.iska_utils.condensed_knowledge": "Condensed Knowledge",
+  "block.iska_utils.rubber_sign": "Rubber Sign",
+  "block.iska_utils.rubber_wall_sign": "Rubber Sign",
+  "block.iska_utils.rubber_hanging_sign": "Rubber Hanging Sign",
+  "block.iska_utils.rubber_wall_hanging_sign": "Rubber Hanging Sign",
+  "item.iska_utils.rubber_sign": "Rubber Sign",
+  "item.iska_utils.rubber_hanging_sign": "Rubber Hanging Sign",
+  "item.iska_utils.lasting_candy": "Lasting Candy",
+  "tooltip.iska_utils.lasting_candy.desc0": "By ingesting these candies you feel you've gained a strange power.",
+  "tooltip.iska_utils.lasting_candy.desc1": "Wear in the Curios charm slot.",
+  "tooltip.iska_utils.lasting_candy.desc2": "%ss invulnerability when hit, then %ss cooldown.",
+  "tooltip.iska_utils.lasting_candy.availability": "§7Available from October 26 to November 5"
 }
