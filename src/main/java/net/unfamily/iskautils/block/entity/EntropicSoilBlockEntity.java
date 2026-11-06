@@ -23,8 +23,9 @@ import net.unfamily.iskautils.util.EntropicSoilUtil;
 import net.unfamily.iskautils.util.SoilAcceleratedSpawn;
 
 import java.util.Optional;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class EntropicSoilBlockEntity extends BlockEntity {
+public class EntropicSoilBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private static final String TAG_COOLDOWN = "spawn_cooldown";
     private static final String TAG_ACCEL_COOLDOWN = "accel_spawn_cooldown";
     private static final String TAG_PATCH_REDSTONE = "patch_redstone";
@@ -42,6 +43,27 @@ public class EntropicSoilBlockEntity extends BlockEntity {
     public EntropicSoilBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ENTROPIC_SOIL_BE.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     public static void tickServer(Level level, BlockPos pos, BlockState state, EntropicSoilBlockEntity blockEntity) {
         if (level.isClientSide() || !(level instanceof ServerLevel server)) {
@@ -208,6 +230,7 @@ public class EntropicSoilBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         output.putInt(TAG_COOLDOWN, spawnCooldownTicks);
         output.putInt(TAG_ACCEL_COOLDOWN, accelSpawnCooldownTicks);
         output.putBoolean(TAG_PATCH_REDSTONE, patchRedstoneActive);
@@ -218,6 +241,7 @@ public class EntropicSoilBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         spawnCooldownTicks = input.getInt(TAG_COOLDOWN).orElse(-1);
         accelSpawnCooldownTicks = input.getInt(TAG_ACCEL_COOLDOWN)
                 .or(() -> input.getInt("accel_wave_cooldown"))

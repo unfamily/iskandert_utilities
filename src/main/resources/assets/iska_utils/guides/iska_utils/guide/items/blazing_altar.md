@@ -27,8 +27,8 @@ Area controller for **Burning Flame** / **Cursed Burning Flame** placement and o
 
 - **Spawn filter**: Off / All / Hostile / Passive — affects only `NATURAL` mob spawns in the area.
 - **Chunk radius** (Chebyshev): area size for flames and spawn filter.
-- **Ground only**: flames only on top of solid ground (default on). With ground off, flames may place in open air.
-- **Light-sensitive blocks**: mushrooms, entropic soil, and dreadful dirt must stay in darkness on the block and the space above it — flame placement that would light them is rejected.
+- **Ground only**: flames only on solid ground — surface **and** underground floors such as caves (default on). With ground off, flames may place in any valid open air (including floating).
+- **Light-sensitive blocks**: mushrooms, entropic soil, entropic dirt, and dreadful dirt must stay in darkness on the block and the space above it — flame placement that would light them is rejected.
 - **Flame Vision**: global client toggle to see mod flame blocks (also toggled with left-click in air or on a brazier/candle).
 - **Show**: corner pillars marking the extreme chunks of the coverage area.
 - **Redstone**: default **ignored** (always active). Other modes match factory machines (no pulse).

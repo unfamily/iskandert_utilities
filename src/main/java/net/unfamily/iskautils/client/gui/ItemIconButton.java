@@ -4,6 +4,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -17,6 +18,8 @@ import java.util.function.Supplier;
  */
 public class ItemIconButton extends Button {
     private final Supplier<ItemStack> iconStack;
+    /** When false, LMB does not play the vanilla UI click. */
+    private boolean playClickSound = true;
     @Nullable
     private final Supplier<Identifier> overlayTexture;
 
@@ -68,6 +71,18 @@ public class ItemIconButton extends Button {
             if (!this.active) {
                 graphics.fill(ix, iy, ix + iconSize, iy + iconSize, 0x66000000);
             }
+        }
+    }
+
+    public ItemIconButton muteClickSound() {
+        this.playClickSound = false;
+        return this;
+    }
+
+    @Override
+    public void playDownSound(SoundManager handler) {
+        if (playClickSound) {
+            super.playDownSound(handler);
         }
     }
 

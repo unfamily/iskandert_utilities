@@ -19,12 +19,14 @@ import net.unfamily.iskautils.block.EnderNullifierBlock;
 import net.unfamily.iskautils.client.gui.NullifierMenu;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.world.NullifierSpatialIndex;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvider, INullifierBE {
+public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvider, INullifierBE, net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private EnderNullifierRedstoneMode redstoneMode = EnderNullifierRedstoneMode.MANUAL;
     private boolean manualEnabled = true;
     private boolean previousRedstoneState = false;
     private int range = -1;
+    private int areaOffsetX = 0;
     private boolean showAreaEnabled = false;
     private NullifierTargetMode targetMode = NullifierTargetMode.ONLY_MOBS;
 
@@ -45,6 +47,27 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
     public EnderNullifierBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ENDER_NULLIFIER_BE.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     // --- INullifierBE ---
     @Override public NullifierType getNullifierType() { return NullifierType.ENDER; }
@@ -75,6 +98,7 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
     @Override
     public void setRange(int r) {
         this.range = Math.max(1, Math.min(r, getMaxRange()));
+        areaOffsetX = Math.max(-this.range, Math.min(this.range, areaOffsetX));
         setChanged();
         syncSpatialIndex(computeEffectiveActive(getBlockState().getValue(EnderNullifierBlock.POWERED)));
     }
@@ -94,6 +118,21 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
     public int getMaxRange() {
         int modules = moduleHandler.getStackInSlot(0).getCount();
         return Config.enderNullifierMaxRange + modules * Config.enderNullifierRangeModuleBonus;
+    }
+    @Override
+    public int getAreaOffsetX() {
+        return areaOffsetX;
+    }
+
+    @Override
+    public void setAreaOffsetX(int offset) {
+        int clamped = Math.max(-getRange(), Math.min(getRange(), offset));
+        if (areaOffsetX == clamped) {
+            return;
+        }
+        areaOffsetX = clamped;
+        setChanged();
+        syncSpatialIndex(computeEffectiveActive(getBlockState().getValue(EnderNullifierBlock.POWERED)));
     }
     @Override
     public int getRedstoneModeGui() {
@@ -210,7 +249,8 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
                     NullifierSpatialIndex.Kind.ENDER,
                     active,
                     getRange(),
-                    targetMode);
+                    targetMode,
+                    getAreaOffsetX());
         }
     }
 
@@ -231,6 +271,7 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
     @Override
     protected void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         int modeValue = input.getInt("RedstoneMode").orElse(0);
         if (modeValue == 3) modeValue = 0;
         redstoneMode = EnderNullifierRedstoneMode.fromValue(modeValue);
@@ -253,6 +294,7 @@ public class EnderNullifierBlockEntity extends BlockEntity implements MenuProvid
     @Override
     protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         output.putInt("RedstoneMode", redstoneMode.getValue());
         output.putBoolean("ManualEnabled", manualEnabled);
         output.putBoolean("PreviousRedstoneState", previousRedstoneState);

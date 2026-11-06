@@ -1416,9 +1416,13 @@ public class Config {
 
     private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> BLAZING_ALTAR_LIGHT_SENSITIVE_ENTRIES = BUILDER
             .comment("Blocks/tags that must not be lit by altar flames. Prefix # for tags, otherwise block id (namespace:path).",
-                    "Default: mushrooms, entropic soil, dreadful dirt.")
+                    "Default: mushrooms, entropic soil, entropic dirt, dreadful dirt.")
             .defineList("004_light_sensitive_entries",
-                    java.util.List.of("#c:mushrooms", "iska_utils:entropic_soil", "mob_grinding_utils:dreadful_dirt"),
+                    java.util.List.of(
+                            "#c:mushrooms",
+                            "iska_utils:entropic_soil",
+                            "iska_utils:entropic_dirt",
+                            "mob_grinding_utils:dreadful_dirt"),
                     obj -> obj instanceof String);
 
     private static final ModConfigSpec.IntValue BLAZING_ALTAR_LIGHT_SENSITIVE_MAX_BLOCK_LIGHT = BUILDER
@@ -1671,19 +1675,12 @@ public class Config {
         BUILDER.comment("Tweaks Configuration").push("tweaks");
     }
 
-    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>>  sticky_fluids = BUILDER
-            .comment("List of fluids that should be sticky")
-            .defineList("000_sticky_fluids", java.util.Arrays.asList("#c:oil"), obj -> obj instanceof String);
-
-    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>>  crude_oils = BUILDER
-            .comment("List of fluids that should be crude oil")
-            .defineList("001_crude_oils", java.util.Arrays.asList("#c:oil"), obj -> obj instanceof String);
-
     private static final ModConfigSpec.ConfigValue<String> SUSPICIOUS_DELIVERY_TRADE_COST = BUILDER
             .comment("Wandering Trader cost for Suspicious Delivery trades.",
                     "Format: item_id;min-max (inclusive counts).",
                     "Default: minecraft:emerald;12-16 (vanilla rare-pool style).",
-                    "Invalid item or range falls back to emerald 12-16.")
+                    "Invalid item or range falls back to emerald 12-16.",
+                    "Sticky/crude fluid lists moved to iska_lib (iska_lib-common.toml → sticky_fluids).")
             .define("002_suspicious_delivery_trade_cost", "minecraft:emerald;12-16");
 
             
@@ -2063,11 +2060,6 @@ public class Config {
             .comment("If true, a successful Entropic Egg use applies Entropic Empowerment to the mob.")
             .define("201_apply_entropic_buff", true);
 
-    private static final ModConfigSpec.BooleanValue BLAZING_ALTAR_CONSUME_BRAZIER = BUILDER
-            .comment("If true, Blazing Altar damages Burning Brazier durability when consuming flames from it.",
-                    "Default: false")
-            .define("210_blazing_altar_consume_brazier", false);
-
     static {
         BUILDER.comment("Entropic Creeper explosion and loot").push("entropic_creeper");
         BUILDER.comment("Normal (uncharged) explosion").push("normal");
@@ -2210,7 +2202,6 @@ public class Config {
     public static int portableDislocatorXpConsume;
     public static boolean portableDislocatorPrioritizeEnergy;
     public static boolean portableDislocatorPrioritizeXp;
-    public static java.util.List<String> stickyFluids = new java.util.ArrayList<>();
     public static int electricTreetapEnergyConsume;
     public static int electricTreetapEnergyBuffer;
     public static int rubberSapExtractorEnergyConsume;
@@ -2219,7 +2210,6 @@ public class Config {
     public static boolean generateRubberTrees;
     public static boolean generateEntropicFungus;
     public static boolean swissWrenchLegacyModes;
-    public static java.util.List<String> crudeOils = new java.util.ArrayList<>();
     /** Raw {@code item_id;min-max} for Suspicious Delivery wanderer trade cost. */
     public static String suspiciousDeliveryTradeCostSpec;
     public static java.util.List<Integer> scannerRangeOptions;
@@ -2338,7 +2328,6 @@ public class Config {
     public static int blazingAltarRangeUpgradeMax;
     public static int blazingAltarExtinguishColumnsPerTick;
     public static boolean burningBrazierSuperHot;
-    public static boolean blazingAltarConsumeBrazier;
     public static int entropicCreeperOr;
     public static int entropicCreeperVr;
     public static int entropicCreeperTickInterval;
@@ -2602,8 +2591,6 @@ public class Config {
         portableDislocatorXpConsume = PORTABLE_DISLOCATOR_XP_CONSUME.get();
         portableDislocatorPrioritizeEnergy = PORTABLE_DISLOCATOR_PRIORITIZE_ENERGY.get();
         portableDislocatorPrioritizeXp = PORTABLE_DISLOCATOR_PRIORITIZE_XP.get();
-        stickyFluids = new java.util.ArrayList<>(sticky_fluids.get());
-        crudeOils = new java.util.ArrayList<>(crude_oils.get());
         suspiciousDeliveryTradeCostSpec = SUSPICIOUS_DELIVERY_TRADE_COST.get();
         net.unfamily.iskautils.obtaining.SuspiciousDeliveryTradeUtil.reloadTradeCostFromConfig();
         // Electric Treetap logic
@@ -2718,7 +2705,6 @@ public class Config {
 
         // Evil Things configuration
         burningBrazierSuperHot = BURNING_BRAZIER_SUPER_HOT.get();
-        blazingAltarConsumeBrazier = BLAZING_ALTAR_CONSUME_BRAZIER.get();
         entropicCreeperOr = ENTROPIC_CREEPER_OR.get();
         entropicCreeperVr = ENTROPIC_CREEPER_VR.get();
         entropicCreeperTickInterval = ENTROPIC_CREEPER_TICK_INTERVAL.get();

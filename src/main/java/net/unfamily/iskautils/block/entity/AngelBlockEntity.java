@@ -8,20 +8,43 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * Block entity for the Angel Block
  * Used to store the "no_drop" tag
  */
-public class AngelBlockEntity extends BlockEntity {
+public class AngelBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     
     public AngelBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ANGEL_BLOCK_ENTITY.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         if (this.getPersistentData().contains("no_drop")) {
             boolean noDrop = this.getPersistentData().getBoolean("no_drop").orElse(false);
             output.putBoolean("no_drop", noDrop);
@@ -31,6 +54,7 @@ public class AngelBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         boolean noDrop = input.getBooleanOr("no_drop", false);
         if (noDrop) {
             this.getPersistentData().putBoolean("no_drop", true);

@@ -46,17 +46,17 @@ Risorsa rara — non si indossa. Si usa sulla <ItemImage id="iska_utils:ancient_
 
 **Loot nel mondo e in combattimento**
 
-- **Streghe** — **1–2** gocce (Saccheggio può aggiungere fino a **1** in più).
-- **Endermite** — **2–3** gocce (Saccheggio può aggiungere fino a **1** in più).
+- **Streghe** — **2–5** gocce (Saccheggio può aggiungere fino a **1** in più).
+- **Endermite** — **1–3** gocce (Saccheggio può aggiungere fino a **1** in più).
+- **Creeper entropico** — **3–7** gocce (Saccheggio può aggiungere fino a **1** in più).
 - **Forzieri dei dungeon** (loot iniettato) — **1–5** gocce per estrazione.
 - <ItemImage id="iska_utils:factory" /> **Fabbrica**: inserisci <ItemImage id="iska_utils:entropic_fungus" /> **Fungo entropico** → **1** Goccia di entropia.
 
 <iska_utils:IfSilverfishLarva>
 
-**Integrazione Ex Deorum** (richiede **Ex Deorum** e l'oggetto <ItemImage id="iska_utils:silverfish_larva" /> **Larva di silverfish** registrato — vedi quella pagina):
+**Integrazione Ex Deorum** (richiede **Ex Deorum** e l'oggetto <ItemImage id="iska_utils:silverfish_larva" /> **Larva di silverfish** — vedi quella pagina):
 
 - Usa una larva su un **barile Ex Deorum** con **acqua della strega** → **1** Goccia di entropia.
-- Infesta la pietra con una larva; un **silverfish** in **witch water** diventa un **endermite** e può lasciare entropia quando viene sconfitto.
 
 </iska_utils:IfSilverfishLarva>
 

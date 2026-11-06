@@ -14,8 +14,9 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.RandomRollUtil;
 
 import java.util.List;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class GraveyardSoilBlockEntity extends BlockEntity {
+public class GraveyardSoilBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private static final String TAG_HEAL_COOLDOWN = "heal_cooldown";
     private static final int TICK_INTERVAL = 5;
 
@@ -24,6 +25,27 @@ public class GraveyardSoilBlockEntity extends BlockEntity {
     public GraveyardSoilBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GRAVEYARD_SOIL_BE.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     public static void tickServer(Level level, BlockPos pos, BlockState state, GraveyardSoilBlockEntity blockEntity) {
         if (level.isClientSide() || !(level instanceof ServerLevel server)) {
@@ -74,12 +96,14 @@ public class GraveyardSoilBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         output.putInt(TAG_HEAL_COOLDOWN, healCooldownTicks);
     }
 
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         healCooldownTicks = input.getInt(TAG_HEAL_COOLDOWN).orElse(-1);
     }
 }

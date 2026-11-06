@@ -31,6 +31,7 @@ public final class NullifierChunkIndex {
 
     private static final Map<NullifierKey, Set<ChunkKey>> NULLIFIER_TO_CHUNKS = new ConcurrentHashMap<>();
     private static final Map<NullifierKey, Integer> NULLIFIER_RANGES = new ConcurrentHashMap<>();
+    private static final Map<NullifierKey, Integer> NULLIFIER_AREA_OFFSET_X = new ConcurrentHashMap<>();
     private static final Map<Kind, Map<ChunkKey, Integer>> chunkCountsByKind = new ConcurrentHashMap<>();
     private static final Set<Kind> dirtyKinds = ConcurrentHashMap.newKeySet();
 
@@ -65,15 +66,22 @@ public final class NullifierChunkIndex {
     }
 
     public static void refresh(ServerLevel level, BlockPos pos, Kind kind, int radius) {
+        refresh(level, pos, kind, radius, 0);
+    }
+
+    public static void refresh(ServerLevel level, BlockPos pos, Kind kind, int radius, int areaOffsetX) {
         NullifierKey key = new NullifierKey(kind, level.dimension(), pos.immutable());
         NULLIFIER_TO_CHUNKS.remove(key);
         NULLIFIER_RANGES.remove(key);
+        NULLIFIER_AREA_OFFSET_X.remove(key);
 
         BlockState state = level.getBlockState(pos);
         boolean active = isActiveBlock(state, kind);
         if (active) {
-            NULLIFIER_TO_CHUNKS.put(key, chunksIntersectingCube(level.dimension(), pos, radius));
+            BlockPos center = pos.offset(areaOffsetX, 0, 0);
+            NULLIFIER_TO_CHUNKS.put(key, chunksIntersectingCube(level.dimension(), center, radius));
             NULLIFIER_RANGES.put(key, radius);
+            NULLIFIER_AREA_OFFSET_X.put(key, areaOffsetX);
             markDirty(kind);
         }
     }
@@ -81,6 +89,7 @@ public final class NullifierChunkIndex {
     public static void remove(ServerLevel level, BlockPos pos, Kind kind) {
         NullifierKey key = new NullifierKey(kind, level.dimension(), pos.immutable());
         NULLIFIER_RANGES.remove(key);
+        NULLIFIER_AREA_OFFSET_X.remove(key);
         if (NULLIFIER_TO_CHUNKS.remove(key) != null) {
             markDirty(kind);
         }
@@ -94,7 +103,8 @@ public final class NullifierChunkIndex {
             ServerLevel sl = server.getLevel(key.dimension());
             if (sl == null) continue;
             int radius = NULLIFIER_RANGES.getOrDefault(key, radiusFor(kind));
-            refresh(sl, key.pos(), kind, radius);
+            int offsetX = NULLIFIER_AREA_OFFSET_X.getOrDefault(key, 0);
+            refresh(sl, key.pos(), kind, radius, offsetX);
         }
     }
 
@@ -114,7 +124,8 @@ public final class NullifierChunkIndex {
                     NullifierKey key = entry.getKey();
                     if (key.kind() != kind || !key.dimension().equals(level.dimension())) continue;
                     int radius = NULLIFIER_RANGES.getOrDefault(key, radiusFor(kind));
-                    if (isWithinCubeRadius(key.pos(), x, y, z, radius)) return true;
+                    int offsetX = NULLIFIER_AREA_OFFSET_X.getOrDefault(key, 0);
+                    if (isWithinCubeRadius(key.pos().offset(offsetX, 0, 0), x, y, z, radius)) return true;
                 }
             }
         }

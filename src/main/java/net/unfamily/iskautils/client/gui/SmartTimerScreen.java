@@ -252,7 +252,9 @@ public class SmartTimerScreen extends AbstractContainerScreen<SmartTimerMenu> {
     }
     
     private void onRedstoneModePressed(boolean backward) {
-        playButtonSound();
+        if (backward) {
+            playButtonSound(); // LMB: widget click already plays
+        }
         BlockPos pos = menu.getSyncedBlockPos();
         if (!pos.equals(net.minecraft.core.BlockPos.ZERO)) {
             ModMessages.sendSmartTimerRedstoneModePacket(pos, backward);

@@ -13,6 +13,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.network.chat.Component;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.KeybindTooltipUtil;
+import net.unfamily.iskautils.world.NullifierSpatialIndex;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 
@@ -63,6 +64,9 @@ public class GauntletOfClimbingItem extends Item {
     /** Applies wall-climb motion when enabled and colliding horizontally. */
     public static void tickEquipped(Player player) {
         if (!isClimbingEnabled(player.getUUID())) {
+            return;
+        }
+        if (NullifierSpatialIndex.shouldBlockPlayerGauntletClimb(player.level().dimension(), player.position())) {
             return;
         }
         if (player.horizontalCollision) {

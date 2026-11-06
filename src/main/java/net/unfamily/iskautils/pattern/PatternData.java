@@ -21,7 +21,7 @@ public class PatternData {
 
     private final int[] grid = new int[GRID_SIZE];
     /** Default: only shaped (1); user can change to both (0) or shapeless only (2) */
-    private int craftingMode = CRAFTING_MODE_SHAPED_ONLY;
+    private int craftingMode = CRAFTING_MODE_BOTH;
 
     /** Result mode (per pattern): 1 = Eject, 2 = Keep (always input-first), 3 = Smart (input-first only if active variable matches) */
     private int resultMode = 1;

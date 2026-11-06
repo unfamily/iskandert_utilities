@@ -7,9 +7,8 @@ import java.util.Map;
 import java.util.Optional;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.util.context.ContextMap;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.SelectableRecipe;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
@@ -18,6 +17,7 @@ import net.minecraft.world.item.crafting.display.SlotDisplayContext;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Runtime stonecutter recipe resolution for the Factory (not added to {@link FactoryLoader#SOURCES} or JEI).
@@ -44,7 +44,8 @@ public final class FactoryStonecutterSupport {
             }
             Identifier id = BuiltInRegistries.ITEM.getKey(result.getItem());
             int count = Math.max(1, result.getCount());
-            outputsById.putIfAbsent(id, new FactoryLoader.Output(id, count));
+            Identifier recipeId = resolveRecipeId(entry);
+            outputsById.putIfAbsent(id, new FactoryLoader.Output(id, count, null, recipeId));
         }
         if (outputsById.isEmpty()) {
             return Optional.empty();
@@ -70,5 +71,11 @@ public final class FactoryStonecutterSupport {
             return holder.get().value().assemble(new SingleRecipeInput(input));
         }
         return entry.recipe().optionDisplay().resolveForFirstStack(displayContext);
+    }
+
+    @Nullable
+    private static Identifier resolveRecipeId(SelectableRecipe.SingleInputEntry<StonecutterRecipe> entry) {
+        Optional<RecipeHolder<StonecutterRecipe>> holder = entry.recipe().recipe();
+        return holder.map(h -> h.id().identifier()).orElse(null);
     }
 }

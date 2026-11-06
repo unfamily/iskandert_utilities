@@ -49,11 +49,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * Block Entity for the Structure Placer Machine
  */
-public class StructurePlacerMachineBlockEntity extends BlockEntity implements MenuProvider {
+public class StructurePlacerMachineBlockEntity extends BlockEntity implements MenuProvider, net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     
     private static final ModLogger LOGGER = ModLogger.of(StructurePlacerMachineBlockEntity.class);
     
@@ -176,6 +177,27 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             ghostFilters.add(ItemStack.EMPTY);
         }
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     
     // Data access methods
     
@@ -203,6 +225,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
 
         ValueOutput.TypedOutputList<ItemStackWithSlot> inv = output.list("inventory", ItemStackWithSlot.CODEC);
         for (int slot = 0; slot < itemHandler.getSlots(); slot++) {
@@ -240,6 +263,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
 
         for (ItemStackWithSlot item : input.listOrEmpty("inventory", ItemStackWithSlot.CODEC)) {
             int slot = item.slot();

@@ -42,8 +42,30 @@ import net.unfamily.iskautils.util.CollectingCrateMode;
 import net.unfamily.iskautils.util.ExperienceFluidMath;
 
 import java.util.List;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvider {
+public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvider, net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     public static final TagKey<net.minecraft.world.level.material.Fluid> EXPERIENCE_FLUID_TAG =
             TagKey.create(Registries.FLUID, Identifier.fromNamespaceAndPath("c", "experience"));
 
@@ -313,6 +335,18 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
             case 3 -> sizeDepth = Math.max(MIN_HEIGHT_OR_DEPTH, Math.min(getMaxDepth(), sizeDepth + delta));
             default -> {}
         }
+        setChanged();
+    }
+
+    /** Shift width balance: +amount adds to sizeLeft and removes from sizeRight (total width unchanged). */
+    public void offsetWidth(int amountTowardLeft) {
+        if (amountTowardLeft == 0) {
+            return;
+        }
+        int total = sizeLeft + sizeRight;
+        int newLeft = Math.max(0, Math.min(total, sizeLeft + amountTowardLeft));
+        sizeLeft = newLeft;
+        sizeRight = total - sizeLeft;
         setChanged();
     }
 
@@ -650,6 +684,7 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         collectMode = CollectingCrateMode.fromId(input.getIntOr("CollectMode", CollectingCrateMode.BOTH.getId()));
         redstoneMode = input.getIntOr("RedstoneMode", 0);
         if (redstoneMode == 3) {
@@ -710,6 +745,7 @@ public class CollectingCrateBlockEntity extends BlockEntity implements MenuProvi
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         output.putInt("CollectMode", collectMode.getId());
         output.putInt("RedstoneMode", redstoneMode);
         output.putLong("AccumulationMb", accumulationTank.getStoredMb());

@@ -7,14 +7,36 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.unfamily.iskautils.util.EntropyExplosionHelper;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class EntropyTntBlockEntity extends BlockEntity {
+public class EntropyTntBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private EntropyExplosionHelper.Params params = EntropyExplosionHelper.Params.entropyTntDefaults();
     private boolean customized;
 
     public EntropyTntBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ENTROPY_TNT_BE.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     public EntropyExplosionHelper.Params getParams() {
         return customized ? params : EntropyExplosionHelper.Params.entropyTntDefaults();
@@ -40,6 +62,7 @@ public class EntropyTntBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         if (customized) {
             output.putInt(EntropyExplosionHelper.TAG_OR, params.or());
             output.putInt(EntropyExplosionHelper.TAG_VR, params.vr());
@@ -53,6 +76,7 @@ public class EntropyTntBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         boolean customizedFlag = input.getBooleanOr("Customized", false);
         if (customizedFlag
                 || input.getInt(EntropyExplosionHelper.TAG_OR).isPresent()

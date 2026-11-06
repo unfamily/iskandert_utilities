@@ -89,6 +89,7 @@ public class DeepDrawerExtractorBlock extends BaseEntityBlock {
         
         // Normal click: open GUI
         if (player instanceof ServerPlayer serverPlayer) {
+            extractor.claimOwner(serverPlayer);
             serverPlayer.openMenu(new net.minecraft.world.MenuProvider() {
                 @Override
                 public net.minecraft.network.chat.Component getDisplayName() {

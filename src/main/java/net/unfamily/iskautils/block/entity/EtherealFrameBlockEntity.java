@@ -27,12 +27,13 @@ import net.unfamily.iskautils.util.EtherealFrameFilterMatcher;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.BiConsumer;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * Block entity for the Ethereal Frame.
  * Adjacent frames form a local network that shares filters.
  */
-public class EtherealFrameBlockEntity extends BlockEntity {
+public class EtherealFrameBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
 
     private static final int MAX_NETWORK_SIZE = 64;
     private static final int SYNC_INTERVAL_TICKS = 40;
@@ -67,6 +68,27 @@ public class EtherealFrameBlockEntity extends BlockEntity {
             reinforced = state.getValue(EtherealFrameBlock.REINFORCED);
         }
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, EtherealFrameBlockEntity frame) {
         if (level.isClientSide()) {
@@ -453,6 +475,7 @@ public class EtherealFrameBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
 
         ValueOutput.TypedOutputList<String> list = output.list("FilterEntityTypes", Codec.STRING);
         for (String id : filterEntityTypes) list.add(id);
@@ -471,6 +494,7 @@ public class EtherealFrameBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
 
         input.list("FilterEntityTypes", Codec.STRING).ifPresent(saved -> {
             filterEntityTypes.clear();

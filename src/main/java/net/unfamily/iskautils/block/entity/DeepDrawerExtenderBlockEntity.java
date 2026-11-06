@@ -13,13 +13,16 @@ import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import net.unfamily.iskautils.util.DeepDrawerConnectorHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import net.unfamily.iskautils.util.BlockCraftOwner;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 /**
  * BlockEntity for Deep Drawer Extender
  * Extends the drawer's presence, allowing direct interactions (item insertion via hoppers, etc.)
  * Acts as a mirror of the adjacent drawer for IItemHandler capability
  */
-public class DeepDrawerExtenderBlockEntity extends BlockEntity {
+public class DeepDrawerExtenderBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     
     // Cache of found Deep Drawer (for performance)
     private BlockPos cachedDrawerPos = null;
@@ -33,6 +36,27 @@ public class DeepDrawerExtenderBlockEntity extends BlockEntity {
     public DeepDrawerExtenderBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DEEP_DRAWER_EXTENDER.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     
     /**
      * Gets the item handler that exposes the adjacent drawer's content
@@ -175,5 +199,17 @@ public class DeepDrawerExtenderBlockEntity extends BlockEntity {
             // Delegate validation to the drawer's item handler (extender is a mirror)
             return drawer.getItemHandler().isItemValid(slot, stack);
         }
+    }
+
+    @Override
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
+    }
+
+    @Override
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
     }
 }

@@ -8,8 +8,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
@@ -56,9 +54,13 @@ public record CollectingCrateSizeC2SPacket(BlockPos pos, int direction, boolean 
                 return;
             }
             int amount = Math.max(1, Math.min(10, packet.amount()));
-            crate.adjustSize(packet.direction(), packet.increment(), amount);
-            level.playSound(null, crate.getBlockPos(), SoundEvents.UI_BUTTON_CLICK.value(),
-                    SoundSource.BLOCKS, 0.3f, 1.0f);
+            // direction 4 = horizontal offset (shift L/R balance, Colossal-style)
+            if (packet.direction() == 4) {
+                crate.offsetWidth(packet.increment() ? amount : -amount);
+            } else {
+                crate.adjustSize(packet.direction(), packet.increment(), amount);
+            }
+            // Client already plays the click sound; avoid duplicate UI_BUTTON_CLICK.
             if (player.containerMenu instanceof CollectingCrateMenu) {
                 player.containerMenu.broadcastChanges();
             }

@@ -105,6 +105,7 @@ public class SmartTimerBlock extends Block implements EntityBlock {
         
         // Apri la GUI
         if (player instanceof ServerPlayer serverPlayer) {
+            timer.claimOwner(serverPlayer);
             serverPlayer.openMenu(new net.minecraft.world.MenuProvider() {
                 @Override
                 public Component getDisplayName() {

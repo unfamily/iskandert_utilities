@@ -3,6 +3,7 @@ package net.unfamily.iskautils.client.gui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -199,12 +200,16 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         int gridCenterX = gridX + GRID_TOTAL_SIZE / 2;
         int gridCenterY = gridY + GRID_TOTAL_SIZE / 2;
         
-        // Buttons above grid: - left, + right (closer together, positioned near center)
+        // Buttons above grid: « offset, -/+ UP, » offset
         int topButtonY = gridY - BUTTON_SIZE - BUTTON_SPACING;
-        topLeftButton = createButton("-", gridCenterX - GRID_BUTTON_OFFSET - BUTTON_SIZE, 
+        createOffsetButton("\u00AB", gridCenterX - GRID_BUTTON_OFFSET - BUTTON_SIZE * 2 - 2,
+                topButtonY, 1);
+        topLeftButton = createButton("-", gridCenterX - GRID_BUTTON_OFFSET - BUTTON_SIZE,
             topButtonY, FanRangeUpdateC2SPacket.RangeType.UP, -1);
-        topRightButton = createButton("+", gridCenterX + GRID_BUTTON_OFFSET, 
+        topRightButton = createButton("+", gridCenterX + GRID_BUTTON_OFFSET,
             topButtonY, FanRangeUpdateC2SPacket.RangeType.UP, 1);
+        createOffsetButton("\u00BB", gridCenterX + GRID_BUTTON_OFFSET + BUTTON_SIZE + 2,
+                topButtonY, -1);
         
         // Buttons left of grid: + top, - bottom (use same spacing as top buttons horizontally)
         // Top buttons spacing: GRID_BUTTON_OFFSET (8 pixels) between - and + buttons
@@ -249,6 +254,22 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             })
             .bounds(x, y, BUTTON_SIZE, BUTTON_SIZE)
             .build();
+        addRenderableWidget(button);
+        return button;
+    }
+
+    private Button createOffsetButton(String label, int x, int y, int amountTowardLeft) {
+        Button button = Button.builder(Component.literal(label),
+                        btn -> {
+                            playButtonSound();
+                            adjustRange(FanRangeUpdateC2SPacket.RangeType.OFFSET, amountTowardLeft);
+                        })
+                .bounds(x, y, BUTTON_SIZE, BUTTON_SIZE)
+                .tooltip(Tooltip.create(Component.translatable(
+                        amountTowardLeft > 0
+                                ? "gui.iska_utils.collecting_crate.offset_left"
+                                : "gui.iska_utils.collecting_crate.offset_right")))
+                .build();
         addRenderableWidget(button);
         return button;
     }
@@ -632,6 +653,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             case LEFT -> menu.getRangeLeft();
             case RIGHT -> menu.getRangeRight();
             case FORWARD -> menu.getRangeFront();
+            case OFFSET -> 0;
         };
         
         // Direction label: for vertical fan facing, map GUI axes to world N/S/E/W
@@ -641,6 +663,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
             case LEFT -> "left";
             case RIGHT -> "right";
             case FORWARD -> "forward";
+            case OFFSET -> "offset";
         };
         Level level = Minecraft.getInstance().level;
         if (level != null) {
@@ -654,6 +677,7 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
                         case LEFT -> "west";
                         case RIGHT -> "east";
                         case FORWARD -> "forward";
+                        case OFFSET -> "offset";
                     };
                 }
             }
@@ -734,7 +758,9 @@ public class FanScreen extends AbstractContainerScreen<FanMenu> {
         BlockPos pos = menu.getSyncedBlockPos();
         if (!pos.equals(BlockPos.ZERO)) {
             ModMessages.sendFanRedstoneModePacket(pos, backward);
-            playButtonSound();
+            if (backward) {
+                playButtonSound(); // LMB: widget click already plays
+            }
         }
     }
     

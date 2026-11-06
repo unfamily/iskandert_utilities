@@ -85,6 +85,10 @@
       }
     },
     {
+      "type": "iska_utils:max_sky_light",
+      "max_inclusive": 0
+    },
+    {
       "type": "minecraft:biome"
     }
   ]

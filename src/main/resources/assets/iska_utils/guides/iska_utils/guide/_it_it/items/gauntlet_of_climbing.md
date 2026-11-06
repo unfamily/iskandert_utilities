@@ -1,6 +1,6 @@
 ---
 navigation:
-  title: Guanto dell'arrampicata
+  title: "Guanto dell'arrampicata"
   icon: iska_utils:gauntlet_of_climbing
   parent: hubs/combat_and_travel.md
   position: 24

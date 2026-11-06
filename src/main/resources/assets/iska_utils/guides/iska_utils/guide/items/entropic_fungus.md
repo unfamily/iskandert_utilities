@@ -15,12 +15,12 @@ categories:
 
 ## What it is
 
-A mushroom-like plant tied to the entropy progression. It can be planted on **any sturdy top face**. Natural worldgen still only appears on **stone-like** surfaces in the **Overworld**, **Nether**, and **End**.
+A mushroom-like plant tied to the entropy progression. It can be planted on **any sturdy top face**. Natural worldgen still only appears on **stone-like** surfaces in the **Overworld**, **Nether**, and **End**, and in the Overworld it only appears where **sky light is 0** (no natural daylight).
 
-**Worldgen** (config `worldgen.001_generate_entropic_fungus`, default **true**):
+**Worldgen**:
 
-- **Overworld** — common cave **patches** of **1–3** from **Y -64 to 72** (deep + upper)
-- **Nether** — same as Overworld; **Warped Forest** denser
+- **Overworld** — cave **patches** of **1–3** on stone-like floors below the surface, never where daylight reaches
+- **Nether** — same patch style as Overworld; **Warped Forest** denser
 - **End** — very dense patches on end stone
 
 ## Drops

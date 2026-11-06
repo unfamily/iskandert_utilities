@@ -17,7 +17,7 @@ categories:
 
 Block that **cancels teleportation** within a cubic **radius** around it on every axis (set in the GUI).
 
-Entities in the configured ignore list (default: `#c:bosses`) are exempt and can still teleport through the zone.
+Bosses and other ignored entities (default tag `#c:bosses`) are exempt and can still teleport through the zone.
 
 ## GUI
 

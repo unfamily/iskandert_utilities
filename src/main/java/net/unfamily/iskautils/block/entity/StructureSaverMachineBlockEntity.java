@@ -22,12 +22,13 @@ import net.neoforged.neoforge.transfer.ResourceHandler;
 import net.neoforged.neoforge.transfer.item.ItemResource;
 import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import net.minecraft.world.item.ItemStack;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * Block Entity per la macchina Structure Saver
  * Gestisce energia da config e compound tags per il salvataggio strutture
  */
-public class StructureSaverMachineBlockEntity extends BlockEntity implements MenuProvider {
+public class StructureSaverMachineBlockEntity extends BlockEntity implements MenuProvider, net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     
     private static final ModLogger LOGGER = ModLogger.of(StructureSaverMachineBlockEntity.class);
     
@@ -75,6 +76,27 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     public StructureSaverMachineBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.STRUCTURE_SAVER_MACHINE_BE.get(), pos, blockState);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     
     @Override
     public void setChanged() {
@@ -120,6 +142,7 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
 
         ValueOutput.TypedOutputList<ItemStackWithSlot> inv = output.list("inventory", ItemStackWithSlot.CODEC);
         for (int slot = 0; slot < itemHandler.getSlots(); slot++) {
@@ -154,6 +177,7 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
 
         for (ItemStackWithSlot item : input.listOrEmpty("inventory", ItemStackWithSlot.CODEC)) {
             int slot = item.slot();

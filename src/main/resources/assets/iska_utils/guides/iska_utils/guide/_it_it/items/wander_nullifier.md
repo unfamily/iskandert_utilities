@@ -29,5 +29,5 @@ Clic destro sul blocco per aprire la GUI di controllo. Tutti i comandi funzionan
 
 ## Suggerimenti
 
-- Il raggio predefinito è più grande del Nullificatore dell'End — sufficiente per coprire la maggior parte delle basi.
+- Il raggio iniziale è più grande del Nullificatore dell'End — abbastanza per coprire la maggior parte delle basi.
 - Alla posa parte **attivo** (modalità manuale, abilitato a mano).

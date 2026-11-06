@@ -31,7 +31,7 @@ import java.util.function.Consumer;
  */
 public class BurningBrazierItem extends Item {
 
-    public static final int MAX_DURABILITY = 512;
+    public static final int MAX_DURABILITY = 2048;
     private static final String CURSE_FLAME_STAGE = "iska_utils_internal-curse_flame";
 
     private static final ConcurrentHashMap<UUID, Boolean> AUTO_PLACEMENT_BY_PLAYER = new ConcurrentHashMap<>();

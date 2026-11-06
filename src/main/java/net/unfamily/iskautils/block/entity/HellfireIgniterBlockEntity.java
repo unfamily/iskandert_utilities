@@ -14,8 +14,9 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.HellfireIgniterBlock;
 
 import org.jetbrains.annotations.Nullable;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class HellfireIgniterBlockEntity extends BlockEntity {
+public class HellfireIgniterBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     // Energy storage
     private final EnergyStorageImpl energyStorage;
     private IEnergyStorage energyHandler;
@@ -45,6 +46,27 @@ public class HellfireIgniterBlockEntity extends BlockEntity {
         this.energyHandler = this.energyStorage;
         this.energyHandler26 = new EnergyHandlerImpl();
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     private final class EnergyHandlerImpl extends net.neoforged.neoforge.transfer.transaction.SnapshotJournal<Integer>
         implements net.neoforged.neoforge.transfer.energy.EnergyHandler {
@@ -179,6 +201,7 @@ public class HellfireIgniterBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         // Load energy only if the block has a capacity
         if (canReceiveEnergy()) {
             energyStorage.setEnergy(input.getInt("Energy").orElse(0));
@@ -192,6 +215,7 @@ public class HellfireIgniterBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         // Save energy only if the block has a capacity
         if (canReceiveEnergy()) {
             output.putInt("Energy", energyStorage.getEnergyStored());

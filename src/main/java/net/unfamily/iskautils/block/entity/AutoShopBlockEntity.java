@@ -219,7 +219,7 @@ public class AutoShopBlockEntity extends BlockEntity {
     public AutoShopBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.AUTO_SHOP_BE.get(), pos, blockState);
     }
-    
+
     @Override
     public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
         return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);

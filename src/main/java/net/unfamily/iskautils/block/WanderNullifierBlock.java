@@ -184,6 +184,7 @@ public class WanderNullifierBlock extends DirectionalBlock implements EntityBloc
                     true);
             return InteractionResult.CONSUME;
         }
+        nullifier.claimOwner(serverPlayer);
         serverPlayer.openMenu(nullifier, pos);
         return InteractionResult.CONSUME;
     }

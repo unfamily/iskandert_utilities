@@ -46,17 +46,17 @@ A rare **resource** — not worn on the body. Used on the <ItemImage id="iska_ut
 
 **World and combat loot**
 
-- **Witches** — **1–2** drops (Looting can add up to **1** more).
-- **Endermites** — **2–3** drops (Looting can add up to **1** more).
+- **Witches** — **2–5** drops (Looting can add up to **1** more).
+- **Endermites** — **1–3** drops (Looting can add up to **1** more).
+- **Entropic Creeper** — **3–7** drops (Looting can add up to **1** more).
 - **Dungeon chests** (injected loot) — **1–5** drops per roll.
 - <ItemImage id="iska_utils:factory" /> **Factory**: insert <ItemImage id="iska_utils:entropic_fungus" /> **Entropic Fungus** → **1** Drop of Entropy.
 
 <iska_utils:IfSilverfishLarva>
 
-**Ex Deorum integration** (requires **Ex Deorum** and the registered <ItemImage id="iska_utils:silverfish_larva" /> **Silverfish Larva** item — see that page):
+**Ex Deorum integration** (requires **Ex Deorum** and the <ItemImage id="iska_utils:silverfish_larva" /> **Silverfish Larva** item — see that page):
 
 - Use a larva on an **Ex Deorum barrel** that holds **witch water** → **1** Drop of Entropy.
-- Infest stone with a larva; a **silverfish** standing in **witch water** becomes an **endermite** and can drop entropy on defeat.
 
 </iska_utils:IfSilverfishLarva>
 

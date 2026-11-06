@@ -10,12 +10,13 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * BlockEntity for the empty dye bush block.
  * Handles the timer for berry refill (empty -> filled).
  */
-public class DyeBushEmptyBlockEntity extends BlockEntity {
+public class DyeBushEmptyBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private int refillTimer;
 
     public DyeBushEmptyBlockEntity(BlockPos pos, BlockState state) {
@@ -25,6 +26,27 @@ public class DyeBushEmptyBlockEntity extends BlockEntity {
         int max = Config.MAX_DYE_BUSH_REFILL_TIME.get();
         this.refillTimer = min + random.nextInt(Math.max(1, max - min));
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     public int getRefillTime() {
         return this.refillTimer;
@@ -55,12 +77,14 @@ public class DyeBushEmptyBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         output.putInt("refill_timer", this.refillTimer);
     }
 
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         this.refillTimer = input.getInt("refill_timer").orElse(0);
     }
 }

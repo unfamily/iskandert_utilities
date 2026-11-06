@@ -25,7 +25,15 @@ public final class ExDeorumCompat {
     }
 
     public static boolean isWitchWater(net.minecraft.world.level.material.Fluid fluid) {
-        return isLoaded() && WITCH_WATER.equals(BuiltInRegistries.FLUID.getKey(fluid));
+        if (!isLoaded() || fluid == null) {
+            return false;
+        }
+        Identifier id = BuiltInRegistries.FLUID.getKey(fluid);
+        if (id == null || !MOD_ID.equals(id.getNamespace())) {
+            return false;
+        }
+        // Match still and flowing variants (e.g. witch_water / flowing_witch_water).
+        return WITCH_WATER.equals(id) || id.getPath().contains("witch_water");
     }
 
     /** True for any Ex Deorum barrel block (oak_barrel, stone_barrel, …). */

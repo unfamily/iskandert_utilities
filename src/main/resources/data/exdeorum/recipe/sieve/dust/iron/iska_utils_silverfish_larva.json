@@ -10,14 +10,9 @@
     }
   ],
   "type": "exdeorum:sieve",
-  "ingredient": {
-    "item": "exdeorum:dust"
-  },
-  "mesh": {
-    "item": "exdeorum:iron_mesh"
-  },
+  "ingredient": "exdeorum:dust",
+  "mesh": "exdeorum:iron_mesh",
   "result": {
-    "count": 1,
     "id": "iska_utils:silverfish_larva"
   },
   "result_amount": {

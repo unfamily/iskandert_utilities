@@ -6,6 +6,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.item.component.AncientTabletContents;
+import net.unfamily.iskautils.util.RecipeStageGate;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -83,7 +84,11 @@ public final class AncientTabletCraftLogic {
         if (views.isEmpty()) {
             return Optional.empty();
         }
+        Level level = player != null ? player.level() : null;
         for (AncientTabletRecipeEntry entry : entries) {
+            if (!RecipeStageGate.isAllowed(entry.sourceId(), player != null ? player.getUUID() : null, level)) {
+                continue;
+            }
             Optional<AncientTabletRecipeEntry.ResolvedCraft> resolved = entry.resolveForPlayer(player);
             if (resolved.isEmpty()) {
                 continue;
@@ -104,7 +109,11 @@ public final class AncientTabletCraftLogic {
         if (views.isEmpty()) {
             return Optional.empty();
         }
+        Level level = player.level();
         for (AncientTabletRecipeEntry entry : entries) {
+            if (!RecipeStageGate.isAllowed(entry.sourceId(), player.getUUID(), level)) {
+                continue;
+            }
             Optional<AncientTabletRecipeEntry.ResolvedCraft> resolved = entry.resolveForPlayer(player);
             if (resolved.isEmpty()) {
                 continue;
@@ -122,7 +131,11 @@ public final class AncientTabletCraftLogic {
             List<AncientTabletContents.SlotView> views,
             List<AncientTabletRecipeEntry> entries,
             ServerPlayer player) {
+        Level level = player.level();
         for (AncientTabletRecipeEntry entry : entries) {
+            if (!RecipeStageGate.isAllowed(entry.sourceId(), player.getUUID(), level)) {
+                continue;
+            }
             Optional<AncientTabletRecipeEntry.ResolvedCraft> resolved = entry.resolveForPlayer(player);
             if (resolved.isEmpty() || !resolved.get().mustOrdered()) {
                 continue;

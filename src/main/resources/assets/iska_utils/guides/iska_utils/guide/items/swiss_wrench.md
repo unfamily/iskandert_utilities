@@ -36,4 +36,4 @@ Preview icons are oriented relative to where you are looking.
 
 ## Legacy modes (optional)
 
-If legacy modes are enabled in the config, **Left Click** (block or air) cycles stored rotation modes (clockwise, counter-clockwise, absolute directions). With a non-menu mode selected, **R** applies that mode instead of opening the menu.
+If legacy modes are enabled, **Left Click** (block or air) cycles stored rotation modes (clockwise, counter-clockwise, absolute directions). With a non-menu mode selected, **R** applies that mode instead of opening the menu.

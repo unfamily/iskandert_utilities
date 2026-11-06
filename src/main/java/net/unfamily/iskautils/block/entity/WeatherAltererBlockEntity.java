@@ -18,8 +18,9 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.WeatherAltererBlock;
 
 import java.util.List;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class WeatherAltererBlockEntity extends BlockEntity {
+public class WeatherAltererBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private static final String ENERGY_TAG = "Energy";
     private static final String ACTIVE_MODE_TAG = "ActiveMode";
     
@@ -36,6 +37,27 @@ public class WeatherAltererBlockEntity extends BlockEntity {
         this.energyStorage.setEnergy(0);
         this.energyHandler26 = new EnergyHandlerImpl();
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     private final class EnergyHandlerImpl extends net.neoforged.neoforge.transfer.transaction.SnapshotJournal<Integer>
         implements net.neoforged.neoforge.transfer.energy.EnergyHandler {
@@ -243,6 +265,7 @@ public class WeatherAltererBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         // Save energy directly from the energy storage
         output.putInt(ENERGY_TAG, this.energyStorage.getEnergyStored());
         output.putInt(ACTIVE_MODE_TAG, activeMode);
@@ -254,6 +277,7 @@ public class WeatherAltererBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         this.energyStorage.setEnergy(input.getInt(ENERGY_TAG).orElse(0));
         this.activeMode = input.getInt(ACTIVE_MODE_TAG).orElse(-1);
     }

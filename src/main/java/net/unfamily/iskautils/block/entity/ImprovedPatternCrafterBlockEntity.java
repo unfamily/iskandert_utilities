@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
@@ -22,24 +23,31 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.pattern.PatternData;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 import net.unfamily.iskautils.util.DeepDrawerItemFilter;
 import net.unfamily.iskautils.util.ModLogger;
+import net.unfamily.iskautils.util.RecipeStageGate;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * BlockEntity for the Improved Pattern Crafter.
  * Stores ghost filter items, machine input/output inventories, upgrade items,
  * and crafting patterns.
  */
-public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
+public class ImprovedPatternCrafterBlockEntity extends BlockEntity
+        implements BlockCraftOwner.BlockCraftOwnerHolder {
 
     private static final ModLogger LOGGER = ModLogger.of(ImprovedPatternCrafterBlockEntity.class);
+
+    private UUID ownerPlayerUuid;
 
     // Input filter ghost slots: count = getMaxKeyInputs() (config: improved 90, normal 18)
     private ItemStackHandler inputFilterHandler;
@@ -620,6 +628,14 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
 
     public void cycleRedstoneMode() {
         redstoneMode = (redstoneMode + 1) % 5; // 0 -> 1 -> 2 -> 3 (pulse) -> 4 (disabled) -> 0
+        setChanged();
+        if (redstoneMode != 3) {
+            pulseIgnoreTimer = 0;
+        }
+    }
+
+    public void cycleRedstoneModeBackward() {
+        redstoneMode = (redstoneMode + 4) % 5;
         setChanged();
         if (redstoneMode != 3) {
             pulseIgnoreTimer = 0;
@@ -1421,6 +1437,26 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
 
     // ===== Crafting Helpers =====
 
+    @Override
+    @Nullable
+    public UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@Nullable UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(ServerPlayer player) {
+        BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    @Nullable
+    public ServerPlayer resolveOwnerPlayer() {
+        return BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     private Optional<RecipeHolder<CraftingRecipe>> findBestCraftingRecipe(CraftingInput input, int mode) {
         if (level == null) return Optional.empty();
         List<RecipeHolder<CraftingRecipe>> matches = ((net.minecraft.server.level.ServerLevel) level)
@@ -1428,6 +1464,7 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
                 .filter(holder -> holder.value().getType() == RecipeType.CRAFTING)
                 .map(holder -> (RecipeHolder<CraftingRecipe>) (RecipeHolder<?>) holder)
                 .filter(holder -> holder.value().matches(input, level))
+                .filter(holder -> RecipeStageGate.isAllowed(holder.id().identifier(), ownerPlayerUuid, level))
                 .toList();
         if (mode == 1) {
             return matches.stream().filter(holder -> holder.value() instanceof ShapedRecipe).findFirst();
@@ -1836,6 +1873,7 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         output.putBoolean("pulseCraftPending", pulseCraftPending);
         output.putBoolean("autoclearVariables", autoclearVariables);
         output.putInt("currentPattern", currentPatternIndex);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
 
         net.minecraft.world.level.storage.ValueOutput.TypedOutputList<CompoundTag> savedPatterns =
                 output.list("patterns", CompoundTag.CODEC);
@@ -1923,6 +1961,7 @@ public class ImprovedPatternCrafterBlockEntity extends BlockEntity {
         pulseCraftPending = input.getBooleanOr("pulseCraftPending", false);
         autoclearVariables = input.getBooleanOr("autoclearVariables", true);
         currentPatternIndex = input.getIntOr("currentPattern", 0);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
 
         patterns.clear();
         for (CompoundTag patternTag : input.listOrEmpty("patterns", CompoundTag.CODEC)) {

@@ -38,6 +38,7 @@ public final class BlazingAltarBlockSync {
                     serverLevel,
                     altar.getBlockPos(),
                     altar.getChunkRadius(),
+                    altar.getChunkOffsetX(),
                     altar.isGroundOnly());
         }
 

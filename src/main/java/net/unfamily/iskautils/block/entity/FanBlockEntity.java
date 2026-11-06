@@ -26,8 +26,9 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.FanBlock;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.util.MachineTargetType;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class FanBlockEntity extends BlockEntity implements MenuProvider {
+public class FanBlockEntity extends BlockEntity implements MenuProvider, net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     /** @deprecated Use {@link MachineTargetType} instead. */
     @Deprecated
     public enum PushType {
@@ -194,6 +195,27 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     public FanBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.FAN_BE.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     
     public ItemStackHandler getModuleHandler() {
         return moduleHandler;
@@ -263,6 +285,28 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
         if (this.rangeFront > newFrontMax) {
             this.rangeFront = newFrontMax;
         }
+        setChanged();
+    }
+
+    /**
+     * Shift horizontal balance: +amount adds to rangeLeft and removes from rangeRight
+     * (total left+right unchanged; area center stays fixed relative to width).
+     */
+    public void offsetWidth(int amountTowardLeft) {
+        if (amountTowardLeft == 0) {
+            return;
+        }
+        int total = rangeLeft + rangeRight;
+        int maxH = getEffectiveMaxRange(Config.fanRangeHorizontalMax);
+        int newLeft = Math.max(0, Math.min(total, rangeLeft + amountTowardLeft));
+        newLeft = Math.min(newLeft, maxH);
+        int newRight = total - newLeft;
+        if (newRight > maxH) {
+            newRight = maxH;
+            newLeft = Math.max(0, total - newRight);
+        }
+        this.rangeLeft = newLeft;
+        this.rangeRight = newRight;
         setChanged();
     }
 
@@ -433,6 +477,7 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         rangeUp = input.getIntOr("RangeUp", 0);
         rangeDown = input.getIntOr("RangeDown", 0);
         rangeRight = input.getIntOr("RangeRight", 0);
@@ -464,6 +509,7 @@ public class FanBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         output.putInt("RangeUp", rangeUp);
         output.putInt("RangeDown", rangeDown);
         output.putInt("RangeRight", rangeRight);

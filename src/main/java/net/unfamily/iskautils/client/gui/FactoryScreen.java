@@ -252,7 +252,9 @@ public class FactoryScreen extends AbstractContainerScreen<FactoryMenu> {
 
     private void onRedstoneModePressed(boolean backward) {
         ModMessages.sendFactoryRedstoneMode(menu.getSyncedBlockPos(), backward);
-        playClick();
+        if (backward) {
+            playClick(); // LMB: widget click already plays
+        }
     }
 
     @Override

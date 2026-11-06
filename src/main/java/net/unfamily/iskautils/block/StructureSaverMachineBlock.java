@@ -70,6 +70,7 @@ public class StructureSaverMachineBlock extends BaseEntityBlock {
         if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
             BlockEntity entity = level.getBlockEntity(pos);
             if (entity instanceof StructureSaverMachineBlockEntity structureSaverEntity) {
+                structureSaverEntity.claimOwner(serverPlayer);
                 serverPlayer.openMenu(structureSaverEntity);
                 return InteractionResult.CONSUME;
             }

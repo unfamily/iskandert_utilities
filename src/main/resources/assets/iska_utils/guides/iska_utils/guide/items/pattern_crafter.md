@@ -48,7 +48,7 @@ Craft a **Pattern Crafter Improver** (recipe above). **Shift+right-click** a pla
 ## Patterns
 
 - The left column holds the **current pattern**: mode controls, pattern browser, 3×3 letter grid, **Save** / **Discard**, and **Mark Input**.
-- **Improved** starts with **6** pattern slots (configurable). Each **Logic Module** adds **+1** pattern (up to the configured max).
+- **Improved** starts with **6** pattern slots. Each **Logic Module** adds **+1** pattern (up to the Logic Module limit).
 - Each cell is a letter (or empty). Letters link to **variables** in the filter area.
 - Cycle a cell with left/right click; **Shift+click** clears it. You can also place an item on a cell to assign a matching letter from your variables.
 - Switch between stored patterns with the pattern arrows / label. **Shift+click** the pattern label clears the current pattern.
@@ -59,7 +59,7 @@ Craft a **Pattern Crafter Improver** (recipe above). **Shift+right-click** a pla
 Above the machine inventory sit the **variable** slots (paginated when you unlock many keys):
 
 - **Improved** starts with **one page** of **18** variable keys.
-- Each **Logic Module** unlocks **one extra page** (+18 keys). With the default max of **4** Logic Modules you can reach **5 pages** (90 keys), capped by config.
+- Each **Logic Module** unlocks **one extra page** (+18 keys). With the default max of **4** Logic Modules you can reach **5 pages** (90 keys).
 - Small **letter** buttons above/below each slot unlock and cycle the letter for that variable.
 - While locked (no letter), the large button is inactive.
 - When unlocked, click the large button to open the **inline editor** for that variable’s filter string.

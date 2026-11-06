@@ -184,6 +184,7 @@ public class ClimbingNullifierBlock extends DirectionalBlock implements EntityBl
                     true);
             return InteractionResult.CONSUME;
         }
+        nullifier.claimOwner(serverPlayer);
         serverPlayer.openMenu(nullifier, pos);
         return InteractionResult.CONSUME;
     }

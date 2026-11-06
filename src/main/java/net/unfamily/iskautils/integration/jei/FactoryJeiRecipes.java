@@ -18,16 +18,10 @@ public final class FactoryJeiRecipes {
     private FactoryJeiRecipes() {}
 
     public static void reloadForClient(Minecraft mc) {
-        if (!FactoryLoader.getSources().isEmpty()) {
-            return;
-        }
-        RecipeManager recipes = null;
+        FactoryLoader.invalidate();
         var server = mc.getSingleplayerServer();
         if (server != null) {
-            recipes = server.getRecipeManager();
-        }
-        if (recipes != null) {
-            FactoryLoader.loadFromRecipeManager(recipes);
+            FactoryLoader.loadFromRecipeManager(server.getRecipeManager());
         }
     }
 

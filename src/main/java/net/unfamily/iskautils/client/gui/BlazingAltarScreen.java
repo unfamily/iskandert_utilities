@@ -3,6 +3,7 @@ package net.unfamily.iskautils.client.gui;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -46,21 +47,15 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
     private static final int CLOSE_BUTTON_X = GUI_WIDTH - CLOSE_BUTTON_SIZE - 5;
     private static final int CLOSE_BUTTON_Y = 5;
 
-    private static final int ROW_SLOT_Y = BlazingAltarMenu.PLACER_Y;
     private static final int ROW_BTN_GAP = 2;
     private static final int GROUND_BTN_X = 8;
     private static final int VISION_BTN_X = GUI_WIDTH - 8 - BTN;
-    /**
-     * Nullifier-style redstone control, mirrored opposite the range-module slot
-     * (module on the left → redstone on the right edge of the slot row).
-     */
-    private static final int REDSTONE_BTN_X = VISION_BTN_X;
-    private static final int SPAWN_BTN_X = REDSTONE_BTN_X - BTN - ROW_BTN_GAP;
-    private static final int EXTINGUISH_BTN_X = SPAWN_BTN_X - BTN - ROW_BTN_GAP;
-    private static final int SLOT_SIDE_BTN_Y = ROW_SLOT_Y - 1;
 
     /** Last button row: 2px gap above player inventory (inv starts at {@link BlazingAltarMenu#PLAYER_INV_Y}). */
     private static final int CHUNK_ROW_Y = BlazingAltarMenu.PLAYER_INV_Y - BTN - 2;
+    /** Stacked above ground / vision: one step and two steps up. */
+    private static final int STACK_NEAR_Y = CHUNK_ROW_Y - BTN - ROW_BTN_GAP;
+    private static final int STACK_FAR_Y = STACK_NEAR_Y - BTN - ROW_BTN_GAP;
     private static final int SHOW_BTN_H = 12;
     private static final int SHOW_BTN_W = 36;
     private static final int SHOW_BTN_Y = CHUNK_ROW_Y - SHOW_BTN_H - 2;
@@ -68,6 +63,9 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
     private static final int CHUNK_PROGRESS_Y = 20;
     private static final int CHUNK_RANGE_BTN_X = GROUND_BTN_X + BTN + ROW_BTN_GAP;
     private static final int CHUNK_RANGE_BTN_WIDTH = VISION_BTN_X - CHUNK_RANGE_BTN_X - ROW_BTN_GAP;
+    private static final int CHUNK_INNER_X = CHUNK_RANGE_BTN_X + BTN + ROW_BTN_GAP;
+    private static final int CHUNK_INNER_WIDTH = CHUNK_RANGE_BTN_WIDTH - 2 * BTN - 2 * ROW_BTN_GAP;
+    private static final int CHUNK_OFFSET_RIGHT_X = CHUNK_RANGE_BTN_X + CHUNK_RANGE_BTN_WIDTH - BTN;
     private static final int SHOW_BTN_X = CHUNK_RANGE_BTN_X + (CHUNK_RANGE_BTN_WIDTH - SHOW_BTN_W) / 2;
 
     private static final String TOOLTIP_RIGHT_CLICK_BACK = "gui.iska_utils.blazing_altar.tooltip.right_click_back";
@@ -89,6 +87,7 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
     private Button closeButton;
     private boolean showingArea;
     private int lastPreviewChunkRadius = -1;
+    private int lastPreviewChunkOffsetX = Integer.MIN_VALUE;
 
     public BlazingAltarScreen(BlazingAltarMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
@@ -108,24 +107,43 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
         }).bounds(leftPos + CLOSE_BUTTON_X, topPos + CLOSE_BUTTON_Y, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE).build();
         addRenderableWidget(closeButton);
 
+        // Left column above flames-on-ground: mobs/player (near ground).
         spawnModeButton = addRenderableWidget(new ItemIconButton(
-                leftPos + SPAWN_BTN_X,
-                topPos + SLOT_SIDE_BTN_Y,
+                leftPos + GROUND_BTN_X,
+                topPos + STACK_NEAR_Y,
                 BTN,
                 b -> sendConfig(0),
                 this::spawnModeIcon,
                 Component.empty()));
 
+        // Right column above flame vision: extinguish (top), redstone (near vision).
         extinguishButton = addRenderableWidget(new ItemIconButton(
-                leftPos + EXTINGUISH_BTN_X,
-                topPos + SLOT_SIDE_BTN_Y,
+                leftPos + VISION_BTN_X,
+                topPos + STACK_FAR_Y,
                 BTN,
                 b -> sendConfig(8),
                 this::extinguishIcon,
                 Component.empty()));
 
+        redstoneButton = addRenderableWidget(new ItemIconButton(
+                leftPos + VISION_BTN_X,
+                topPos + STACK_NEAR_Y,
+                BTN,
+                b -> sendConfig(5),
+                this::redstoneIcon,
+                () -> menu.getRedstoneMode() == 2 ? REDSTONE_GUI : null,
+                Component.empty()));
+
+        addRenderableWidget(Button.builder(Component.literal("\u00AB"), b -> sendConfig(16))
+                .bounds(leftPos + CHUNK_RANGE_BTN_X, topPos + CHUNK_ROW_Y, BTN, BTN)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.collecting_crate.offset_left")))
+                .build());
         chunkRangeButton = addRenderableWidget(Button.builder(Component.empty(), b -> {})
-                .bounds(leftPos + CHUNK_RANGE_BTN_X, topPos + CHUNK_ROW_Y, CHUNK_RANGE_BTN_WIDTH, BTN)
+                .bounds(leftPos + CHUNK_INNER_X, topPos + CHUNK_ROW_Y, CHUNK_INNER_WIDTH, BTN)
+                .build());
+        addRenderableWidget(Button.builder(Component.literal("\u00BB"), b -> sendConfig(17))
+                .bounds(leftPos + CHUNK_OFFSET_RIGHT_X, topPos + CHUNK_ROW_Y, BTN, BTN)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.collecting_crate.offset_right")))
                 .build());
 
         groundButton = addRenderableWidget(new ItemIconButton(
@@ -144,15 +162,6 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
                 this::visionIcon,
                 Component.empty()));
 
-        redstoneButton = addRenderableWidget(new ItemIconButton(
-                leftPos + REDSTONE_BTN_X,
-                topPos + SLOT_SIDE_BTN_Y,
-                BTN,
-                b -> sendConfig(5),
-                this::redstoneIcon,
-                () -> menu.getRedstoneMode() == 2 ? REDSTONE_GUI : null,
-                Component.empty()));
-
         showingArea = menu.isShowAreaEnabled();
         showAreaButton = addRenderableWidget(Button.builder(showAreaLabel(), b -> toggleShowArea())
                 .bounds(leftPos + SHOW_BTN_X, topPos + SHOW_BTN_Y, SHOW_BTN_W, SHOW_BTN_H)
@@ -161,8 +170,7 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
             BlockPos pos = menu.getSyncedBlockPos();
             if (!pos.equals(BlockPos.ZERO)) {
                 BlazingAltarAreaPreview.setActive(pos, true);
-                lastPreviewChunkRadius = menu.getChunkRadius();
-                BlazingAltarAreaPreview.refresh(pos, lastPreviewChunkRadius);
+                refreshPreviewIfShowing(pos);
             }
         }
     }
@@ -183,20 +191,29 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
             if (!pos.equals(BlockPos.ZERO)) {
                 BlazingAltarAreaPreview.setActive(pos, showingArea);
                 if (showingArea) {
-                    lastPreviewChunkRadius = menu.getChunkRadius();
-                    BlazingAltarAreaPreview.refresh(pos, lastPreviewChunkRadius);
+                    refreshPreviewIfShowing(pos);
                 } else {
                     lastPreviewChunkRadius = -1;
+                    lastPreviewChunkOffsetX = Integer.MIN_VALUE;
                 }
             }
         } else if (showingArea && !pos.equals(BlockPos.ZERO)) {
             int radius = menu.getChunkRadius();
-            if (radius != lastPreviewChunkRadius) {
-                lastPreviewChunkRadius = radius;
-                BlazingAltarAreaPreview.setActive(pos, true);
-                BlazingAltarAreaPreview.refresh(pos, radius);
+            int offset = menu.getChunkOffsetX();
+            if (radius != lastPreviewChunkRadius || offset != lastPreviewChunkOffsetX) {
+                refreshPreviewIfShowing(pos);
             }
         }
+    }
+
+    private void refreshPreviewIfShowing(BlockPos pos) {
+        if (pos.equals(BlockPos.ZERO)) {
+            return;
+        }
+        lastPreviewChunkRadius = menu.getChunkRadius();
+        lastPreviewChunkOffsetX = menu.getChunkOffsetX();
+        BlazingAltarAreaPreview.setActive(pos, true);
+        BlazingAltarAreaPreview.refresh(pos, lastPreviewChunkRadius, lastPreviewChunkOffsetX);
     }
 
     private Component chunkRangeButtonLabel() {
@@ -285,10 +302,10 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
         sendConfig(enabling ? 13 : 14);
         BlazingAltarAreaPreview.setActive(pos, enabling);
         if (enabling) {
-            lastPreviewChunkRadius = menu.getChunkRadius();
-            BlazingAltarAreaPreview.refresh(pos, lastPreviewChunkRadius);
+            refreshPreviewIfShowing(pos);
         } else {
             lastPreviewChunkRadius = -1;
+            lastPreviewChunkOffsetX = Integer.MIN_VALUE;
         }
     }
 
@@ -361,27 +378,7 @@ public class BlazingAltarScreen extends AbstractContainerScreen<BlazingAltarMenu
                     "gui.iska_utils.blazing_altar.extinguish_chunks_progress",
                     menu.getExtinguishChunkProgress(),
                     menu.getExtinguishChunkTotal()));
-            return;
         }
-        if (!menu.isExtinguishing()
-                && menu.getRedstoneMode() != 4
-                && menu.getPlacementChunkTotal() > 0
-                && hasPlacerFuel()) {
-            int current = Math.min(menu.getPlacementChunkProgress() + 1, menu.getPlacementChunkTotal());
-            String progressKey = hasPlacerFuel()
-                    ? "gui.iska_utils.blazing_altar.placement_chunks_progress"
-                    : "gui.iska_utils.blazing_altar.spawn_prevention_chunks_progress";
-            drawCenteredProgressLine(graphics, Component.translatable(
-                    progressKey,
-                    current,
-                    menu.getPlacementChunkTotal()));
-        }
-    }
-
-    private boolean hasPlacerFuel() {
-        ItemStack stack = menu.getSlot(BlazingAltarMenu.PLACER_SLOT_INDEX).getItem();
-        return !stack.isEmpty()
-                && (stack.is(ModItems.BURNING_BRAZIER.get()) || stack.is(ModItems.CURSED_CANDLE.get()));
     }
 
     private void drawCenteredProgressLine(GuiGraphicsExtractor graphics, Component text) {

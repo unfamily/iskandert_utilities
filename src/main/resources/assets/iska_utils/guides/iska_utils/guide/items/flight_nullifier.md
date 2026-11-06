@@ -17,7 +17,7 @@ categories:
 
 Blocks **flight** inside a cubic **radius** around the block. When the target includes aerial entities, it also suppresses upward aerial movement — Ghasts, Phantoms, Blazes, and similar flyers are grounded in the zone. Same range and Range Module upgrades as the [Ender Nullifier](ender_nullifier.md).
 
-Entities in the configured ignore list (default: `#c:bosses`) are exempt from this nullifier.
+Bosses and other ignored entities (default tag `#c:bosses`) are exempt from this nullifier.
 
 ## GUI
 

@@ -27,6 +27,7 @@ import net.neoforged.neoforge.transfer.item.ItemResource;
 import net.unfamily.iskalib.transfer.LegacyItemHandlerResourceHandler;
 import net.unfamily.iskautils.data.load.FactoryLoader;
 import net.unfamily.iskautils.util.BlockCraftOwner;
+import net.unfamily.iskautils.util.RecipeStageGate;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.unfamily.iskautils.Config;
@@ -97,7 +98,7 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer,
     }
 
     public List<FactoryLoader.Output> activeOutputs(FactoryLoader.Source source) {
-        return source.resolveOutputs(resolveOwnerPlayer());
+        return source.resolveOutputs(ownerPlayerUuid, level);
     }
 
     public ResourceHandler<ItemResource> getItemTransferHandler() {
@@ -279,6 +280,9 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer,
         int selected = Math.min(Math.max(0, be.selectedColorIndex), activeOutputs.size() - 1);
 
         var outDef = activeOutputs.get(selected);
+        if (!RecipeStageGate.isAllowed(source.gateRecipeId(outDef), be.getOwnerPlayerUuid(), level)) {
+            return;
+        }
         var outStackOpt = FactoryLoader.resolveOutputStack(outDef);
         if (outStackOpt.isEmpty()) return;
         ItemStack producedPerOp = outStackOpt.get();

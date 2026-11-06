@@ -145,6 +145,7 @@ public class IskaUtils {
         ShopLoader.loadAll(null);
         
         net.unfamily.iskautils.worldgen.ModBiomeModifierSerializers.register(modEventBus);
+        net.unfamily.iskautils.worldgen.ModPlacementModifiers.register(modEventBus);
 
         // Register blocks and items
         ModBlocks.register(modEventBus);

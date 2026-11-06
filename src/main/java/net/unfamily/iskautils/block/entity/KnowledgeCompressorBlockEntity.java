@@ -28,8 +28,30 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.KnowledgeCompressorBlock;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.util.ExperienceFluidMath;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class KnowledgeCompressorBlockEntity extends BlockEntity {
+public class KnowledgeCompressorBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     public static final TagKey<Fluid> EXPERIENCE_FLUID_TAG =
             TagKey.create(Registries.FLUID, Identifier.fromNamespaceAndPath("c", "experience"));
 
@@ -185,6 +207,7 @@ public class KnowledgeCompressorBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         FluidStack tankFluid = experienceTank.getFluid();
         output.putInt("TankMb", tankFluid.getAmount());
         if (!tankFluid.isEmpty()) {
@@ -205,6 +228,7 @@ public class KnowledgeCompressorBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         int tankMb = input.getIntOr("TankMb", 0);
         experienceTank.updateCapacity();
         experienceTank.setFluid(FluidStack.EMPTY);

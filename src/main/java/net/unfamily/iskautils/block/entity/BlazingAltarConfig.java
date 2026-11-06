@@ -10,6 +10,7 @@ import java.util.UUID;
 public final class BlazingAltarConfig {
     private long instanceId;
     private int chunkRadius = 1;
+    private int chunkOffsetX = 0;
     private boolean groundOnly = true;
     private BlazingAltarSpawnMode spawnMode = BlazingAltarSpawnMode.HOSTILE;
     private int redstoneMode;
@@ -35,6 +36,19 @@ public final class BlazingAltarConfig {
 
     public void setChunkRadius(int chunkRadius) {
         this.chunkRadius = chunkRadius;
+        chunkOffsetX = Math.max(-this.chunkRadius, Math.min(this.chunkRadius, chunkOffsetX));
+    }
+
+    public int getChunkOffsetX() {
+        return chunkOffsetX;
+    }
+
+    public void setChunkOffsetX(int chunkOffsetX) {
+        this.chunkOffsetX = Math.max(-chunkRadius, Math.min(chunkRadius, chunkOffsetX));
+    }
+
+    public void offsetChunkX(int delta) {
+        setChunkOffsetX(chunkOffsetX + delta);
     }
 
     public boolean isGroundOnly() {
@@ -94,6 +108,7 @@ public final class BlazingAltarConfig {
         output.putBoolean("ShowAreaEnabled", showAreaEnabled);
         output.putInt("TickCounter", tickCounter);
         output.putInt("PlacementChunkIndex", placementChunkIndex);
+        output.putInt("ChunkOffsetX", chunkOffsetX);
     }
 
     public void load(ValueInput input) {
@@ -116,5 +131,7 @@ public final class BlazingAltarConfig {
         showAreaEnabled = input.getBooleanOr("ShowAreaEnabled", false);
         tickCounter = input.getIntOr("TickCounter", 0);
         placementChunkIndex = Math.max(0, input.getIntOr("PlacementChunkIndex", 0));
+        chunkOffsetX = input.getIntOr("ChunkOffsetX", 0);
+        chunkOffsetX = Math.max(-chunkRadius, Math.min(chunkRadius, chunkOffsetX));
     }
 }

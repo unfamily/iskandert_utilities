@@ -17,7 +17,7 @@ categories:
 
 Blocca il **volo** dentro un **raggio** cubico attorno al blocco. Quando il bersaglio include le entità aeree, sopprime anche il movimento aereo verso l'alto — Ghast, Phantom, Blaze e simili vengono bloccati a terra nella zona. Stesso raggio e upgrade con Modulo portata dell'[Annullatore dell'End](ender_nullifier.md).
 
-Le entità nella lista di esclusione configurata (predefinita: `#c:bosses`) sono esenti da questo nullificatore.
+Boss e altre entità escluse (tag predefinito `#c:bosses`) sono esenti da questo nullificatore.
 
 ## GUI
 

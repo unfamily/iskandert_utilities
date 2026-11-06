@@ -71,8 +71,9 @@ public class ImprovedPatternCrafterBlock extends BaseEntityBlock {
         }
 
         BlockEntity entity = level.getBlockEntity(pos);
-        if (entity instanceof ImprovedPatternCrafterBlockEntity) {
+        if (entity instanceof ImprovedPatternCrafterBlockEntity crafter) {
             if (player instanceof ServerPlayer serverPlayer) {
+                crafter.claimOwner(serverPlayer);
                 serverPlayer.openMenu(new MenuProvider() {
                     @Override
                     public Component getDisplayName() {

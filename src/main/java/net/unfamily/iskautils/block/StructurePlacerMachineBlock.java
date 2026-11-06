@@ -92,6 +92,7 @@ public class StructurePlacerMachineBlock extends BaseEntityBlock {
         if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof StructurePlacerMachineBlockEntity machineEntity) {
+                machineEntity.claimOwner(serverPlayer);
                 serverPlayer.openMenu(machineEntity);
                 return InteractionResult.CONSUME;
             }

@@ -26,8 +26,9 @@ import net.unfamily.iskautils.block.RubberLogFilledBlock;
 import net.unfamily.iskautils.block.RubberSapExtractorBlock;
 import net.unfamily.iskautils.item.ModItems;
 import org.jetbrains.annotations.Nullable;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class RubberSapExtractorBlockEntity extends BlockEntity implements WorldlyContainer {
+public class RubberSapExtractorBlockEntity extends BlockEntity implements WorldlyContainer, net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     // Inventory: slot 0 for output (sap)
     private final NonNullList<ItemStack> items = NonNullList.withSize(1, ItemStack.EMPTY);
 
@@ -50,6 +51,27 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
         this.energyStorage = new EnergyStorageImpl(maxEnergy);
         this.energyHandler26 = new EnergyHandlerImpl();
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     private final class EnergyHandlerImpl extends net.neoforged.neoforge.transfer.transaction.SnapshotJournal<Integer>
         implements net.neoforged.neoforge.transfer.energy.EnergyHandler {
@@ -306,6 +328,7 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
     @Override
     protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         // save the inventory
         ContainerHelper.saveAllItems(output, this.items);
         // save the extraction state
@@ -317,6 +340,7 @@ public class RubberSapExtractorBlockEntity extends BlockEntity implements Worldl
     @Override
     protected void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         // load the inventory
         ContainerHelper.loadAllItems(input, this.items);
         // load the extraction state

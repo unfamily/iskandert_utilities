@@ -856,6 +856,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             ModMessages.sendDeepDrawerExtractorRedstoneModePacket(blockPos, backward);
         }
         saveFilterData();
+        if (backward) {
+            playButtonSound(); // LMB: widget click already plays
+        }
     }
     
     /**
@@ -1878,6 +1881,31 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
         this.extractSnapbackItem(guiGraphics);
         renderSettingsCopierItem(guiGraphics, mouseX, mouseY);
         this.extractTooltip(guiGraphics, mouseX, mouseY);
+        renderSettingsCopierSlotTooltip(guiGraphics, mouseX, mouseY);
+    }
+
+    /** AD-style empty Settings Copier slot hover (slot is drawn custom, not via vanilla slot). */
+    private void renderSettingsCopierSlotTooltip(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        if (!isCopierSlotHovered(mouseX, mouseY)) {
+            return;
+        }
+        int idx = menu.copySettingsSlotIndex();
+        if (idx < 0) {
+            return;
+        }
+        ItemStack copier = menu.getSlot(idx).getItem();
+        if (!copier.isEmpty()) {
+            return; // filled: extractTooltip / hovered slot already shows the item tip
+        }
+        guiGraphics.setTooltipForNextFrame(
+                this.font,
+                java.util.List.of(
+                        Component.translatable("gui.iska_utils.settings_copier.slot.tooltip.line1").getVisualOrderText(),
+                        Component.translatable("gui.iska_utils.settings_copier.slot.tooltip.line2").getVisualOrderText()),
+                net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner.INSTANCE,
+                mouseX,
+                mouseY,
+                true);
     }
 
     private boolean isCopierSlotHovered(double mouseX, double mouseY) {

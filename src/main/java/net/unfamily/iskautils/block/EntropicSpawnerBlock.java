@@ -93,6 +93,7 @@ public class EntropicSpawnerBlock extends BaseEntityBlock {
         }
         BlockEntity be = level.getBlockEntity(pos);
         if (be instanceof EntropicSpawnerBlockEntity spawner && player instanceof ServerPlayer serverPlayer) {
+            spawner.claimOwner(serverPlayer);
             serverPlayer.openMenu(spawner, pos);
             return InteractionResult.CONSUME;
         }

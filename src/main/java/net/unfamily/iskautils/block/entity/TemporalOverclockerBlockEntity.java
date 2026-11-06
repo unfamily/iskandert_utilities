@@ -29,12 +29,13 @@ import net.unfamily.iskautils.util.EntropyCharges;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * BlockEntity for the Temporal Overclocker
  * Accelerates ticks of linked blocks via chipset
  */
-public class TemporalOverclockerBlockEntity extends BlockEntity {
+public class TemporalOverclockerBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private static final String ENERGY_TAG = "Energy";
     private static final String LINKED_BLOCKS_TAG = "LinkedBlocks";
     private static final String UPGRADE_STACK_TAG = "UpgradeStack";
@@ -81,6 +82,27 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         this.energyHandler26 = new EnergyHandlerImpl();
         // accelerationFactor is already initialized from the field with the value from config
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     private final class EnergyHandlerImpl extends net.neoforged.neoforge.transfer.transaction.SnapshotJournal<Integer>
         implements net.neoforged.neoforge.transfer.energy.EnergyHandler {
@@ -609,6 +631,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         output.putInt(ENERGY_TAG, this.energyStorage.getEnergyStored());
         output.putInt("redstoneMode", redstoneMode);
         output.putInt("accelerationFactor", accelerationFactor);
@@ -631,6 +654,7 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         input.getInt(ENERGY_TAG).ifPresent(this.energyStorage::setEnergy);
 
         this.redstoneMode = input.getIntOr("redstoneMode", this.redstoneMode);

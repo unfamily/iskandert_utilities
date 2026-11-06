@@ -17,7 +17,7 @@ categories:
 
 Impedisce l'**arrampicata** su scale, impalcature e altri blocchi scalabili dentro un **raggio** cubico. Blocca anche l'arrampicata sui muri del **Gauntlet of Climbing** dentro la zona. Stesso raggio e moduli del [Nullificatore Ender](ender_nullifier.md).
 
-Le entità nella lista di esclusione configurata (predefinita: `#c:bosses`) sono esenti da questo nullificatore.
+Boss e altre entità escluse (tag predefinito `#c:bosses`) sono esenti da questo nullificatore.
 
 ## GUI
 

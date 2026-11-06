@@ -45,8 +45,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
+public class MobReaperBlockEntity extends BlockEntity implements MenuProvider, net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
 
     public enum MobAgeFilter {
         BOTH(0, "both"),
@@ -145,6 +146,27 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
     public MobReaperBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.MOB_REAPER_BE.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     private boolean isValidDamageModule(ItemStack stack) {
         if (stack.is(ModItems.NORMAL_DAMAGE_MODULE.get()) || stack.is(ModItems.LETHAL_DAMAGE_MODULE.get())) {
@@ -360,6 +382,7 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         targetType = MachineTargetType.fromId(input.getIntOr("TargetType", MachineTargetType.MOBS_ONLY.getId()));
         ageFilter = MobAgeFilter.fromId(input.getIntOr("AgeFilter", MobAgeFilter.BOTH.getId()));
         redstoneMode = input.getIntOr("RedstoneMode", 0);
@@ -381,6 +404,7 @@ public class MobReaperBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         output.putInt("TargetType", targetType.getId());
         output.putInt("AgeFilter", ageFilter.getId());
         output.putInt("RedstoneMode", redstoneMode);

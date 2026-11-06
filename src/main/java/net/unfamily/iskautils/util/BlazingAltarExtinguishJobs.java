@@ -39,13 +39,15 @@ public final class BlazingAltarExtinguishJobs {
                 level,
                 altar.getBlockPos(),
                 altar.getChunkRadius(),
+                altar.getChunkOffsetX(),
                 altar.isGroundOnly(),
                 finishMode,
                 altar.getInstanceId());
     }
 
-    public static void enqueueBreakCleanup(ServerLevel level, BlockPos altarPos, int chunkRadius, boolean groundOnly) {
-        enqueue(level, altarPos, chunkRadius, groundOnly, FinishMode.FLAMES_ONLY, NO_OWNER_INSTANCE);
+    public static void enqueueBreakCleanup(
+            ServerLevel level, BlockPos altarPos, int chunkRadius, int chunkOffsetX, boolean groundOnly) {
+        enqueue(level, altarPos, chunkRadius, chunkOffsetX, groundOnly, FinishMode.FLAMES_ONLY, NO_OWNER_INSTANCE);
     }
 
     public static boolean hasJob(ServerLevel level, BlockPos altarPos, long ownerInstanceId) {
@@ -103,10 +105,11 @@ public final class BlazingAltarExtinguishJobs {
             ServerLevel level,
             BlockPos altarPos,
             int chunkRadius,
+            int chunkOffsetX,
             boolean groundOnly,
             FinishMode finishMode,
             long ownerInstanceId) {
-        List<ChunkPos> chunks = BlazingAltarChunks.collectOrdered(altarPos, chunkRadius);
+        List<ChunkPos> chunks = BlazingAltarChunks.collectOrdered(altarPos, chunkRadius, chunkOffsetX);
         if (chunks.isEmpty()) {
             if (finishMode == FinishMode.FINISH_ALTAR && ownerInstanceId != NO_OWNER_INSTANCE) {
                 applyAltarFinish(level, altarPos, ownerInstanceId, 0);

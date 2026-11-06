@@ -15,12 +15,12 @@ categories:
 
 ## Cos'è
 
-Pianta simile a un fungo legata alla progressione entropica. Si pianta su **qualsiasi faccia superiore solida**. La generazione naturale resta solo su superfici **simili alla pietra** in **Overworld**, **Nether** ed **End**.
+Pianta simile a un fungo legata alla progressione entropica. Si pianta su **qualsiasi faccia superiore solida**. La generazione naturale resta solo su superfici **simili alla pietra** in **Overworld**, **Nether** ed **End**; in Overworld compare solo dove la **luce del cielo è 0** (niente luce diurna naturale).
 
-**Worldgen** (config `worldgen.001_generate_entropic_fungus`, default **true**):
+**Worldgen**:
 
-- **Overworld** — **patch** comuni da **1–3** funghi nelle grotte da **Y -64 a 72** (deep + alta)
-- **Nether** — come Overworld; **Warped Forest** più denso
+- **Overworld** — **patch** da **1–3** funghi nelle grotte sotto la superficie, mai dove arriva la luce diurna
+- **Nether** — stesso stile di patch; **Warped Forest** più denso
 - **End** — patch molto dense sulla pietra dell'End
 
 ## Drop

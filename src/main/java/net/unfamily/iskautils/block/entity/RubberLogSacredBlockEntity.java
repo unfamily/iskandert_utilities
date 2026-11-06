@@ -7,14 +7,36 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.unfamily.iskautils.block.ModBlocks;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class RubberLogSacredBlockEntity extends BlockEntity {
+public class RubberLogSacredBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private BlockPos rootPos = null; // Fixed coordinates of the root/sapling
     private int checkCounter = 0; // Counter to check less frequently
     
     public RubberLogSacredBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.RUBBER_LOG_SACRED_BE.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     
     /**
      * Sets the root position (called when block is placed during tree generation)
@@ -56,6 +78,7 @@ public class RubberLogSacredBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         if (rootPos != null) {
             output.putLong("rootPos", rootPos.asLong());
         }
@@ -65,6 +88,7 @@ public class RubberLogSacredBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         input.getLong("rootPos").ifPresent(val -> rootPos = BlockPos.of(val));
         checkCounter = input.getInt("checkCounter").orElse(0);
     }

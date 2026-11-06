@@ -12,8 +12,9 @@ import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.SacredRubberSaplingBlock;
 import net.unfamily.iskautils.worldgen.tree.SacredRubberTreeGrower;
 import net.unfamily.iskautils.worldgen.tree.SacredRubberTreeScale;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class SacredRubberSaplingBlockEntity extends BlockEntity {
+public class SacredRubberSaplingBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private static final int GROWTH_INTERVAL = 2; // Add blocks every 2 ticks (faster)
 
     private boolean isGrowing = false;
@@ -26,6 +27,27 @@ public class SacredRubberSaplingBlockEntity extends BlockEntity {
         super(ModBlockEntities.SACRED_RUBBER_SAPLING_BE.get(), pos, state);
         this.basePos = pos;
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     public static void tick(Level level, BlockPos pos, BlockState state, SacredRubberSaplingBlockEntity blockEntity) {
         if (level.isClientSide()) {
@@ -241,6 +263,7 @@ public class SacredRubberSaplingBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        BlockCraftOwner.write(output, ownerPlayerUuid);
         output.putBoolean("isGrowing", isGrowing);
         output.putInt("growthTick", growthTick);
         output.putInt("currentTrunkY", currentTrunkY);
@@ -251,6 +274,7 @@ public class SacredRubberSaplingBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        ownerPlayerUuid = BlockCraftOwner.read(input);
         isGrowing = input.getBooleanOr("isGrowing", false);
         growthTick = input.getInt("growthTick").orElse(0);
         currentTrunkY = input.getInt("currentTrunkY").orElse(0);

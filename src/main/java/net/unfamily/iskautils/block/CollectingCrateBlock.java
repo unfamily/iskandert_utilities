@@ -108,6 +108,7 @@ public class CollectingCrateBlock extends BaseEntityBlock {
             return InteractionResult.PASS;
         }
         if (player instanceof ServerPlayer serverPlayer) {
+            crate.claimOwner(serverPlayer);
             serverPlayer.openMenu(crate, pos);
         }
         return InteractionResult.CONSUME;

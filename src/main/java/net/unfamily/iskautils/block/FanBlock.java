@@ -160,6 +160,7 @@ public class FanBlock extends Block implements EntityBlock {
         }
 
         // Open GUI
+        fanEntity.claimOwner(serverPlayer);
         serverPlayer.openMenu(fanEntity, pos);
         return InteractionResult.CONSUME;
     }
