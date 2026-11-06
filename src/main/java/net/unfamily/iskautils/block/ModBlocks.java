@@ -652,7 +652,7 @@ public class ModBlocks {
             .noCollision()
             .instabreak()
             .sound(SoundType.WOOL)
-            .lightLevel((state) -> 15)
+            .lightLevel(state -> state.getValue(BurningFlameBlock.LIT) ? 15 : 0)
             .noOcclusion()
             .replaceable()
             .isSuffocating((state, level, pos) -> false)

@@ -1,7 +1,6 @@
 package net.unfamily.iskautils.block;
 
 import net.unfamily.iskautils.Config;
-import net.unfamily.iskautils.util.BlazingAltarFlamePlacement;
 import net.unfamily.iskautils.util.ClientPlayerAccess;
 import net.unfamily.iskautils.util.FlameVisibilityClientAccess;
 import net.unfamily.iskalib.stage.StageRegistry;
@@ -16,6 +15,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -26,26 +28,20 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  */
 public class BurningFlameBlock extends Block {
 
+    /** When false, vanilla lightLevel emits 0 (e.g. suspended altar range). */
+    public static final BooleanProperty LIT = BlockStateProperties.LIT;
+
     // Flame shape: 6x6 base, 11 pixels high, positioned 4 pixels above ground
     private static final VoxelShape FLAME_SHAPE = Block.box(5.0D, 4.0D, 5.0D, 11.0D, 15.0D, 11.0D);
 
     public BurningFlameBlock(Properties properties) {
         super(properties);
-    }
-
-    private static final int FLAME_LIGHT_EMISSION = 15;
-
-    @Override
-    public boolean hasDynamicLightEmission(BlockState state) {
-        return true;
+        registerDefaultState(stateDefinition.any().setValue(LIT, true));
     }
 
     @Override
-    public int getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {
-        if (BlazingAltarFlamePlacement.isBrazierFlameLightSuppressed(level, pos)) {
-            return 0;
-        }
-        return FLAME_LIGHT_EMISSION;
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(LIT);
     }
 
     @Override
