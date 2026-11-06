@@ -6,6 +6,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.unfamily.iskalib.nbt.NbtUuid;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -20,15 +21,7 @@ public final class BlockCraftOwner {
 
     @Nullable
     public static UUID read(ValueInput input) {
-        String raw = input.getStringOr(NBT_OWNER, "");
-        if (raw.isEmpty()) {
-            return null;
-        }
-        try {
-            return UUID.fromString(raw);
-        } catch (IllegalArgumentException ignored) {
-            return null;
-        }
+        return NbtUuid.read(input, NBT_OWNER);
     }
 
     public static void write(ValueOutput output, @Nullable UUID owner) {
