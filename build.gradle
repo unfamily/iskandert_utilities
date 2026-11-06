@@ -292,7 +292,8 @@ dependencies {
     compileOnly "curse.maven:fusion-connected-textures-854949:8355160"
     localRuntime "curse.maven:fusion-connected-textures-854949:8355160"
     // Ex Deorum (optional; witch water / silverfish larva — download for dev runtime only)
-    localRuntime "curse.maven:ex-deorum-901420:8384464"
+    // Temporarily disabled for local testing:
+    // localRuntime "curse.maven:ex-deorum-901420:8384464"
     // Forbidden Arcanus optional (compile only — no auto-download)
     compileOnly "curse.maven:forbidden-arcanus-309858:8333815"
     // Lootr optional (compile only — loot scanner chip integration uses reflection at runtime)

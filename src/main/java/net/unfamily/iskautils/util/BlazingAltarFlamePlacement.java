@@ -18,6 +18,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.block.BurningFlameBlock;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.world.BlazingAltarSpatialIndex;
 
@@ -264,11 +265,7 @@ public final class BlazingAltarFlamePlacement {
 
     /**
      * Brazier flames in range of a non-operational altar must not emit block light.
-     *
-     * <p>This is invoked by {@code BurningFlameBlock#getLightEmission}, which the light engine calls
-     * from its own worker threads. It therefore must be a pure, non-blocking lookup: it reads only
-     * the in-memory {@link BlazingAltarSpatialIndex} and never touches block entities or neighbour
-     * chunks (which would trigger off-thread chunk loads and deadlock during world load).
+     * Pure in-memory index lookup — safe from light-engine / server threads.
      */
     public static boolean isBrazierFlameLightSuppressed(BlockGetter level, BlockPos flamePos) {
         if (!(level instanceof Level world)) {
@@ -278,7 +275,10 @@ public final class BlazingAltarFlamePlacement {
                 world.dimension(), flamePos, maxAltarChunkReach());
     }
 
-    /** Recomputes block light for brazier flames after altar operational state changes. */
+    /**
+     * Syncs {@link net.unfamily.iskautils.block.BurningFlameBlock#LIT} (vanilla lightLevel) for
+     * brazier flames after altar operational state changes.
+     */
     public static void refreshBrazierFlameLightInRadius(
             ServerLevel level, BlockPos altarPos, int chunkRadius, int chunkOffsetX, boolean groundOnly) {
         Block burningFlame = ModBlocks.BURNING_FLAME.get();
@@ -303,8 +303,13 @@ public final class BlazingAltarFlamePlacement {
                         if (!state.is(burningFlame)) {
                             continue;
                         }
-                        level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
-                        level.getLightEngine().checkBlock(pos);
+                        boolean lit = !isBrazierFlameLightSuppressed(level, pos);
+                        BlockState updated = state.setValue(BurningFlameBlock.LIT, lit);
+                        if (updated != state) {
+                            level.setBlock(pos, updated, Block.UPDATE_ALL);
+                        } else {
+                            level.getLightEngine().checkBlock(pos);
+                        }
                     }
                 }
             }

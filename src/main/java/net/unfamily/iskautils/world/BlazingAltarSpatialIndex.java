@@ -15,10 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * chunk radius.
  *
  * <p>The index is kept fully in-memory and is only mutated from the server thread. This lets the
- * light engine query brazier-flame light suppression from its worker threads (via
- * {@code BurningFlameBlock#getLightEmission}) without ever touching block entities or loading
- * neighbour chunks. Doing chunk/BE access from a light worker re-enters the chunk system and can
- * deadlock with chunk-loading mods that reinstate forced chunks during world load.
+ * light-suppression refresh to update {@code BurningFlameBlock#LIT} without touching block entities
+ * or loading neighbour chunks from light workers.
  */
 public final class BlazingAltarSpatialIndex {
     /** Immutable snapshot of an altar's light-relevant state. */

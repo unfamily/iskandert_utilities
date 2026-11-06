@@ -1,6 +1,9 @@
 {
   "variants": {
-    "": {
+    "lit=false": {
+      "model": "iska_utils:block/cursed_burning_flame"
+    },
+    "lit=true": {
       "model": "iska_utils:block/cursed_burning_flame"
     }
   }
