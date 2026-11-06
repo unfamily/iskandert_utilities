@@ -9,10 +9,8 @@ public final class FactoryClientSourcesBootstrap {
 
     private FactoryClientSourcesBootstrap() {}
 
+    /** Always refresh from the current RecipeManager so GUI/JEI see post-{@code /reload} data. */
     public static void ensureLoaded() {
-        if (!FactoryLoader.getSources().isEmpty()) {
-            return;
-        }
         Minecraft mc = Minecraft.getInstance();
         if (mc == null) {
             return;

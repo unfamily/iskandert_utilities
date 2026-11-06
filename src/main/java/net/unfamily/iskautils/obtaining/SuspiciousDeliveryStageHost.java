@@ -119,6 +119,66 @@ public final class SuspiciousDeliveryStageHost {
         };
     }
 
+    /**
+     * Offline evaluation: world stages via server; player/team stages via UUID APIs
+     * ({@code StageRegistry.hasPlayerStage}/{@code hasPlayerTeamStage}), including offline playerdata.
+     */
+    public boolean isFullyEligibleOffline(
+            @org.jetbrains.annotations.Nullable java.util.UUID ownerUuid,
+            @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level level) {
+        if (!checkAllMods()) {
+            return false;
+        }
+        return checkAllStagesOffline(ownerUuid, level);
+    }
+
+    public boolean checkAllStagesOffline(
+            @org.jetbrains.annotations.Nullable java.util.UUID ownerUuid,
+            @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level level) {
+        if (stagesLogic == CommandItemDefinition.StagesLogic.DEF_AND
+                || stagesLogic == CommandItemDefinition.StagesLogic.DEF_OR) {
+            return true;
+        }
+        if (stages.isEmpty()) {
+            return true;
+        }
+        if (stagesLogic == CommandItemDefinition.StagesLogic.AND) {
+            for (CommandItemDefinition.StageCondition stage : stages) {
+                if (!checkSingleStageOffline(ownerUuid, level, stage)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        for (CommandItemDefinition.StageCondition stage : stages) {
+            if (checkSingleStageOffline(ownerUuid, level, stage)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean checkSingleStageOffline(
+            @org.jetbrains.annotations.Nullable java.util.UUID ownerUuid,
+            @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level level,
+            CommandItemDefinition.StageCondition condition) {
+        if (level == null || level.getServer() == null) {
+            return false;
+        }
+        String stageId = condition.getStage();
+        boolean shouldBeSet = condition.shouldBeSet();
+        net.unfamily.iskalib.stage.StageRegistry registry =
+                net.unfamily.iskalib.stage.StageRegistry.getInstance(level.getServer());
+        return switch (condition.getStageType().toLowerCase()) {
+            case "world" -> registry.hasWorldStage(stageId) == shouldBeSet;
+            case "player" ->
+                    ownerUuid != null && registry.hasPlayerStage(ownerUuid, stageId) == shouldBeSet;
+            case "team" ->
+                    ownerUuid != null && registry.hasPlayerTeamStage(ownerUuid, stageId) == shouldBeSet;
+            default -> false;
+        };
+    }
+
     /** Adapter so {@link net.unfamily.iskautils.command.CommandItemAction} IF blocks can resolve stage/mod indices. */
     public CommandItemDefinition asDefinitionAdapter() {
         CommandItemDefinition def = new CommandItemDefinition("suspicious_delivery_stage_host");

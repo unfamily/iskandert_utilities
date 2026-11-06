@@ -24,13 +24,14 @@ import net.unfamily.iskautils.util.EtherealFrameFilterMatcher;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.BiConsumer;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * Block entity for the Ethereal Frame.
  * Stores an entity type filter (allow/deny list) and optional camouflage BlockState.
  * Adjacent frames form a local network that shares filters.
  */
-public class EtherealFrameBlockEntity extends BlockEntity {
+public class EtherealFrameBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
 
     private static final int MAX_NETWORK_SIZE = 64;
     private static final int SYNC_INTERVAL_TICKS = 40;
@@ -66,6 +67,27 @@ public class EtherealFrameBlockEntity extends BlockEntity {
             reinforced = state.getValue(EtherealFrameBlock.REINFORCED);
         }
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, EtherealFrameBlockEntity frame) {
         if (level.isClientSide) {
@@ -471,6 +493,7 @@ public class EtherealFrameBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
 
         net.minecraft.nbt.ListTag listTag = new net.minecraft.nbt.ListTag();
         for (String id : filterEntityTypes) {
@@ -496,6 +519,7 @@ public class EtherealFrameBlockEntity extends BlockEntity {
     @Override
     public void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
 
         if (tag.contains("FilterEntityTypes")) {
             filterEntityTypes.clear();

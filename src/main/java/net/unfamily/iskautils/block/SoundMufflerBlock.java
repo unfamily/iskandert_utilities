@@ -57,6 +57,7 @@ public class SoundMufflerBlock extends Block implements EntityBlock {
             return InteractionResult.PASS;
         }
         if (player instanceof ServerPlayer serverPlayer) {
+            muffler.claimOwner(serverPlayer);
             serverPlayer.openMenu(new net.minecraft.world.MenuProvider() {
                 @Override
                 public Component getDisplayName() {

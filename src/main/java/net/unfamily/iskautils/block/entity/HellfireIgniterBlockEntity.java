@@ -15,8 +15,9 @@ import net.unfamily.iskautils.block.HellfireIgniterBlock;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class HellfireIgniterBlockEntity extends BlockEntity {
+public class HellfireIgniterBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     // Energy storage
     private final EnergyStorageImpl energyStorage;
     private IEnergyStorage energyHandler;
@@ -44,6 +45,27 @@ public class HellfireIgniterBlockEntity extends BlockEntity {
         this.energyStorage = new EnergyStorageImpl(this.effectiveBufferCapacity);
         this.energyHandler = this.energyStorage;
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     
     // Determine effective energy capacity based on configurations
     private int determineEffectiveCapacity() {
@@ -139,6 +161,7 @@ public class HellfireIgniterBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
         // Load energy only if the block has a capacity
         if (canReceiveEnergy()) {
             energyStorage.setEnergy(tag.getInt("Energy"));
@@ -152,6 +175,7 @@ public class HellfireIgniterBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
         // Save energy only if the block has a capacity
         if (canReceiveEnergy()) {
             tag.putInt("Energy", energyStorage.getEnergyStored());

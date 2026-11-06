@@ -17,7 +17,7 @@ categories:
 
 Blocco che **annulla i teletrasporti** dentro un **raggio** cubico attorno a sé su ogni asse (impostato nella GUI).
 
-Le entità nella lista di esclusione configurata (predefinita: `#c:bosses`) sono esenti e possono continuare a teletrasportarsi nella zona.
+Boss e altre entità escluse (tag predefinito `#c:bosses`) sono esenti e possono continuare a teletrasportarsi nella zona.
 
 ## GUI
 

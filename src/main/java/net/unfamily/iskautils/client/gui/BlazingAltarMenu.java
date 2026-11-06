@@ -50,7 +50,8 @@ public class BlazingAltarMenu extends AbstractContainerMenu {
     private static final int EXTINGUISH_CHUNK_TOTAL_INDEX = 11;
     private static final int EXTINGUISHING_INDEX = 12;
     private static final int SHOW_AREA_INDEX = 13;
-    private static final int DATA_COUNT = 14;
+    private static final int CHUNK_OFFSET_X_INDEX = 14;
+    private static final int DATA_COUNT = 15;
 
     private final BlazingAltarBlockEntity blockEntity;
     private final ContainerLevelAccess levelAccess;
@@ -81,6 +82,7 @@ public class BlazingAltarMenu extends AbstractContainerMenu {
                     case EXTINGUISH_CHUNK_TOTAL_INDEX -> blockEntity.getExtinguishChunkTotal();
                     case EXTINGUISHING_INDEX -> blockEntity.isExtinguishing() ? 1 : 0;
                     case SHOW_AREA_INDEX -> blockEntity.isShowAreaEnabled() ? 1 : 0;
+                    case CHUNK_OFFSET_X_INDEX -> blockEntity.getChunkOffsetX();
                     default -> 0;
                 };
             }
@@ -177,6 +179,10 @@ public class BlazingAltarMenu extends AbstractContainerMenu {
 
     public int getChunkRadius() {
         return containerData.get(CHUNK_RADIUS_INDEX);
+    }
+
+    public int getChunkOffsetX() {
+        return containerData.get(CHUNK_OFFSET_X_INDEX);
     }
 
     public int getMaxChunkRadius() {

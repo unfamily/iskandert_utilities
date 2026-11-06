@@ -26,6 +26,8 @@ import net.unfamily.iskautils.network.packet.DeepDrawerExtractorSettingsCopierC2
 import net.unfamily.iskautils.integration.jei.ghost.IIskaUtilsGhostTarget;
 import net.unfamily.iskautils.util.FilterLineTextUtil;
 
+import java.util.List;
+
 /**
  * Screen for Deep Drawer Extractor GUI
  * Shows scrollable EditBoxes for infinite filter fields, allow/deny button, and help text
@@ -727,7 +729,6 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
 
         if (subView != SubView.HOW_TO_USE && button == 1 && redstoneModeButton != null && redstoneModeButton.isHovered()) {
             onRedstoneModePressed(true);
-            playButtonSound();
             return true;
         }
         
@@ -852,6 +853,9 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             ModMessages.sendDeepDrawerExtractorRedstoneModePacket(blockPos, backward);
         }
         saveFilterData();
+        if (backward) {
+            playButtonSound(); // LMB: widget click already plays
+        }
     }
     
     /**
@@ -1820,10 +1824,34 @@ public class DeepDrawerExtractorScreen extends AbstractContainerScreen<DeepDrawe
             super.render(guiGraphics, mouseX, mouseY, partialTick);
             renderSettingsCopierItem(guiGraphics, mouseX, mouseY);
             this.renderTooltip(guiGraphics, mouseX, mouseY);
+            renderSettingsCopierSlotTooltip(guiGraphics, mouseX, mouseY);
             if (redstoneModeButton != null && redstoneModeButton.isHovered()) {
                 guiGraphics.renderTooltip(this.font,
                         MachineGuiButtons.redstoneTooltip(menu.getRedstoneMode(), true), mouseX, mouseY);
             }
+        }
+    }
+
+    /** AD-style empty/filled Settings Copier slot hover (slot is drawn custom, not via vanilla slot). */
+    private void renderSettingsCopierSlotTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        if (!isCopierSlotHovered(mouseX, mouseY)) {
+            return;
+        }
+        int idx = menu.copySettingsSlotIndex();
+        if (idx < 0) {
+            return;
+        }
+        ItemStack copier = menu.getSlot(idx).getItem();
+        if (!copier.isEmpty()) {
+            guiGraphics.renderTooltip(this.font, copier, mouseX, mouseY);
+        } else {
+            guiGraphics.renderComponentTooltip(
+                    this.font,
+                    List.of(
+                            Component.translatable("gui.iska_utils.settings_copier.slot.tooltip.line1"),
+                            Component.translatable("gui.iska_utils.settings_copier.slot.tooltip.line2")),
+                    mouseX,
+                    mouseY);
         }
     }
 

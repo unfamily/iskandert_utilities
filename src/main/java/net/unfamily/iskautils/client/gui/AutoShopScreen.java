@@ -828,7 +828,9 @@ public class AutoShopScreen extends AbstractContainerScreen<AutoShopMenu>
     }
 
     private void onRedstoneModePressed(boolean backward) {
-        playButtonSound();
+        if (backward) {
+            playButtonSound(); // LMB: widget click already plays
+        }
         BlockPos machinePos = resolveMachinePos();
         if (!machinePos.equals(BlockPos.ZERO)) {
             net.unfamily.iskautils.network.ModMessages.sendAutoShopRedstoneModePacket(machinePos, backward);

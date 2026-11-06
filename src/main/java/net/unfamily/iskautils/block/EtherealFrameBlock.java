@@ -339,6 +339,7 @@ public class EtherealFrameBlock extends Block implements EntityBlock {
     }
 
     private void openFilterGui(ServerPlayer player, BlockPos pos, EtherealFrameBlockEntity frame) {
+        frame.claimOwner(player);
         player.openMenu(new net.minecraft.world.MenuProvider() {
             @Override
             public Component getDisplayName() {

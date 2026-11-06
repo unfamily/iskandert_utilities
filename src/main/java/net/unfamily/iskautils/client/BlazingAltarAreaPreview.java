@@ -49,6 +49,10 @@ public final class BlazingAltarAreaPreview {
      * @param chunkRadius  Chebyshev chunk radius ({@code max(|dx|,|dz|) <= radius})
      */
     public static void refresh(BlockPos owner, int chunkRadius) {
+        refresh(owner, chunkRadius, 0);
+    }
+
+    public static void refresh(BlockPos owner, int chunkRadius, int chunkOffsetX) {
         if (owner == null || !activeOwners.contains(owner.immutable())) {
             return;
         }
@@ -60,7 +64,7 @@ public final class BlazingAltarAreaPreview {
         BlockPos key = owner.immutable();
         MarkRenderer.getInstance().clearBillboardMarkersForOwner(key);
 
-        ChunkPos origin = new ChunkPos(owner);
+        ChunkPos origin = net.unfamily.iskautils.util.BlazingAltarChunks.chunkOrigin(owner, chunkOffsetX);
         int minChunkX = origin.x - radius;
         int maxChunkX = origin.x + radius;
         int minChunkZ = origin.z - radius;

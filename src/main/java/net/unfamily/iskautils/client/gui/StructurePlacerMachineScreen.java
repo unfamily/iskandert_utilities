@@ -393,6 +393,9 @@ public class StructurePlacerMachineScreen extends AbstractContainerScreen<Struct
         
         if (!machinePos.equals(BlockPos.ZERO)) {
             net.unfamily.iskautils.network.ModMessages.sendStructurePlacerMachineRedstoneModePacket(machinePos, backward);
+            if (backward) {
+                playButtonSound(); // LMB: widget click already plays
+            }
         }
     }
     

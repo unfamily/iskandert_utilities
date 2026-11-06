@@ -20,9 +20,15 @@
           "absolute": 0
         },
         "max_inclusive": {
-          "absolute": 72
+          "absolute": 48
         }
       }
+    },
+    {
+      "type": "minecraft:surface_relative_threshold_filter",
+      "heightmap": "WORLD_SURFACE_WG",
+      "min_inclusive": -512,
+      "max_inclusive": -4
     },
     {
       "type": "minecraft:count",
@@ -83,6 +89,10 @@
           }
         ]
       }
+    },
+    {
+      "type": "iska_utils:max_sky_light",
+      "max_inclusive": 0
     },
     {
       "type": "minecraft:biome"

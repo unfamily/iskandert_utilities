@@ -173,6 +173,7 @@ public class FanBlock extends DirectionalBlock implements EntityBlock {
         }
 
         // Open GUI
+        fanEntity.claimOwner(serverPlayer);
         serverPlayer.openMenu(fanEntity, pos);
         return InteractionResult.CONSUME;
     }

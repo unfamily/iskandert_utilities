@@ -258,7 +258,9 @@ public class MobReaperScreen extends AbstractContainerScreen<MobReaperMenu> {
         BlockPos pos = menu.getSyncedBlockPos();
         if (!pos.equals(BlockPos.ZERO)) {
             ModMessages.sendMobReaperRedstoneModePacket(pos, backward);
-            playButtonSound();
+            if (backward) {
+                playButtonSound(); // LMB: widget click already plays
+            }
         }
     }
 

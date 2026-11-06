@@ -74,6 +74,8 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
 
     private Button closeButton;
     private Button buttonUp;
+    private Button buttonOffsetLeft;
+    private Button buttonOffsetRight;
     private Button buttonLeft;
     private Button buttonRight;
     private Button buttonDepth;
@@ -106,8 +108,16 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         addRenderableWidget(closeButton);
 
         int upX = leftPos + ARROW_GROUP_LEFT_X + ARROW_GROUP_WIDTH / 2 - BUTTON_W / 2;
+        buttonOffsetLeft = Button.builder(Component.literal("\u00AB"), b -> sendSize(4, true))
+                .bounds(upX - BUTTON_W - GAP, topPos + ROW1_Y, BUTTON_W, BUTTON_H)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.collecting_crate.offset_left")))
+                .build();
         buttonUp = Button.builder(Component.literal("\u2191"), b -> sendSize(0, true))
                 .bounds(upX, topPos + ROW1_Y, BUTTON_W, BUTTON_H)
+                .build();
+        buttonOffsetRight = Button.builder(Component.literal("\u00BB"), b -> sendSize(4, false))
+                .bounds(upX + BUTTON_W + GAP, topPos + ROW1_Y, BUTTON_W, BUTTON_H)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.collecting_crate.offset_right")))
                 .build();
         buttonLeft = Button.builder(Component.literal("\u2190"), b -> sendSize(1, true))
                 .bounds(leftPos + ARROW_GROUP_LEFT_X, topPos + ROW2_Y, BUTTON_W, BUTTON_H)
@@ -118,7 +128,9 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         buttonRight = Button.builder(Component.literal("\u2192"), b -> sendSize(2, true))
                 .bounds(leftPos + ARROW_GROUP_LEFT_X + 2 * (BUTTON_W + GAP), topPos + ROW2_Y, BUTTON_W, BUTTON_H)
                 .build();
+        addRenderableWidget(buttonOffsetLeft);
         addRenderableWidget(buttonUp);
+        addRenderableWidget(buttonOffsetRight);
         addRenderableWidget(buttonLeft);
         addRenderableWidget(buttonDepth);
         addRenderableWidget(buttonRight);
@@ -196,10 +208,13 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         y -= BUTTON_SIZE + BUTTON_GAP;
         int collectY = y;
 
+        // Mute widget click: server plays EXPERIENCE_ORB_PICKUP / BOTTLE_EMPTY.
         collectButton = addRenderableWidget(new ItemIconButton(
-                buttonX, collectY, BUTTON_SIZE, b -> sendXpCollect(), () -> new ItemStack(Items.EXPERIENCE_BOTTLE), Component.empty()));
+                buttonX, collectY, BUTTON_SIZE, b -> sendXpCollect(), () -> new ItemStack(Items.EXPERIENCE_BOTTLE), Component.empty())
+                .muteClickSound());
         depositButton = addRenderableWidget(new ItemIconButton(
-                buttonX, depositY, BUTTON_SIZE, b -> sendXpDeposit(), () -> new ItemStack(Items.GLASS_BOTTLE), Component.empty()));
+                buttonX, depositY, BUTTON_SIZE, b -> sendXpDeposit(), () -> new ItemStack(Items.GLASS_BOTTLE), Component.empty())
+                .muteClickSound());
         modeButton = addRenderableWidget(new ItemIconButton(
                 buttonX, modeY, BUTTON_SIZE, b -> sendMode(false), this::modeIcon, Component.empty()));
         redstoneButton = addRenderableWidget(MachineGuiButtons.redstoneIconButton(
@@ -210,7 +225,6 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         BlockPos pos = menu.getSyncedBlockPos();
         if (!pos.equals(BlockPos.ZERO)) {
             ModMessages.sendCollectingCrateXpCollectPacket(pos);
-            playButtonSound();
         }
     }
 
@@ -218,7 +232,6 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         BlockPos pos = menu.getSyncedBlockPos();
         if (!pos.equals(BlockPos.ZERO)) {
             ModMessages.sendCollectingCrateXpDepositPacket(pos);
-            playButtonSound();
         }
     }
 
@@ -226,7 +239,11 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         BlockPos pos = menu.getSyncedBlockPos();
         if (!pos.equals(BlockPos.ZERO)) {
             ModMessages.sendCollectingCrateModePacket(pos, backward);
-            playButtonSound();
+            // Left click: ItemIconButton already plays default UI sound.
+            // Right click: no widget press — play once here.
+            if (backward) {
+                playButtonSound();
+            }
         }
     }
 
@@ -234,7 +251,9 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         BlockPos pos = menu.getSyncedBlockPos();
         if (!pos.equals(BlockPos.ZERO)) {
             ModMessages.sendCollectingCrateRedstoneModePacket(pos, backward);
-            playButtonSound();
+            if (backward) {
+                playButtonSound();
+            }
         }
     }
 
@@ -266,7 +285,7 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         if (pos.equals(BlockPos.ZERO)) {
             return;
         }
-        playButtonSound();
+        // Button widget already plays the default UI click.
         boolean enabling = !menu.isPreviewEnabled();
         MarkRenderer.getInstance().clearBillboardMarkersForOwner(pos);
         PacketDistributor.sendToServer(new CollectingCratePreviewToggleC2SPacket(pos, enabling));
@@ -417,7 +436,9 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
         } else if (modeButton.isHovered()) {
             CollectingCrateMode mode = CollectingCrateMode.fromId(menu.getCollectMode());
             guiGraphics.renderTooltip(this.font,
-                    Component.translatable("gui.iska_utils.collecting_crate.mode." + mode.name().toLowerCase()), mouseX, mouseY);
+                    MachineGuiButtons.withCycleHint(Component.translatable(
+                            "gui.iska_utils.collecting_crate.mode." + mode.name().toLowerCase())),
+                    mouseX, mouseY);
         } else if (redstoneButton.isHovered()) {
             guiGraphics.renderTooltip(this.font,
                     MachineGuiButtons.redstoneTooltip(menu.getRedstoneMode(), false), mouseX, mouseY);
@@ -438,9 +459,19 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
             int x = (int) mouseX;
             int y = (int) mouseY;
             int upX = leftPos + ARROW_GROUP_LEFT_X + ARROW_GROUP_WIDTH / 2 - BUTTON_W / 2;
+            if (isInArrowBounds(x, y, upX - BUTTON_W - GAP, topPos + ROW1_Y)) {
+                playGuiClickSound();
+                sendSize(4, false);
+                return true;
+            }
             if (isInArrowBounds(x, y, upX, topPos + ROW1_Y)) {
                 playGuiClickSound();
                 sendSize(0, false);
+                return true;
+            }
+            if (isInArrowBounds(x, y, upX + BUTTON_W + GAP, topPos + ROW1_Y)) {
+                playGuiClickSound();
+                sendSize(4, true);
                 return true;
             }
             if (isInArrowBounds(x, y, leftPos + ARROW_GROUP_LEFT_X, topPos + ROW2_Y)) {
@@ -473,8 +504,10 @@ public class CollectingCrateScreen extends AbstractContainerScreen<CollectingCra
     }
 
     private void playButtonSound() {
-        if (this.minecraft != null && this.minecraft.gameMode != null) {
-            this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
+        if (this.minecraft != null) {
+            this.minecraft.getSoundManager().play(
+                    net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                            net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
         }
     }
 

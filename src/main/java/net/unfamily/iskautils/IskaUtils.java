@@ -125,6 +125,7 @@ public class IskaUtils {
         ModBlocks.register(modEventBus);
         net.unfamily.iskautils.fluid.ModFluids.register(modEventBus);
         net.unfamily.iskautils.worldgen.ModBiomeModifierSerializers.register(modEventBus);
+        net.unfamily.iskautils.worldgen.ModPlacementModifiers.register(modEventBus);
         ModFactoryRecipes.register(modEventBus);
         ModAncientTabRecipes.register(modEventBus);
         ModItems.register(modEventBus);

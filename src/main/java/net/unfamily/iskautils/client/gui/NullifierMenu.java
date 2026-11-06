@@ -41,7 +41,8 @@ public class NullifierMenu extends AbstractContainerMenu {
     public static final int SHOW_AREA_INDEX = 6;
     public static final int TYPE_ID_INDEX = 7;
     public static final int TARGET_MODE_INDEX = 8;
-    public static final int DATA_COUNT = 9;
+    public static final int AREA_OFFSET_X_INDEX = 9;
+    public static final int DATA_COUNT = 10;
 
     private final INullifierBE nullifierBE;
     private final ContainerLevelAccess levelAccess;
@@ -67,6 +68,7 @@ public class NullifierMenu extends AbstractContainerMenu {
                     case SHOW_AREA_INDEX -> nullifierBE.isShowAreaEnabled() ? 1 : 0;
                     case TYPE_ID_INDEX -> nullifierBE.getNullifierType().getId();
                     case TARGET_MODE_INDEX -> nullifierBE.getTargetMode().getId();
+                    case AREA_OFFSET_X_INDEX -> nullifierBE.getAreaOffsetX();
                     default -> 0;
                 };
             }
@@ -194,6 +196,10 @@ public class NullifierMenu extends AbstractContainerMenu {
 
     public int getTargetModeId() {
         return containerData.get(TARGET_MODE_INDEX);
+    }
+
+    public int getAreaOffsetX() {
+        return containerData.get(AREA_OFFSET_X_INDEX);
     }
 
     public BlockPos getSyncedBlockPos() {

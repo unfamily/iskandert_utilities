@@ -26,11 +26,11 @@ import java.util.List;
 
 /**
  * Burning Brazier Item - Places burning flame blocks when light level is low
- * Has 512 durability and consumes 1 durability per successful placement.
+ * Has 2048 durability and consumes 1 durability per successful placement.
  */
 public class BurningBrazierItem extends Item {
 
-    public static final int MAX_DURABILITY = 512;
+    public static final int MAX_DURABILITY = 2048;
     private static final String CURSE_FLAME_STAGE = "iska_utils_internal-curse_flame";
 
     protected static boolean hasCurseFlame(ServerPlayer player) {

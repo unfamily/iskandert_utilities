@@ -6,6 +6,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.block.Block;
 import net.unfamily.iskautils.Config;
+import net.unfamily.iskautils.util.ArtifactTooltipUtil;
 
 import java.util.List;
 
@@ -21,7 +22,7 @@ public class EnderNullifierBlockItem extends BlockItem {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        tooltip.add(Component.translatable("tooltip.iska_utils.ender_nullifier.effect"));
-        tooltip.add(Component.translatable("tooltip.iska_utils.ender_nullifier.radius", Config.enderNullifierRadius));
+        tooltip.add(ArtifactTooltipUtil.loreLine("tooltip.iska_utils.ender_nullifier.effect"));
+        tooltip.add(ArtifactTooltipUtil.techLine("tooltip.iska_utils.ender_nullifier.radius", Config.enderNullifierRadius));
     }
 }

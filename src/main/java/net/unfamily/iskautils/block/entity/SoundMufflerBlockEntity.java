@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * Block entity for Sound Muffler. Stores per-category volume (0-100%).
@@ -28,7 +29,7 @@ import java.util.regex.Pattern;
  *   <li>Then vanilla categories: RECORDS, WEATHER, BLOCKS, HOSTILE, NEUTRAL, PLAYERS, AMBIENT, VOICE. MUSIC is never applied.</li>
  * </ul>
  */
-public class SoundMufflerBlockEntity extends BlockEntity {
+public class SoundMufflerBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
 
     public static final int CATEGORY_COUNT = 10;
     /** Default volume when block is placed (50%). */
@@ -41,6 +42,8 @@ public class SoundMufflerBlockEntity extends BlockEntity {
     private boolean allowList = false;
     /** Effect range in blocks (min 8, max from config, default 8). */
     private int range = 8;
+    /** Horizontal shift of muffling sphere center (blocks), clamped to ±range. */
+    private int offsetX = 0;
     /** Sound IDs (e.g. "minecraft:entity.creeper.hiss") in the filter. Empty = muffle all sounds. */
     private final List<String> filterSoundIds = new ArrayList<>();
 
@@ -52,6 +55,27 @@ public class SoundMufflerBlockEntity extends BlockEntity {
             volumes[i] = DEFAULT_VOLUME;
         }
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     public int getVolume(int categoryIndex) {
         if (categoryIndex < 0 || categoryIndex >= CATEGORY_COUNT) return DEFAULT_VOLUME;
@@ -157,8 +181,27 @@ public class SoundMufflerBlockEntity extends BlockEntity {
     public void setRange(int value) {
         int max = net.unfamily.iskautils.Config.soundMufflerRangeMax;
         this.range = Math.max(RANGE_MIN, Math.min(max, value));
+        offsetX = Math.max(-this.range, Math.min(this.range, offsetX));
         setChanged();
         sendUpdateToClients();
+    }
+
+    public int getOffsetX() {
+        return offsetX;
+    }
+
+    public void setOffsetX(int value) {
+        this.offsetX = Math.max(-getRange(), Math.min(getRange(), value));
+        setChanged();
+        sendUpdateToClients();
+    }
+
+    public void offsetEffectX(int delta) {
+        setOffsetX(offsetX + delta);
+    }
+
+    public BlockPos getEffectCenter() {
+        return worldPosition.offset(offsetX, 0, 0);
     }
 
     private void sendUpdateToClients() {
@@ -272,9 +315,11 @@ public class SoundMufflerBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
         tag.putIntArray("Volumes", volumes);
         tag.putBoolean("AllowList", allowList);
         tag.putInt("Range", range);
+        tag.putInt("OffsetX", offsetX);
         ListTag list = new ListTag();
         for (String id : filterSoundIds) list.add(StringTag.valueOf(id));
         tag.put("FilterSounds", list);
@@ -283,6 +328,7 @@ public class SoundMufflerBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
         if (tag.contains("Volumes", net.minecraft.nbt.Tag.TAG_INT_ARRAY)) {
             int[] loaded = tag.getIntArray("Volumes");
             if (loaded.length == 11) {
@@ -297,6 +343,8 @@ public class SoundMufflerBlockEntity extends BlockEntity {
         }
         if (tag.contains("AllowList", Tag.TAG_ANY_NUMERIC)) allowList = tag.getBoolean("AllowList");
         if (tag.contains("Range", Tag.TAG_ANY_NUMERIC)) range = Math.max(RANGE_MIN, Math.min(net.unfamily.iskautils.Config.soundMufflerRangeMax, tag.getInt("Range")));
+        if (tag.contains("OffsetX", Tag.TAG_ANY_NUMERIC)) offsetX = tag.getInt("OffsetX");
+        offsetX = Math.max(-getRange(), Math.min(getRange(), offsetX));
         if (tag.contains("FilterSounds", Tag.TAG_LIST)) {
             filterSoundIds.clear();
             ListTag list = tag.getList("FilterSounds", Tag.TAG_STRING);
@@ -320,6 +368,7 @@ public class SoundMufflerBlockEntity extends BlockEntity {
         tag.putIntArray("Volumes", volumes);
         tag.putBoolean("AllowList", allowList);
         tag.putInt("Range", range);
+        tag.putInt("OffsetX", offsetX);
         ListTag list = new ListTag();
         for (String id : filterSoundIds) list.add(StringTag.valueOf(id));
         tag.put("FilterSounds", list);
@@ -339,6 +388,8 @@ public class SoundMufflerBlockEntity extends BlockEntity {
         }
         if (t.contains("AllowList", Tag.TAG_ANY_NUMERIC)) allowList = t.getBoolean("AllowList");
         if (t.contains("Range", Tag.TAG_ANY_NUMERIC)) range = Math.max(RANGE_MIN, Math.min(net.unfamily.iskautils.Config.soundMufflerRangeMax, t.getInt("Range")));
+        if (t.contains("OffsetX", Tag.TAG_ANY_NUMERIC)) offsetX = t.getInt("OffsetX");
+        offsetX = Math.max(-getRange(), Math.min(getRange(), offsetX));
         if (t.contains("FilterSounds", Tag.TAG_LIST)) {
             filterSoundIds.clear();
             ListTag list = t.getList("FilterSounds", Tag.TAG_STRING);

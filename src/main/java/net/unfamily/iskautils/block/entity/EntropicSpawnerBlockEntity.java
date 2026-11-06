@@ -33,11 +33,12 @@ import net.unfamily.iskautils.util.EntropicSpawnerSpawnUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * Block entity for the Entropic Spawner machine.
  */
-public class EntropicSpawnerBlockEntity extends BlockEntity implements MenuProvider {
+public class EntropicSpawnerBlockEntity extends BlockEntity implements MenuProvider, net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private static final double CLIENT_PARTICLE_PLAYER_RANGE = 16.0D;
     private static final int SPAWN_BURST_PARTICLES_PER_TICK = 8;
     public static final int CLOCK_SLOT_INDEX = 0;
@@ -95,6 +96,27 @@ public class EntropicSpawnerBlockEntity extends BlockEntity implements MenuProvi
     public EntropicSpawnerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ENTROPIC_SPAWNER_BE.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     public static void clientTick(Level level, BlockPos pos, BlockState state, EntropicSpawnerBlockEntity be) {
         be.clientTick(level, state);
@@ -494,6 +516,7 @@ public class EntropicSpawnerBlockEntity extends BlockEntity implements MenuProvi
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
         tag.putInt("StoredEntropy", storedEntropy);
         tag.putInt("LifetimeSpawnCount", lifetimeSpawnCount);
         tag.putInt("SpawnDelay", spawnDelayTicks);
@@ -509,6 +532,7 @@ public class EntropicSpawnerBlockEntity extends BlockEntity implements MenuProvi
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         ResourceLocation previousSpawnEntityId = spawnEntityId;
         super.loadAdditional(tag, registries);
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
         storedEntropy = tag.contains("StoredEntropy")
                 ? Mth.clamp(tag.getInt("StoredEntropy"), 0, getMaxStoredEntropy())
                 : 0;

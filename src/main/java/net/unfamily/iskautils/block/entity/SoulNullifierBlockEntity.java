@@ -19,12 +19,14 @@ import net.unfamily.iskautils.block.SoulNullifierBlock;
 import net.unfamily.iskautils.client.gui.NullifierMenu;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.world.NullifierChunkIndex;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class SoulNullifierBlockEntity extends BlockEntity implements MenuProvider, INullifierBE {
+public class SoulNullifierBlockEntity extends BlockEntity implements MenuProvider, INullifierBE, net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private EnderNullifierRedstoneMode redstoneMode = EnderNullifierRedstoneMode.MANUAL;
     private boolean manualEnabled = true;
     private boolean previousRedstoneState = false;
     private int range = -1;
+    private int areaOffsetX = 0;
     private boolean showAreaEnabled = false;
     private NullifierTargetMode targetMode = NullifierTargetMode.ONLY_MOBS;
 
@@ -45,6 +47,27 @@ public class SoulNullifierBlockEntity extends BlockEntity implements MenuProvide
     public SoulNullifierBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SOUL_NULLIFIER_BE.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     // --- INullifierBE ---
     @Override public NullifierType getNullifierType() { return NullifierType.SOUL; }
@@ -75,6 +98,7 @@ public class SoulNullifierBlockEntity extends BlockEntity implements MenuProvide
     @Override
     public void setRange(int r) {
         this.range = Math.max(1, Math.min(r, getMaxRange()));
+        areaOffsetX = Math.max(-this.range, Math.min(this.range, areaOffsetX));
         setChanged();
         syncIndex(computeEffectiveActive(getBlockState().getValue(SoulNullifierBlock.POWERED)));
     }
@@ -93,6 +117,21 @@ public class SoulNullifierBlockEntity extends BlockEntity implements MenuProvide
     public int getMaxRange() {
         int modules = moduleHandler.getStackInSlot(0).getCount();
         return Config.soulNullifierMaxRange + modules * Config.soulNullifierRangeModuleBonus;
+    }
+    @Override
+    public int getAreaOffsetX() {
+        return areaOffsetX;
+    }
+
+    @Override
+    public void setAreaOffsetX(int offset) {
+        int clamped = Math.max(-getRange(), Math.min(getRange(), offset));
+        if (areaOffsetX == clamped) {
+            return;
+        }
+        areaOffsetX = clamped;
+        setChanged();
+        syncIndex(computeEffectiveActive(getBlockState().getValue(SoulNullifierBlock.POWERED)));
     }
     @Override
     public int getRedstoneModeGui() {
@@ -202,7 +241,7 @@ public class SoulNullifierBlockEntity extends BlockEntity implements MenuProvide
     private void syncIndex(boolean active) {
         if (!(level instanceof ServerLevel serverLevel)) return;
         if (active && targetMode.affectsMobs()) {
-            NullifierChunkIndex.refresh(serverLevel, worldPosition, NullifierChunkIndex.Kind.SOUL, getRange());
+            NullifierChunkIndex.refresh(serverLevel, worldPosition, NullifierChunkIndex.Kind.SOUL, getRange(), getAreaOffsetX());
         } else {
             NullifierChunkIndex.remove(serverLevel, worldPosition, NullifierChunkIndex.Kind.SOUL);
         }
@@ -225,12 +264,14 @@ public class SoulNullifierBlockEntity extends BlockEntity implements MenuProvide
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
         int modeValue = tag.contains("RedstoneMode") ? tag.getInt("RedstoneMode") : 0;
         if (modeValue == 3) modeValue = 0;
         redstoneMode = EnderNullifierRedstoneMode.fromValue(modeValue);
         manualEnabled = !tag.contains("ManualEnabled") || tag.getBoolean("ManualEnabled");
         previousRedstoneState = tag.getBoolean("PreviousRedstoneState");
         range = tag.contains("Range") ? tag.getInt("Range") : -1;
+        areaOffsetX = tag.contains("AreaOffsetX") ? tag.getInt("AreaOffsetX") : 0;
         showAreaEnabled = tag.getBoolean("ShowArea");
         targetMode = NullifierTargetMode.fromId(tag.contains("TargetMode") ? tag.getInt("TargetMode") : 1);
         if (tag.contains("Modules")) {
@@ -244,10 +285,12 @@ public class SoulNullifierBlockEntity extends BlockEntity implements MenuProvide
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
         tag.putInt("RedstoneMode", redstoneMode.getValue());
         tag.putBoolean("ManualEnabled", manualEnabled);
         tag.putBoolean("PreviousRedstoneState", previousRedstoneState);
         tag.putInt("Range", getRange());
+        tag.putInt("AreaOffsetX", areaOffsetX);
         tag.putBoolean("ShowArea", showAreaEnabled);
         tag.putInt("TargetMode", targetMode.getId());
         tag.put("Modules", moduleHandler.serializeNBT(registries));

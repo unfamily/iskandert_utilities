@@ -17,7 +17,9 @@ public class FanRangeUpdateC2SPacket {
         UP(1),
         DOWN(2),
         LEFT(3),
-        RIGHT(4);
+        RIGHT(4),
+        /** Redistribute left/right without changing total width (Colossal-style offset). */
+        OFFSET(5);
         
         private final int id;
         
@@ -36,6 +38,7 @@ public class FanRangeUpdateC2SPacket {
                 case 2 -> DOWN;
                 case 3 -> LEFT;
                 case 4 -> RIGHT;
+                case 5 -> OFFSET;
                 default -> FORWARD;
             };
         }
@@ -61,44 +64,51 @@ public class FanRangeUpdateC2SPacket {
         var blockEntity = player.level().getBlockEntity(pos);
         if (!(blockEntity instanceof FanBlockEntity fan)) return;
         
-        // Get current value and calculate new value
-        int currentValue = switch (rangeType) {
-            case FORWARD -> fan.getRangeFront();
-            case UP -> fan.getRangeUp();
-            case DOWN -> fan.getRangeDown();
-            case LEFT -> fan.getRangeLeft();
-            case RIGHT -> fan.getRangeRight();
-        };
-        
-        // Calculate new value
-        int newValue = currentValue + delta;
-        
-        // Calculate effective max range (base + installed range modules)
-        int rangeModules = fan.countRangeModules();
-        int maxValue = switch (rangeType) {
-            case FORWARD -> {
-                // Front range is always horizontal range * 2 + 1 to maintain cube shape
-                int effectiveHorizontalMax = Config.fanRangeHorizontalMax + rangeModules;
-                yield effectiveHorizontalMax * 2 + 1;
+        if (rangeType == RangeType.OFFSET) {
+            fan.offsetWidth(delta);
+        } else {
+            // Get current value and calculate new value
+            int currentValue = switch (rangeType) {
+                case FORWARD -> fan.getRangeFront();
+                case UP -> fan.getRangeUp();
+                case DOWN -> fan.getRangeDown();
+                case LEFT -> fan.getRangeLeft();
+                case RIGHT -> fan.getRangeRight();
+                case OFFSET -> 0;
+            };
+
+            // Calculate new value
+            int newValue = currentValue + delta;
+
+            // Calculate effective max range (base + installed range modules)
+            int rangeModules = fan.countRangeModules();
+            int maxValue = switch (rangeType) {
+                case FORWARD -> {
+                    // Front range is always horizontal range * 2 + 1 to maintain cube shape
+                    int effectiveHorizontalMax = Config.fanRangeHorizontalMax + rangeModules;
+                    yield effectiveHorizontalMax * 2 + 1;
+                }
+                case UP, DOWN -> Config.fanRangeVerticalMax + rangeModules;
+                case LEFT, RIGHT -> Config.fanRangeHorizontalMax + rangeModules;
+                case OFFSET -> 0;
+            };
+
+            // Apply limits: minimum is 0, if exceeds effective max, set to effective max
+            if (newValue < 0) {
+                newValue = 0;
+            } else if (newValue > maxValue) {
+                newValue = maxValue;
             }
-            case UP, DOWN -> Config.fanRangeVerticalMax + rangeModules;
-            case LEFT, RIGHT -> Config.fanRangeHorizontalMax + rangeModules;
-        };
-        
-        // Apply limits: minimum is 0, if exceeds effective max, set to effective max
-        if (newValue < 0) {
-            newValue = 0;
-        } else if (newValue > maxValue) {
-            newValue = maxValue;
-        }
-        
-        // Set the new value
-        switch (rangeType) {
-            case FORWARD -> fan.setRangeFront(newValue);
-            case UP -> fan.setRangeUp(newValue);
-            case DOWN -> fan.setRangeDown(newValue);
-            case LEFT -> fan.setRangeLeft(newValue);
-            case RIGHT -> fan.setRangeRight(newValue);
+
+            // Set the new value
+            switch (rangeType) {
+                case FORWARD -> fan.setRangeFront(newValue);
+                case UP -> fan.setRangeUp(newValue);
+                case DOWN -> fan.setRangeDown(newValue);
+                case LEFT -> fan.setRangeLeft(newValue);
+                case RIGHT -> fan.setRangeRight(newValue);
+                case OFFSET -> {}
+            }
         }
         
         // Mark the BlockEntity as changed

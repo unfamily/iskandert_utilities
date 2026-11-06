@@ -24,8 +24,17 @@ public final class BlazingAltarChunks {
         return count;
     }
 
+    public static ChunkPos chunkOrigin(BlockPos altarPos, int chunkOffsetX) {
+        ChunkPos base = new ChunkPos(altarPos);
+        return new ChunkPos(base.x + chunkOffsetX, base.z);
+    }
+
     public static List<ChunkPos> collectOrdered(BlockPos center, int chunkRadius) {
-        ChunkPos origin = new ChunkPos(center);
+        return collectOrdered(center, chunkRadius, 0);
+    }
+
+    public static List<ChunkPos> collectOrdered(BlockPos center, int chunkRadius, int chunkOffsetX) {
+        ChunkPos origin = chunkOrigin(center, chunkOffsetX);
         List<ChunkPos> result = new ArrayList<>();
         for (int dx = -chunkRadius; dx <= chunkRadius; dx++) {
             for (int dz = -chunkRadius; dz <= chunkRadius; dz++) {
@@ -40,7 +49,11 @@ public final class BlazingAltarChunks {
     }
 
     public static List<ChunkPos> collectLoadedOrdered(ServerLevel level, BlockPos center, int chunkRadius) {
-        ChunkPos origin = new ChunkPos(center);
+        return collectLoadedOrdered(level, center, chunkRadius, 0);
+    }
+
+    public static List<ChunkPos> collectLoadedOrdered(ServerLevel level, BlockPos center, int chunkRadius, int chunkOffsetX) {
+        ChunkPos origin = chunkOrigin(center, chunkOffsetX);
         List<ChunkPos> result = new ArrayList<>();
         for (int dx = -chunkRadius; dx <= chunkRadius; dx++) {
             for (int dz = -chunkRadius; dz <= chunkRadius; dz++) {

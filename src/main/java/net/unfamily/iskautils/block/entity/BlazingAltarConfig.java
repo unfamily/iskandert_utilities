@@ -16,9 +16,11 @@ public final class BlazingAltarConfig {
     private static final String TAG_SHOW_AREA = "ShowAreaEnabled";
     private static final String TAG_TICK_COUNTER = "TickCounter";
     private static final String TAG_PLACEMENT_CHUNK_INDEX = "PlacementChunkIndex";
+    private static final String TAG_CHUNK_OFFSET_X = "ChunkOffsetX";
 
     private long instanceId;
     private int chunkRadius = 1;
+    private int chunkOffsetX = 0;
     private boolean groundOnly = true;
     private BlazingAltarSpawnMode spawnMode = BlazingAltarSpawnMode.HOSTILE;
     private int redstoneMode;
@@ -44,6 +46,19 @@ public final class BlazingAltarConfig {
 
     public void setChunkRadius(int chunkRadius) {
         this.chunkRadius = chunkRadius;
+        chunkOffsetX = Math.max(-this.chunkRadius, Math.min(this.chunkRadius, chunkOffsetX));
+    }
+
+    public int getChunkOffsetX() {
+        return chunkOffsetX;
+    }
+
+    public void setChunkOffsetX(int chunkOffsetX) {
+        this.chunkOffsetX = Math.max(-chunkRadius, Math.min(chunkRadius, chunkOffsetX));
+    }
+
+    public void offsetChunkX(int delta) {
+        setChunkOffsetX(chunkOffsetX + delta);
     }
 
     public boolean isGroundOnly() {
@@ -103,6 +118,7 @@ public final class BlazingAltarConfig {
         tag.putBoolean(TAG_SHOW_AREA, showAreaEnabled);
         tag.putInt(TAG_TICK_COUNTER, tickCounter);
         tag.putInt(TAG_PLACEMENT_CHUNK_INDEX, placementChunkIndex);
+        tag.putInt(TAG_CHUNK_OFFSET_X, chunkOffsetX);
     }
 
     public void load(CompoundTag tag, HolderLookup.Provider registries) {
@@ -124,5 +140,7 @@ public final class BlazingAltarConfig {
         showAreaEnabled = tag.getBoolean(TAG_SHOW_AREA);
         tickCounter = tag.getInt(TAG_TICK_COUNTER);
         placementChunkIndex = Math.max(0, tag.getInt(TAG_PLACEMENT_CHUNK_INDEX));
+        chunkOffsetX = tag.contains(TAG_CHUNK_OFFSET_X) ? tag.getInt(TAG_CHUNK_OFFSET_X) : 0;
+        chunkOffsetX = Math.max(-chunkRadius, Math.min(chunkRadius, chunkOffsetX));
     }
 }

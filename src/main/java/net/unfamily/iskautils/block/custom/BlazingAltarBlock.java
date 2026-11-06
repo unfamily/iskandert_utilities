@@ -164,6 +164,7 @@ public class BlazingAltarBlock extends BaseEntityBlock {
             return InteractionResult.PASS;
         }
         if (player instanceof ServerPlayer serverPlayer) {
+            altar.claimOwner(serverPlayer);
             serverPlayer.openMenu(new MenuProvider() {
                 @Override
                 public Component getDisplayName() {

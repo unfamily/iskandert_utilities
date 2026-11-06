@@ -225,7 +225,9 @@ public class EntropicSpawnerScreen extends AbstractContainerScreen<EntropicSpawn
 
     private void onRedstoneModePressed(boolean backward) {
         ModMessages.sendEntropicSpawnerRedstoneMode(menu.getSyncedBlockPos(), backward);
-        playButtonSound();
+        if (backward) {
+            playButtonSound(); // LMB: widget click already plays
+        }
     }
 
     private void playButtonSound() {

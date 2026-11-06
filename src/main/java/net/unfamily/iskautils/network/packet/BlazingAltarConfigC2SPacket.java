@@ -22,7 +22,8 @@ import net.unfamily.iskautils.data.FlameVisionData;
  * C2S altar GUI actions.
  * action: 0=cycle spawn fwd, 1=chunk+, 2=chunk-, 3=toggle ground, 4=set flame vision fwd,
  * 5=redstone fwd, 6=redstone back, 7=cycle spawn back, 8=extinguish flames, 9=chunk max, 10=chunk min,
- * 11=toggle ground back, 12=set flame vision back, 13=show area on, 14=show area off
+ * 11=toggle ground back, 12=set flame vision back, 13=show area on, 14=show area off, 15=restart placement,
+ * 16=chunk area offset -X, 17=chunk area offset +X
  */
 public record BlazingAltarConfigC2SPacket(BlockPos pos, int action, boolean flameVisionEnabled)
         implements CustomPacketPayload {
@@ -77,6 +78,9 @@ public record BlazingAltarConfigC2SPacket(BlockPos pos, int action, boolean flam
                 case 8 -> altar.extinguishFlamesInRange(player.serverLevel());
                 case 13 -> altar.setShowAreaEnabled(true);
                 case 14 -> altar.setShowAreaEnabled(false);
+                case 15 -> altar.restartPlacement();
+                case 16 -> altar.adjustChunkOffsetX(-1);
+                case 17 -> altar.adjustChunkOffsetX(1);
                 default -> {
                     return;
                 }

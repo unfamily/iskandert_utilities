@@ -16,6 +16,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.iskalib.client.marker.AreaBorderRenderer;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.item.ModItems;
+import net.unfamily.iskautils.network.packet.NullifierAreaOffsetC2SPacket;
 import net.unfamily.iskautils.network.packet.NullifierRangeC2SPacket;
 import net.unfamily.iskautils.network.packet.NullifierRedstoneModeC2SPacket;
 import net.unfamily.iskautils.network.packet.NullifierShowAreaC2SPacket;
@@ -56,7 +57,9 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
     private static final int RANGE_BTN_X = 8;
     private static final int SHOW_BTN_W = 40;
     private static final int SHOW_BTN_X = GUI_WIDTH - 8 - SHOW_BTN_W;
-    private static final int RANGE_BTN_WIDTH = SHOW_BTN_X - RANGE_BTN_X - ROW_BTN_GAP;
+    private static final int RANGE_INNER_X = RANGE_BTN_X + BTN + ROW_BTN_GAP;
+    private static final int RANGE_INNER_WIDTH = SHOW_BTN_X - RANGE_INNER_X - BTN - ROW_BTN_GAP;
+    private static final int RANGE_OFFSET_RIGHT_X = SHOW_BTN_X - ROW_BTN_GAP - BTN;
 
     private ItemIconButton redstoneModeButton;
     private ItemIconButton targetModeButton;
@@ -104,9 +107,17 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
                 Component.empty()));
         updateTargetModeButtonState();
 
+        addRenderableWidget(Button.builder(Component.literal("\u00AB"), b -> sendAreaOffset(-1))
+                .bounds(leftPos + RANGE_BTN_X, topPos + RANGE_ROW_Y, BTN, BTN)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.collecting_crate.offset_left")))
+                .build());
         rangeButton = addRenderableWidget(Button.builder(Component.empty(), b -> {})
-                .bounds(leftPos + RANGE_BTN_X, topPos + RANGE_ROW_Y, RANGE_BTN_WIDTH, BTN)
+                .bounds(leftPos + RANGE_INNER_X, topPos + RANGE_ROW_Y, RANGE_INNER_WIDTH, BTN)
                 .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.nullifier.tooltip.range")))
+                .build());
+        addRenderableWidget(Button.builder(Component.literal("\u00BB"), b -> sendAreaOffset(1))
+                .bounds(leftPos + RANGE_OFFSET_RIGHT_X, topPos + RANGE_ROW_Y, BTN, BTN)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.collecting_crate.offset_right")))
                 .build());
 
         showingArea = menu.isShowAreaEnabled();
@@ -231,9 +242,21 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
         PacketDistributor.sendToServer(new NullifierRangeC2SPacket(menu.getSyncedBlockPos(), delta));
     }
 
+    private void sendAreaOffset(int delta) {
+        if (delta == 0) {
+            return;
+        }
+        PacketDistributor.sendToServer(new NullifierAreaOffsetC2SPacket(menu.getSyncedBlockPos(), delta));
+    }
+
     private void cycleRedstoneMode(boolean backward) {
         int next = backward ? cycleModeBackward(menu.getRedstoneModeGui()) : cycleModeForward(menu.getRedstoneModeGui());
         PacketDistributor.sendToServer(new NullifierRedstoneModeC2SPacket(menu.getSyncedBlockPos(), next));
+        if (backward && minecraft != null) {
+            minecraft.getSoundManager().play(
+                    net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                            net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        }
     }
 
     private static int cycleModeForward(int mode) {
@@ -321,10 +344,11 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
     }
 
     private void refreshAreaPreview() {
-        BlockPos center = menu.getSyncedBlockPos();
-        if (center.equals(BlockPos.ZERO)) {
+        BlockPos synced = menu.getSyncedBlockPos();
+        if (synced.equals(BlockPos.ZERO)) {
             return;
         }
+        BlockPos center = synced.offset(menu.getAreaOffsetX(), 0, 0);
         int r = menu.getRange();
         AreaBorderRenderer.getInstance().showArea(
                 areaKey(),
@@ -360,13 +384,14 @@ public class NullifierScreen extends AbstractContainerScreen<NullifierMenu> {
     }
 
     private static Component nullifierRedstoneTooltip(int mode) {
-        return switch (mode) {
+        Component primary = switch (mode) {
             case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
             case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
             case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
             case 3 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
             default -> Component.literal("Unknown mode");
         };
+        return MachineGuiButtons.withCycleHint(primary);
     }
 
     @Override

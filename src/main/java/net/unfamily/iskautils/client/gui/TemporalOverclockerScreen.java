@@ -656,6 +656,9 @@ public class TemporalOverclockerScreen extends AbstractContainerScreen<TemporalO
         BlockPos machinePos = this.menu.getSyncedBlockPos();
         if (!machinePos.equals(BlockPos.ZERO)) {
             net.unfamily.iskautils.network.ModMessages.sendTemporalOverclockerRedstoneModePacket(machinePos, backward);
+            if (backward) {
+                playButtonSound(); // LMB: widget click already plays
+            }
         }
     }
     

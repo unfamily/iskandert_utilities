@@ -163,7 +163,7 @@ public class AutoShopBlockEntity extends BlockEntity {
     public AutoShopBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.AUTO_SHOP_BE.get(), pos, blockState);
     }
-    
+
     @Override
     public void onDataPacket(net.minecraft.network.Connection net, net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider lookupProvider) {
         super.onDataPacket(net, pkt, lookupProvider);

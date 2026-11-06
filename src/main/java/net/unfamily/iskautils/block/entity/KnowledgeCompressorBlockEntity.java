@@ -21,8 +21,30 @@ import net.unfamily.iskautils.block.KnowledgeCompressorBlock;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.util.ExperienceFluidMath;
 import org.jetbrains.annotations.NotNull;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class KnowledgeCompressorBlockEntity extends BlockEntity {
+public class KnowledgeCompressorBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     public static final TagKey<Fluid> EXPERIENCE_FLUID_TAG =
             TagKey.create(Registries.FLUID, ResourceLocation.fromNamespaceAndPath("c", "experience"));
 
@@ -146,6 +168,7 @@ public class KnowledgeCompressorBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
         tag.put("Tank", experienceTank.writeToNBT(registries, new CompoundTag()));
         tag.put("Output", outputHandler.serializeNBT(registries));
         tag.putInt("ConversionCooldown", conversionCooldown);
@@ -154,6 +177,7 @@ public class KnowledgeCompressorBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
         experienceTank.readFromNBT(registries, tag.getCompound("Tank"));
         outputHandler.deserializeNBT(registries, tag.getCompound("Output"));
         conversionCooldown = tag.getInt("ConversionCooldown");

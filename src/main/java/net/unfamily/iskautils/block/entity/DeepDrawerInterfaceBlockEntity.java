@@ -8,13 +8,15 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.unfamily.iskautils.util.DeepDrawerConnectorHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import net.unfamily.iskautils.util.BlockCraftOwner;
+import net.minecraft.nbt.CompoundTag;
 
 /**
  * BlockEntity for Deep Drawer Interface
  * Exposes the content of adjacent Deep Drawer to other mods via IItemHandler capability
  * This allows storage mods to read the entire content of the Deep Drawer
  */
-public class DeepDrawerInterfaceBlockEntity extends BlockEntity {
+public class DeepDrawerInterfaceBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     
     // Cache of found Deep Drawer (for performance)
     private BlockPos cachedDrawerPos = null;
@@ -27,6 +29,27 @@ public class DeepDrawerInterfaceBlockEntity extends BlockEntity {
     public DeepDrawerInterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DEEP_DRAWER_INTERFACE.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     
     /**
      * Gets the item handler that exposes the adjacent drawer's content
@@ -162,5 +185,17 @@ public class DeepDrawerInterfaceBlockEntity extends BlockEntity {
             // Delegate validation to the drawer's item handler (interface is a mirror)
             return drawer.getItemHandler().isItemValid(slot, stack);
         }
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
+    }
+
+    @Override
+    protected void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
     }
 }

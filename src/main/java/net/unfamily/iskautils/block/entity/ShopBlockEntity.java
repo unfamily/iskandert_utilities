@@ -48,7 +48,7 @@ public class ShopBlockEntity extends BlockEntity implements MenuProvider {
     public ShopBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.SHOP_BE.get(), pos, blockState);
     }
-    
+
     @Override
     public Component getDisplayName() {
         return Component.translatable("block.iska_utils.shop");

@@ -111,6 +111,7 @@ public class TemporalOverclockerBlock extends Block implements EntityBlock {
             
             // Otherwise open the GUI
             if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                overclocker.claimOwner(serverPlayer);
                 serverPlayer.openMenu(new net.minecraft.world.MenuProvider() {
                     @Override
                     public net.minecraft.network.chat.Component getDisplayName() {

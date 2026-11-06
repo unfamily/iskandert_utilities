@@ -16,7 +16,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.BlazingAltarSpawnMode;
@@ -31,8 +30,9 @@ import net.unfamily.iskautils.world.BlazingAltarSpatialIndex;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider {
+public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider, net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     public static final int PLACER_SLOT = 0;
     public static final int MODULE_SLOT = 0;
 
@@ -84,6 +84,27 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
         super(ModBlockEntities.BLAZING_ALTAR_BE.get(), pos, state);
     }
 
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
+
     public long getInstanceId() {
         return config.getInstanceId();
     }
@@ -124,6 +145,16 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
 
     public void adjustChunkRadius(int delta) {
         setChunkRadius(config.getChunkRadius() + delta);
+    }
+
+    public int getChunkOffsetX() {
+        return config.getChunkOffsetX();
+    }
+
+    public void adjustChunkOffsetX(int delta) {
+        config.offsetChunkX(delta);
+        resetPlacementProgress();
+        setChanged();
     }
 
     public boolean isGroundOnly() {
@@ -224,7 +255,7 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
 
     public void enqueueFlameCleanupOnBreak(ServerLevel level) {
         BlazingAltarExtinguishJobs.enqueueBreakCleanup(
-                level, worldPosition, config.getChunkRadius(), config.isGroundOnly());
+                level, worldPosition, config.getChunkRadius(), config.getChunkOffsetX(), config.isGroundOnly());
     }
 
     public void completeExtinguishJob(int normalFlamesRemoved) {
@@ -302,6 +333,15 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
         config.setPlacementChunkIndex(0);
     }
 
+    /** GUI restart: resume flame placement from the innermost chunk ring. */
+    public void restartPlacement() {
+        if (extinguishing) {
+            return;
+        }
+        resetPlacementProgress();
+        setChanged();
+    }
+
     public void prepareForRemoval() {
         if (preventChunkSave) {
             return;
@@ -373,7 +413,8 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
 
     private void tryPlaceFlames(ServerLevel level) {
         ItemStack placer = placerHandler.getStackInSlot(PLACER_SLOT);
-        List<ChunkPos> chunksByDistance = BlazingAltarChunks.collectLoadedOrdered(level, worldPosition, config.getChunkRadius());
+        List<ChunkPos> chunksByDistance = BlazingAltarChunks.collectLoadedOrdered(
+                level, worldPosition, config.getChunkRadius(), config.getChunkOffsetX());
         if (chunksByDistance.isEmpty()) {
             return;
         }
@@ -382,8 +423,8 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
         }
         Block flameBlock = BlazingAltarFlamePlacement.flameBlockForPlacer(placer.getItem());
         boolean isBrazier = placer.is(ModItems.BURNING_BRAZIER.get());
-        if (isBrazier && Config.blazingAltarConsumeBrazier
-                && placer.getDamageValue() >= BurningBrazierItem.MAX_DURABILITY - 1) {
+        // Always consume active Brazier durability when used as the flame placer.
+        if (isBrazier && placer.getDamageValue() >= BurningBrazierItem.MAX_DURABILITY - 1) {
             return;
         }
 
@@ -396,6 +437,9 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
         RandomSource random = level.getRandom();
         int budget = Config.blazingAltarPlacementsPerTick;
         BlockState flameState = flameBlock.defaultBlockState();
+        int emission = BlazingAltarFlamePlacement.flameLightEmission(flameState);
+        // Light engine may not update mid-tick; track placements so we do not cluster beside new flames.
+        java.util.ArrayList<BlockPos> placedThisTick = new java.util.ArrayList<>(budget);
         for (int attempt = 0; attempt < budget; attempt++) {
             BlockPos candidate = randomCandidateInChunk(level, currentChunk, random);
             if (candidate == null) {
@@ -404,8 +448,19 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
             if (!BlazingAltarFlamePlacement.canPlaceFlameAt(level, candidate, config.isGroundOnly(), flameState)) {
                 continue;
             }
+            boolean litByFreshFlame = false;
+            for (BlockPos placed : placedThisTick) {
+                if (BlazingAltarFlamePlacement.wouldBeLitByFlame(candidate, placed, emission)) {
+                    litByFreshFlame = true;
+                    break;
+                }
+            }
+            if (litByFreshFlame) {
+                continue;
+            }
             level.setBlock(candidate, flameState, 3);
-            if (isBrazier && Config.blazingAltarConsumeBrazier) {
+            placedThisTick.add(candidate.immutable());
+            if (isBrazier) {
                 int nextDamage = placer.getDamageValue() + 1;
                 if (nextDamage >= BurningBrazierItem.MAX_DURABILITY) {
                     placer.setDamageValue(BurningBrazierItem.MAX_DURABILITY - 1);
@@ -419,6 +474,7 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
         advancePlacementChunkIndex(chunksByDistance.size());
     }
 
+    /** Advances to the next loaded chunk, wrapping to 0 after the last for continuous coverage. */
     private void advancePlacementChunkIndex(int loadedChunkCount) {
         if (loadedChunkCount <= 0) {
             return;
@@ -427,40 +483,50 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
         if (index >= loadedChunkCount) {
             index = loadedChunkCount - 1;
         }
-        if (index < loadedChunkCount - 1) {
-            config.setPlacementChunkIndex(index + 1);
+        int next = index + 1;
+        if (next >= loadedChunkCount) {
+            next = 0;
+        }
+        if (next != config.getPlacementChunkIndex()) {
+            config.setPlacementChunkIndex(next);
             setChanged();
         }
     }
 
-    private static final int AIR_CANDIDATE_ATTEMPTS = 16;
+    /** Random volume probes per placement attempt within the current chunk column. */
+    private static final int AIR_CANDIDATE_ATTEMPTS = 24;
 
+    /**
+     * Pick a flame candidate via random volume sampling in the column (including underground),
+     * soft-capped near the world surface. Ground-only snaps down onto a solid floor so cave
+     * floors are lit; free mode keeps floating air cells. Light-sensitive / brightness gates
+     * stay in {@link BlazingAltarFlamePlacement#canPlaceFlameAt}.
+     */
     @Nullable
     private BlockPos randomCandidateInChunk(ServerLevel level, ChunkPos chunk, RandomSource random) {
         int baseX = chunk.getMinBlockX();
         int baseZ = chunk.getMinBlockZ();
         int x = baseX + random.nextInt(16);
         int z = baseZ + random.nextInt(16);
-        if (config.isGroundOnly()) {
-            int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
-            for (int y = topY; y >= level.getMinBuildHeight(); y--) {
-                BlockPos ground = new BlockPos(x, y, z);
-                BlockPos above = ground.above();
-                if (BlazingAltarFlamePlacement.isGroundPlacement(level, above)
-                        && level.getBlockState(above).isAir()) {
-                    return above;
-                }
-            }
+        int minY = level.getMinBuildHeight();
+        int maxY = BlazingAltarFlamePlacement.maxSampleY(level, x, z);
+        if (maxY < minY) {
             return null;
         }
-        int minY = level.getMinBuildHeight();
-        int height = level.getMaxBuildHeight() - minY;
+        int span = maxY - minY + 1;
         for (int attempt = 0; attempt < AIR_CANDIDATE_ATTEMPTS; attempt++) {
-            int y = minY + random.nextInt(height);
-            BlockPos candidate = new BlockPos(x, y, z);
-            BlockState state = level.getBlockState(candidate);
+            int y = minY + random.nextInt(span);
+            BlockPos probe = new BlockPos(x, y, z);
+            if (config.isGroundOnly()) {
+                BlockPos snapped = BlazingAltarFlamePlacement.snapDownToGroundPlacement(level, probe, minY);
+                if (snapped != null) {
+                    return snapped;
+                }
+                continue;
+            }
+            BlockState state = level.getBlockState(probe);
             if (state.isAir() || state.canBeReplaced()) {
-                return candidate;
+                return probe.immutable();
             }
         }
         return null;
@@ -485,7 +551,7 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
                 BlazingAltarBlockSync.sync(this);
                 if (!isOperational()) {
                     BlazingAltarFlamePlacement.refreshBrazierFlameLightInRadius(
-                            serverLevel, worldPosition, config.getChunkRadius(), config.isGroundOnly());
+                            serverLevel, worldPosition, config.getChunkRadius(), config.getChunkOffsetX(), config.isGroundOnly());
                 }
             });
         }
@@ -503,6 +569,7 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
         config.save(tag, registries);
         tag.put("Placer", placerHandler.serializeNBT(registries));
         tag.put("Module", moduleHandler.serializeNBT(registries));
@@ -511,6 +578,7 @@ public class BlazingAltarBlockEntity extends BlockEntity implements MenuProvider
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
         config.load(tag, registries);
         placerHandler.deserializeNBT(registries, tag.getCompound("Placer"));
         if (tag.contains("Module")) {

@@ -19,8 +19,9 @@ import net.unfamily.iskautils.util.DruidicPodzolUtil;
 import net.unfamily.iskautils.util.SoilAcceleratedSpawn;
 
 import java.util.Optional;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class DruidicPodzolBlockEntity extends BlockEntity {
+public class DruidicPodzolBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private static final String TAG_COOLDOWN = "spawn_cooldown";
     private static final String TAG_ACCEL_COOLDOWN = "accel_spawn_cooldown";
     private static final String TAG_PATCH_REDSTONE = "patch_redstone";
@@ -32,6 +33,27 @@ public class DruidicPodzolBlockEntity extends BlockEntity {
     public DruidicPodzolBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DRUIDIC_PODZOL_BE.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     public static void tickServer(Level level, BlockPos pos, BlockState state, DruidicPodzolBlockEntity blockEntity) {
         if (level.isClientSide() || !(level instanceof ServerLevel server)) {

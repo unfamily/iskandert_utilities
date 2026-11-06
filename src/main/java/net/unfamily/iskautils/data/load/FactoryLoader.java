@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -25,6 +27,7 @@ import net.unfamily.iskautils.crafting.ModFactoryRecipes;
 import net.unfamily.iskautils.command.CommandItemDefinition;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryStageHost;
 import net.unfamily.iskautils.script.LoadEntryIfParser;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -42,13 +45,25 @@ public final class FactoryLoader {
                     List.of(),
                     CommandItemDefinition.StagesLogic.AND);
 
-    public record Output(ResourceLocation id, int amount, SuspiciousDeliveryStageHost gateHost) {
+    public record Output(
+            ResourceLocation id,
+            int amount,
+            SuspiciousDeliveryStageHost gateHost,
+            @Nullable ResourceLocation recipeId) {
         public Output(ResourceLocation id, int amount) {
-            this(id, amount, NO_GATE);
+            this(id, amount, NO_GATE, null);
+        }
+
+        public Output(ResourceLocation id, int amount, SuspiciousDeliveryStageHost gateHost) {
+            this(id, amount, gateHost, null);
         }
 
         public Output {
             gateHost = gateHost != null ? gateHost : NO_GATE;
+        }
+
+        public Output withRecipeId(@Nullable ResourceLocation id) {
+            return new Output(this.id, amount, gateHost, id);
         }
     }
 
@@ -58,7 +73,8 @@ public final class FactoryLoader {
             List<Output> flatOutputs,
             int energyPerOperation,
             SuspiciousDeliveryStageHost gateHost,
-            List<FactoryIfBranch> ifBranches) {
+            List<FactoryIfBranch> ifBranches,
+            @Nullable ResourceLocation recipeId) {
 
         public Source {
             flatOutputs = flatOutputs != null ? List.copyOf(flatOutputs) : List.of();
@@ -71,6 +87,10 @@ public final class FactoryLoader {
             return flatOutputs;
         }
 
+        public Source withRecipeId(@Nullable ResourceLocation id) {
+            return new Source(selector, inputAmount, flatOutputs, energyPerOperation, gateHost, ifBranches, id);
+        }
+
         public boolean hasIfBranches() {
             return !ifBranches.isEmpty();
         }
@@ -78,6 +98,17 @@ public final class FactoryLoader {
         public boolean hasGate() {
             return !gateHost.isEmpty() || hasIfBranches()
                     || flatOutputs.stream().anyMatch(o -> !o.gateHost().isEmpty());
+        }
+
+        /**
+         * Recipe id used for stage / pack gates: source-level id, else per-output id (stonecutter).
+         */
+        @Nullable
+        public ResourceLocation gateRecipeId(@Nullable Output selected) {
+            if (recipeId != null) {
+                return recipeId;
+            }
+            return selected != null ? selected.recipeId() : null;
         }
 
         public List<Output> resolveOutputs(@Nullable ServerPlayer player) {
@@ -93,6 +124,27 @@ public final class FactoryLoader {
                 return List.of();
             }
             return filterOutputGates(flatOutputs, player);
+        }
+
+        /** Prefer this for machines: works with offline owners via UUID. */
+        public List<Output> resolveOutputs(@Nullable UUID ownerUuid, @Nullable Level level) {
+            ServerPlayer online =
+                    level != null ? BlockCraftOwner.resolve(level, ownerUuid) : null;
+            if (online != null) {
+                return resolveOutputs(online);
+            }
+            if (hasIfBranches()) {
+                if (ownerUuid == null) {
+                    return List.of();
+                }
+                for (FactoryIfBranch branch : ifBranches) {
+                    if (branch.matchesOffline(ownerUuid, level, gateHost)) {
+                        return filterOutputGatesOffline(branch.outputs(), ownerUuid, level);
+                    }
+                }
+                return List.of();
+            }
+            return filterOutputGatesOffline(flatOutputs, ownerUuid, level);
         }
 
         private static List<Output> filterOutputGates(List<Output> outputs, @Nullable ServerPlayer player) {
@@ -113,6 +165,26 @@ public final class FactoryLoader {
                 if (o.gateHost().isEmpty() || o.gateHost().isFullyEligible(player)) {
                     eligible.add(o);
                 }
+            }
+            return List.copyOf(eligible);
+        }
+
+        private static List<Output> filterOutputGatesOffline(
+                List<Output> outputs, @Nullable UUID ownerUuid, @Nullable Level level) {
+            if (outputs == null || outputs.isEmpty()) {
+                return List.of();
+            }
+            List<Output> eligible = new ArrayList<>();
+            for (Output o : outputs) {
+                if (!o.gateHost().isEmpty() && !o.gateHost().isFullyEligibleOffline(ownerUuid, level)) {
+                    continue;
+                }
+                if (o.recipeId() != null
+                        && !net.unfamily.iskautils.util.RecipeStageGate.isAllowed(
+                                o.recipeId(), ownerUuid, level)) {
+                    continue;
+                }
+                eligible.add(o);
             }
             return List.copyOf(eligible);
         }
@@ -137,8 +209,19 @@ public final class FactoryLoader {
     }
 
     private static volatile List<Source> SOURCES = List.of();
+    private static final AtomicLong LOAD_REVISION = new AtomicLong();
 
     private FactoryLoader() {}
+
+    public static long loadRevision() {
+        return LOAD_REVISION.get();
+    }
+
+    /** Clears cached sources so the next client/server load refreshes after {@code /reload}. */
+    public static void invalidate() {
+        SOURCES = List.of();
+        LOAD_REVISION.incrementAndGet();
+    }
 
     public static void loadFromRecipeManager(RecipeManager recipeManager) {
         loadFromRecipeManager(recipeManager, null);
@@ -152,10 +235,14 @@ public final class FactoryLoader {
         List<Source> merged = new ArrayList<>();
         var factoryType = ModFactoryRecipes.FACTORY_TYPE.get();
         for (RecipeHolder<FactorySourcesRecipe> holder : recipeManager.getAllRecipesFor(factoryType)) {
-            merged.addAll(holder.value().compiledSources());
+            ResourceLocation recipeId = holder.id();
+            for (Source source : holder.value().compiledSources()) {
+                merged.add(source.withRecipeId(recipeId));
+            }
         }
         SOURCES = List.copyOf(merged);
-        LOGGER.info("Loaded {} Factory sources from {} recipe(s)", SOURCES.size(), merged.size());
+        LOAD_REVISION.incrementAndGet();
+        LOGGER.info("Loaded {} Factory sources from RecipeManager", SOURCES.size());
     }
 
     /** @deprecated Bundle JSON is split by Library; use {@link #loadFromRecipeManager(RecipeManager)}. */
@@ -210,7 +297,8 @@ public final class FactoryLoader {
                 List.copyOf(presentFlat),
                 Math.max(0, energyPerOperation),
                 gateHost != null ? gateHost : NO_GATE,
-                List.copyOf(presentBranches)));
+                List.copyOf(presentBranches),
+                null));
     }
 
     public static Optional<Source> tryCompileSource(

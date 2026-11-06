@@ -29,5 +29,5 @@ Right-click the block to open its control GUI. All controls work the same as the
 
 ## Tips
 
-- Default radius is larger than the Ender Nullifier — sufficient to cover most base areas.
+- Starting radius is larger than the Ender Nullifier — enough to cover most base areas.
 - Starts **active** (Manual mode, manually enabled) when placed.

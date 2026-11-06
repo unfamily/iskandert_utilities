@@ -36,4 +36,4 @@ Le icone di anteprima sono orientate rispetto a dove stai guardando.
 
 ## Modalità legacy (opzionale)
 
-Se le modalità legacy sono abilitate in config, **clic sinistro** (blocco o aria) cicla le modalità di rotazione memorizzate (orario, antiorario, direzioni assolute). Con una modalità non-menu selezionata, **R** applica quella modalità invece di aprire il menu.
+Se le modalità legacy sono abilitate, **clic sinistro** (blocco o aria) cicla le modalità di rotazione memorizzate (orario, antiorario, direzioni assolute). Con una modalità non-menu selezionata, **R** applica quella modalità invece di aprire il menu.

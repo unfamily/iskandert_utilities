@@ -49,7 +49,7 @@ public final class MachineGuiButtons {
     }
 
     public static Component redstoneTooltip(int mode, boolean allowPulse) {
-        return switch (displayRedstoneMode(mode, allowPulse)) {
+        Component primary = switch (displayRedstoneMode(mode, allowPulse)) {
             case 0 -> Component.translatable("gui.iska_utils.generic.redstone_mode.none");
             case 1 -> Component.translatable("gui.iska_utils.generic.redstone_mode.low");
             case 2 -> Component.translatable("gui.iska_utils.generic.redstone_mode.high");
@@ -57,6 +57,16 @@ public final class MachineGuiButtons {
             case 4 -> Component.translatable("gui.iska_utils.generic.redstone_mode.disabled");
             default -> Component.literal("Unknown mode");
         };
+        return withCycleHint(primary);
+    }
+
+    /** Append left=next / right=previous lines used by bidirectional cycle buttons. */
+    public static Component withCycleHint(Component primary) {
+        return primary.copy()
+                .append(Component.literal("\n"))
+                .append(Component.translatable("gui.iska_utils.cycle_hint.line1"))
+                .append(Component.literal("\n"))
+                .append(Component.translatable("gui.iska_utils.cycle_hint.line2"));
     }
 
     public static ItemIconButton redstoneIconButton(

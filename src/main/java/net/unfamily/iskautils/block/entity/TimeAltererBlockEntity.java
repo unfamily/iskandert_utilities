@@ -17,8 +17,9 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.TimeAltererBlock;
 
 import java.util.List;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class TimeAltererBlockEntity extends BlockEntity {
+public class TimeAltererBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private static final String ENERGY_TAG = "Energy";
     private static final String ACTIVE_MODE_TAG = "ActiveMode";
     
@@ -33,6 +34,27 @@ public class TimeAltererBlockEntity extends BlockEntity {
         // Start with 0 energy
         this.energyStorage.setEnergy(0);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     /**
      * Executes time change
@@ -181,6 +203,7 @@ public class TimeAltererBlockEntity extends BlockEntity {
     @Override
     public void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
         super.saveAdditional(tag, provider);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
         // Save energy directly from the energy storage
         tag.putInt(ENERGY_TAG, this.energyStorage.getEnergyStored());
         tag.putInt(ACTIVE_MODE_TAG, activeMode);
@@ -192,6 +215,7 @@ public class TimeAltererBlockEntity extends BlockEntity {
     @Override
     public void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
         super.loadAdditional(tag, provider);
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
         if (tag.contains(ENERGY_TAG)) {
             // Load energy directly into the energy storage
             this.energyStorage.setEnergy(tag.getInt(ENERGY_TAG));

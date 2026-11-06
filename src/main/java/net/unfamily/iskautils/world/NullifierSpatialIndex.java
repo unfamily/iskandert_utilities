@@ -23,7 +23,7 @@ public final class NullifierSpatialIndex {
         CLIMBING
     }
 
-    public record Entry(int radius, Kind kind, NullifierTargetMode targetMode) {}
+    public record Entry(int radius, Kind kind, NullifierTargetMode targetMode, int areaOffsetX) {}
 
     private static final Map<ResourceKey<Level>, Map<Long, Map<BlockPos, Entry>>> BY_DIMENSION = new ConcurrentHashMap<>();
 
@@ -36,12 +36,23 @@ public final class NullifierSpatialIndex {
             boolean active,
             int radius,
             NullifierTargetMode targetMode) {
+        update(dimension, pos, kind, active, radius, targetMode, 0);
+    }
+
+    public static void update(
+            ResourceKey<Level> dimension,
+            BlockPos pos,
+            Kind kind,
+            boolean active,
+            int radius,
+            NullifierTargetMode targetMode,
+            int areaOffsetX) {
         if (active && targetMode != NullifierTargetMode.DISABLED) {
             long chunkKey = ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
             BY_DIMENSION
                     .computeIfAbsent(dimension, d -> new ConcurrentHashMap<>())
                     .computeIfAbsent(chunkKey, k -> new ConcurrentHashMap<>())
-                    .put(pos.immutable(), new Entry(radius, kind, targetMode));
+                    .put(pos.immutable(), new Entry(radius, kind, targetMode, areaOffsetX));
         } else {
             remove(dimension, pos);
         }
@@ -127,7 +138,8 @@ public final class NullifierSpatialIndex {
                     if (e.kind() != kind || !modeTest.test(e.targetMode())) {
                         continue;
                     }
-                    if (isWithinRadius(entry.getKey(), position, e.radius())) {
+                    BlockPos center = entry.getKey().offset(e.areaOffsetX(), 0, 0);
+                    if (isWithinRadius(center, position, e.radius())) {
                         return true;
                     }
                 }

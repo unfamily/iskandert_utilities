@@ -42,7 +42,7 @@ public final class IskaUtilsClientGameEvents {
             var be = level.getBlockEntity(pos);
             if (be instanceof SoundMufflerBlockEntity muffler) {
                 int r = muffler.getRange();
-                if (pos.distSqr(soundPos) > (long) r * r) continue;
+                if (muffler.getEffectCenter().distSqr(soundPos) > (long) r * r) continue;
                 if (!muffler.shouldMuffleSound(soundId)) continue;
                 int p = muffler.getEffectiveVolumeFor(sound.getSource(), sound.getLocation());
                 if (p < effectivePercent) effectivePercent = p;

@@ -17,7 +17,7 @@ categories:
 
 Stops **climbing** on ladders, scaffolding, and other climbable blocks inside a cubic **radius**. Also blocks **Gauntlet of Climbing** wall-climb while inside the zone. Same range and modules as the [Ender Nullifier](ender_nullifier.md).
 
-Entities in the configured ignore list (default: `#c:bosses`) are exempt from this nullifier.
+Bosses and other ignored entities (default tag `#c:bosses`) are exempt from this nullifier.
 
 ## GUI
 

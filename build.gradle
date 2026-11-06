@@ -195,7 +195,13 @@ dependencies {
     }
 
     // Iskandert Library 1.21.1 — local JAR in libs/ when present, else CurseForge
-    def iskaLibLocalJar = file('libs/iska_lib-1.12.0.0.0-neoforge-1.21.1.jar')
+    def iskaLibLocalJar = file('libs/iska_lib-1.14.0.0.0-neoforge-1.21.1.jar')
+    if (!iskaLibLocalJar.exists()) {
+        iskaLibLocalJar = file('libs/iska_lib-1.14.0.0.0.jar')
+    }
+    if (!iskaLibLocalJar.exists()) {
+        iskaLibLocalJar = file('libs/iska_lib-1.12.0.0.0-neoforge-1.21.1.jar')
+    }
     if (!iskaLibLocalJar.exists()) {
         iskaLibLocalJar = file('libs/iska_lib-1.11.0.0.0-neoforge-1.21.1.jar')
     }
@@ -285,6 +291,8 @@ dependencies {
     // Fusion connected textures (dev auto-download)
     compileOnly "curse.maven:fusion-connected-textures-854949:8355160"
     localRuntime "curse.maven:fusion-connected-textures-854949:8355160"
+    // Ex Deorum (optional; witch water / silverfish larva — download for dev runtime only)
+    localRuntime "curse.maven:ex-deorum-901420:8384464"
     // Forbidden Arcanus optional (compile only — no auto-download)
     compileOnly "curse.maven:forbidden-arcanus-309858:8333815"
     // Lootr optional (compile only — loot scanner chip integration uses reflection at runtime)

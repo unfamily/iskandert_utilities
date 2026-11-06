@@ -111,20 +111,24 @@ public class ClimbingNullifierBlock extends DirectionalBlock implements EntityBl
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (!level.isClientSide && !state.is(newState.getBlock())) {
+        if (!state.is(newState.getBlock())) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof ClimbingNullifierBlockEntity nullifier) {
                 nullifier.clearSpatialIndex();
-                var handler = nullifier.getModuleHandler();
-                for (int i = 0; i < handler.getSlots(); i++) {
-                    var stack = handler.getStackInSlot(i);
-                    if (!stack.isEmpty()) {
-                        Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
-                        handler.setStackInSlot(i, net.minecraft.world.item.ItemStack.EMPTY);
+                if (!level.isClientSide) {
+                    var handler = nullifier.getModuleHandler();
+                    for (int i = 0; i < handler.getSlots(); i++) {
+                        var stack = handler.getStackInSlot(i);
+                        if (!stack.isEmpty()) {
+                            Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
+                            handler.setStackInSlot(i, net.minecraft.world.item.ItemStack.EMPTY);
+                        }
                     }
                 }
             }
-            PreviewAreaSupport.onPreviewOwnerBlockRemoved(level, pos, state, newState);
+            if (!level.isClientSide) {
+                PreviewAreaSupport.onPreviewOwnerBlockRemoved(level, pos, state, newState);
+            }
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }
@@ -195,6 +199,7 @@ public class ClimbingNullifierBlock extends DirectionalBlock implements EntityBl
                     true);
             return InteractionResult.CONSUME;
         }
+        nullifier.claimOwner(serverPlayer);
         serverPlayer.openMenu(nullifier, pos);
         return InteractionResult.CONSUME;
     }

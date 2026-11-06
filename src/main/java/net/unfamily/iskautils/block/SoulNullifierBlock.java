@@ -186,6 +186,7 @@ public class SoulNullifierBlock extends DirectionalBlock implements EntityBlock 
                     true);
             return InteractionResult.CONSUME;
         }
+        nullifier.claimOwner(serverPlayer);
         serverPlayer.openMenu(nullifier, pos);
         return InteractionResult.CONSUME;
     }

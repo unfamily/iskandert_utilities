@@ -193,6 +193,7 @@ public class MobReaperBlock extends HorizontalDirectionalBlock implements Entity
         }
 
         reaperEntity.ensureOwner(serverPlayer.getUUID());
+        reaperEntity.claimOwner(serverPlayer);
         serverPlayer.openMenu(reaperEntity, pos);
         return InteractionResult.CONSUME;
     }

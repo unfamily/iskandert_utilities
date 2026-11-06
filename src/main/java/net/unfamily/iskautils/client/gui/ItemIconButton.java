@@ -4,6 +4,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -18,6 +19,8 @@ public class ItemIconButton extends Button {
     private final Supplier<ItemStack> iconStack;
     @Nullable
     private final Supplier<ResourceLocation> overlayTexture;
+    /** When false, LMB does not play the vanilla UI click (e.g. server already plays a custom sound). */
+    private boolean playClickSound = true;
 
     public ItemIconButton(
             int x,
@@ -70,6 +73,19 @@ public class ItemIconButton extends Button {
                 graphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
             }
             graphics.pose().popPose();
+        }
+    }
+
+    /** Disable vanilla click so a custom/server sound can be the only feedback. */
+    public ItemIconButton muteClickSound() {
+        this.playClickSound = false;
+        return this;
+    }
+
+    @Override
+    public void playDownSound(SoundManager handler) {
+        if (playClickSound) {
+            super.playDownSound(handler);
         }
     }
 

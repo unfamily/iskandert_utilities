@@ -9,7 +9,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.IskaUtils;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.iskautils.block.entity.SoundMufflerBlockEntity;
+import net.unfamily.iskautils.network.packet.SoundMufflerOffsetC2SPacket;
 import net.unfamily.iskautils.network.ModMessages;
 
 public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu> {
@@ -116,8 +118,14 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
         int totalBottomW = ROW_CONTENT_W + BOTTOM_BUTTON_GAP + BOTTOM_BUTTON_W;
         int rangeRowX = leftPos + (GUI_WIDTH - totalBottomW) / 2;
         int lineY = topPos + BOTTOM_BUTTONS_Y + (BOTTOM_BUTTON_H - BUTTON_H) / 2;
-        int minusX = rangeRowX;
-        int plusX = rangeRowX + ROW_CONTENT_W - BUTTON_W;
+        int offsetGap = 2;
+        int minusX = rangeRowX + BUTTON_W + offsetGap;
+        int plusX = rangeRowX + ROW_CONTENT_W - BUTTON_W * 2 - offsetGap;
+        addRenderableWidget(
+                Button.builder(Component.literal("\u00AB"), btn -> sendRangeOffset(-1))
+                        .bounds(rangeRowX, lineY, BUTTON_W, BUTTON_H)
+                        .tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.iska_utils.collecting_crate.offset_left")))
+                        .build());
         addRenderableWidget(
                 Button.builder(Component.literal("-"), btn -> setRangeStep(-1))
                         .bounds(minusX, lineY, BUTTON_W, BUTTON_H)
@@ -127,6 +135,11 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
                 Button.builder(Component.literal("+"), btn -> setRangeStep(1))
                         .bounds(plusX, lineY, BUTTON_W, BUTTON_H)
                         .tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.iska_utils.sound_muffler.tooltip.range_step")))
+                        .build());
+        addRenderableWidget(
+                Button.builder(Component.literal("\u00BB"), btn -> sendRangeOffset(1))
+                        .bounds(rangeRowX + ROW_CONTENT_W - BUTTON_W, lineY, BUTTON_W, BUTTON_H)
+                        .tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.iska_utils.collecting_crate.offset_right")))
                         .build());
         int filterX = leftPos + (GUI_WIDTH - totalBottomW) / 2 + ROW_CONTENT_W + BOTTOM_BUTTON_GAP;
         filterButton = Button.builder(Component.translatable("gui.iska_utils.sound_muffler.filter"), btn -> onFilterClicked())
@@ -163,6 +176,12 @@ public class SoundMufflerScreen extends AbstractContainerScreen<SoundMufflerMenu
         BlockPos pos = menu.getSyncedBlockPos();
         if (pos.equals(BlockPos.ZERO)) return;
         ModMessages.sendSoundMufflerRangePacket(pos, value);
+    }
+
+    private void sendRangeOffset(int delta) {
+        BlockPos pos = menu.getSyncedBlockPos();
+        if (pos.equals(BlockPos.ZERO) || delta == 0) return;
+        PacketDistributor.sendToServer(new SoundMufflerOffsetC2SPacket(pos, delta));
     }
 
     private void onFilterClicked() {

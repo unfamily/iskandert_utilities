@@ -50,7 +50,7 @@ public final class FactoryStonecutterSupport {
             }
             ResourceLocation id = BuiltInRegistries.ITEM.getKey(result.getItem());
             int count = Math.max(1, result.getCount());
-            outputsById.putIfAbsent(id, new FactoryLoader.Output(id, count));
+            outputsById.putIfAbsent(id, new FactoryLoader.Output(id, count, null, holder.id()));
         }
         if (outputsById.isEmpty()) {
             return Optional.empty();

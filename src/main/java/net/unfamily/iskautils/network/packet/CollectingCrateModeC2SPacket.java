@@ -7,8 +7,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
@@ -39,9 +37,7 @@ public record CollectingCrateModeC2SPacket(BlockPos pos, boolean backward) imple
             BlockEntity blockEntity = player.serverLevel().getBlockEntity(packet.pos());
             if (blockEntity instanceof CollectingCrateBlockEntity crate) {
                 crate.cycleCollectMode(packet.backward());
-                float pitch = packet.backward() ? 0.82f : 1.0f;
-                player.serverLevel().playSound(null, packet.pos(), SoundEvents.UI_BUTTON_CLICK.value(),
-                        SoundSource.BLOCKS, 0.3f, pitch);
+                // Client already plays the click sound; avoid duplicate UI_BUTTON_CLICK.
                 crate.setChanged();
                 if (player.containerMenu instanceof net.unfamily.iskautils.client.gui.CollectingCrateMenu) {
                     player.containerMenu.broadcastChanges();

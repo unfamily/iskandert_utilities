@@ -124,6 +124,9 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     // Pattern navigation buttons
     private Button prevPatternButton;
     private Button patternLabelButton;
+    private int patternTitleDrawX;
+    private int patternTitleDrawY;
+    private int patternTitleDrawW;
     private Button nextPatternButton;
     private Button toolSafeguardButton;
     private Button savePatternButton;
@@ -424,7 +427,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 this.leftPos + rsX, this.topPos + rsY,
                 btn -> cycleRedstoneMode(), menu::getRedstoneMode, true));
 
-        // ===== Pattern column: mode → recursive → remainder → tool → browser → grid → Save =====
+        // ===== Pattern column: browser on top → Pattern label → mode/recursive/remainder/tool → grid → Save =====
         // Nav buttons are wider; Save + 3×3 grid stay centered under them.
         int patternColX = 12;
         int patternNavWidth = 70;
@@ -436,14 +439,41 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         int btnH = 12;
         int btnGap = 1;
         int arrowWidth = 12;
-        int labelWidth = patternNavWidth - arrowWidth * 2;
+        // 2px tighter than the previous full-gap layout
+        int numberWidth = Math.max(18, patternNavWidth - arrowWidth * 2 - 10);
+        int numberPad = (patternNavWidth - arrowWidth * 2 - numberWidth) / 2;
 
-        // 4 control rows above browser, then browser immediately above grid
-        int browserY = gridStartY - btnH - btnGap;
-        int toolSafeguardY = browserY - btnH - btnGap;
+        // Top: Pattern label, then <- X/Y ->, then the four pattern control rows above the grid
+        int toolSafeguardY = gridStartY - btnH - btnGap;
         int remainderRowY = toolSafeguardY - btnH - btnGap;
         int recursiveRowY = remainderRowY - btnH - btnGap;
         int modeButtonY = recursiveRowY - btnH - btnGap;
+        int browserY = modeButtonY - btnH - btnGap;
+        int patternTitleY = browserY - btnH - btnGap;
+        patternTitleDrawX = navStartX;
+        patternTitleDrawY = patternTitleY;
+        patternTitleDrawW = patternNavWidth;
+
+        prevPatternButton = Button.builder(Component.literal("←"),
+                        btn -> switchPattern(-1))
+                .bounds(navStartX, browserY, arrowWidth, btnH)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.pattern_nav.previous")))
+                .build();
+        addRenderableWidget(prevPatternButton);
+
+        patternLabelButton = Button.builder(Component.literal("1/4"),
+                        btn -> resetCurrentPattern())
+                .bounds(navStartX + arrowWidth + numberPad, browserY, numberWidth, btnH)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.reset_pattern_tooltip")))
+                .build();
+        addRenderableWidget(patternLabelButton);
+
+        nextPatternButton = Button.builder(Component.literal("→"),
+                        btn -> switchPattern(1))
+                .bounds(navStartX + patternNavWidth - arrowWidth, browserY, arrowWidth, btnH)
+                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.pattern_nav.next")))
+                .build();
+        addRenderableWidget(nextPatternButton);
 
         craftingModeButton = Button.builder(Component.translatable("gui.iska_utils.crafting_mode.both"),
                         btn -> cycleCraftingMode())
@@ -473,27 +503,6 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
                 .bounds(navStartX, toolSafeguardY, patternNavWidth, btnH)
                 .build();
         addRenderableWidget(toolSafeguardButton);
-
-        prevPatternButton = Button.builder(Component.literal("←"),
-                        btn -> switchPattern(-1))
-                .bounds(navStartX, browserY, arrowWidth, btnH)
-                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.pattern_nav.previous")))
-                .build();
-        addRenderableWidget(prevPatternButton);
-
-        patternLabelButton = Button.builder(Component.literal("1/4"),
-                        btn -> resetCurrentPattern())
-                .bounds(navStartX + arrowWidth, browserY, labelWidth, btnH)
-                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.reset_pattern_tooltip")))
-                .build();
-        addRenderableWidget(patternLabelButton);
-
-        nextPatternButton = Button.builder(Component.literal("→"),
-                        btn -> switchPattern(1))
-                .bounds(navStartX + arrowWidth + labelWidth, browserY, arrowWidth, btnH)
-                .tooltip(Tooltip.create(Component.translatable("gui.iska_utils.pattern_nav.next")))
-                .build();
-        addRenderableWidget(nextPatternButton);
 
         // Save under the 3x3 grid (same width/X as grid — centered under nav)
         int saveY = gridStartY + 54 + btnGap;
@@ -950,9 +959,14 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
     }
 
     private void cycleRedstoneMode() {
+        cycleRedstoneMode(false);
+    }
+
+    private void cycleRedstoneMode(boolean backward) {
         if (menu.getBlockEntity() != null) {
             PacketDistributor.sendToServer(
-                    new net.unfamily.iskautils.network.packet.RedstoneModeC2SPacket(menu.getBlockEntity().getBlockPos())
+                    new net.unfamily.iskautils.network.packet.RedstoneModeC2SPacket(
+                            menu.getBlockEntity().getBlockPos(), backward)
             );
         }
     }
@@ -1380,6 +1394,30 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         }
 
         this.renderTooltip(guiGraphics, mouseX, mouseY);
+        renderSettingsCopierSlotTooltip(guiGraphics, mouseX, mouseY);
+    }
+
+    /** AD-style empty/filled Settings Copier slot hover (slot is drawn custom, not via vanilla slot). */
+    private void renderSettingsCopierSlotTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        if (!isCopierSlotHovered(mouseX, mouseY)) {
+            return;
+        }
+        int idx = menu.copySettingsSlotIndex();
+        if (idx < 0) {
+            return;
+        }
+        ItemStack copier = menu.getSlot(idx).getItem();
+        if (!copier.isEmpty()) {
+            guiGraphics.renderTooltip(this.font, copier, mouseX, mouseY);
+        } else {
+            guiGraphics.renderComponentTooltip(
+                    this.font,
+                    List.of(
+                            Component.translatable("gui.iska_utils.settings_copier.slot.tooltip.line1"),
+                            Component.translatable("gui.iska_utils.settings_copier.slot.tooltip.line2")),
+                    mouseX,
+                    mouseY);
+        }
     }
 
     private boolean isCopierSlotHovered(double mouseX, double mouseY) {
@@ -1728,10 +1766,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
             }
             if (redstoneButton != null && redstoneButton.isHovered()) {
                 playButtonSound();
-                cycleRedstoneMode();
-                cycleRedstoneMode();
-                cycleRedstoneMode();
-                cycleRedstoneMode();
+                cycleRedstoneMode(true);
                 return true;
             }
         }
@@ -1822,6 +1857,14 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         guiGraphics.drawString(this.font, this.title, titleX, 6, 4210752, false);
 
         if (subView != SubView.MAIN) return;
+
+        if (patternTitleDrawW > 0 && (patternLabelButton == null || patternLabelButton.visible)) {
+            Component patternTitle = Component.translatable("gui.iska_utils.pattern");
+            int pw = this.font.width(patternTitle);
+            int px = patternTitleDrawX + (patternTitleDrawW - pw) / 2 - this.leftPos;
+            int py = patternTitleDrawY + 2 - this.topPos;
+            guiGraphics.drawString(this.font, patternTitle, px, py, 4210752, false);
+        }
 
         int maxPages = Math.max(1, (menu.getOutputSlotCount() + 8) / 9);
         String outputPage = (currentOutputPage + 1) + "/" + maxPages;
@@ -1983,7 +2026,7 @@ public class ImprovedPatternCrafterScreen extends AbstractContainerScreen<Improv
         }
         if (markOutputButton != null) {
             markOutputButton.visible = showMainSide;
-            markOutputButton.active = showMainSide;
+            markOutputButton.active = normalMain; // locked while editing a variable
         }
         if (redstoneButton != null) {
             redstoneButton.visible = showMainSide;

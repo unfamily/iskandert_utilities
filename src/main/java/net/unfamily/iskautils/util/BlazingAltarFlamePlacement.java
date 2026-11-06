@@ -21,6 +21,7 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.world.BlazingAltarSpatialIndex;
 
+import javax.annotation.Nullable;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,6 +43,7 @@ public final class BlazingAltarFlamePlacement {
             return false;
         }
 
+        // Block light only — sky brightness must never reject outdoor / surface placement.
         if (level.getBrightness(LightLayer.BLOCK, placePos) >= 8) {
             return false;
         }
@@ -50,8 +52,55 @@ public final class BlazingAltarFlamePlacement {
         return !wouldIlluminateLightSensitive(level, placePos, emission);
     }
 
+    /**
+     * True if a just-placed (or about-to-place) flame with {@code emission} would already light
+     * {@code placePos} to block light &gt;= 8 (Manhattan falloff). Used for same-tick spacing
+     * before the light engine catches up.
+     */
+    public static boolean wouldBeLitByFlame(BlockPos placePos, BlockPos flamePos, int emission) {
+        int manhattan = placePos.distManhattan(flamePos);
+        return emission - manhattan >= 8;
+    }
+
+    public static int flameLightEmission(BlockState flameState) {
+        int emission = flameState.getLightEmission();
+        return emission > 0 ? emission : 15;
+    }
+
     public static boolean isGroundPlacement(Level level, BlockPos placePos) {
         return hasSolidTopSupport(level, placePos.below());
+    }
+
+    /**
+     * Soft ceiling for volume sampling: avoid placing far above the world surface.
+     * Underground (below surface) stays fully eligible so caves are covered.
+     */
+    public static int maxSampleY(Level level, int x, int z) {
+        int surfaceY = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
+        int softCeiling = surfaceY + 4;
+        int worldMax = level.getMaxBuildHeight() - 1;
+        return Math.min(worldMax, Math.max(level.getMinBuildHeight(), softCeiling));
+    }
+
+    /**
+     * From a random volume probe, walk downward to the first replaceable cell that has solid support
+     * (cave floors and surface). Returns {@code null} if none in the column below the probe.
+     */
+    @Nullable
+    public static BlockPos snapDownToGroundPlacement(Level level, BlockPos probe, int minY) {
+        int startY = Math.min(probe.getY(), level.getHeight(Heightmap.Types.MOTION_BLOCKING, probe.getX(), probe.getZ()));
+        startY = Math.min(startY, level.getMaxBuildHeight() - 1);
+        for (int y = startY; y >= minY; y--) {
+            BlockPos candidate = new BlockPos(probe.getX(), y, probe.getZ());
+            BlockState state = level.getBlockState(candidate);
+            if (!state.isAir() && !state.canBeReplaced()) {
+                continue;
+            }
+            if (isGroundPlacement(level, candidate)) {
+                return candidate.immutable();
+            }
+        }
+        return null;
     }
 
     private static boolean hasSolidTopSupport(Level level, BlockPos supportPos) {
@@ -64,11 +113,6 @@ public final class BlazingAltarFlamePlacement {
         }
         VoxelShape shape = support.getCollisionShape(level, supportPos, CollisionContext.empty());
         return !shape.isEmpty() && shape.max(Direction.Axis.Y) >= 0.875;
-    }
-
-    private static int flameLightEmission(BlockState flameState) {
-        int emission = flameState.getLightEmission();
-        return emission > 0 ? emission : 15;
     }
 
     public static boolean wouldIlluminateLightSensitive(Level level, BlockPos flamePos, int flameEmission) {
@@ -235,9 +279,10 @@ public final class BlazingAltarFlamePlacement {
     }
 
     /** Recomputes block light for brazier flames after altar operational state changes. */
-    public static void refreshBrazierFlameLightInRadius(ServerLevel level, BlockPos altarPos, int chunkRadius, boolean groundOnly) {
+    public static void refreshBrazierFlameLightInRadius(
+            ServerLevel level, BlockPos altarPos, int chunkRadius, int chunkOffsetX, boolean groundOnly) {
         Block burningFlame = ModBlocks.BURNING_FLAME.get();
-        for (ChunkPos chunk : BlazingAltarChunks.collectOrdered(altarPos, chunkRadius)) {
+        for (ChunkPos chunk : BlazingAltarChunks.collectOrdered(altarPos, chunkRadius, chunkOffsetX)) {
             BlockPos probe = new BlockPos(chunk.getMinBlockX(), altarPos.getY(), chunk.getMinBlockZ());
             if (!level.isLoaded(probe)) {
                 continue;
@@ -259,6 +304,7 @@ public final class BlazingAltarFlamePlacement {
                             continue;
                         }
                         level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
+                        level.getLightEngine().checkBlock(pos);
                     }
                 }
             }

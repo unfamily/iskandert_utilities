@@ -55,6 +55,14 @@ public interface INullifierBE {
     int getMaxRange();
     void setRange(int r);
 
+    /** Horizontal shift of the effect cube center (blocks), clamped to roughly ±{@link #getRange()}. */
+    int getAreaOffsetX();
+    void setAreaOffsetX(int offsetX);
+
+    default void offsetAreaX(int delta) {
+        setAreaOffsetX(getAreaOffsetX() + delta);
+    }
+
     // --- GUI redstone mode (0=Manual, 1=Disabled, 2=Low, 3=High) ---
     int getRedstoneModeGui();
     void setRedstoneModeGui(int guiMode);

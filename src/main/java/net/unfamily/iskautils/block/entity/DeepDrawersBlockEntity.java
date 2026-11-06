@@ -22,6 +22,7 @@ import net.unfamily.iskautils.util.DeepDrawerStackSizeContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * BlockEntity for Deep Drawers
@@ -29,7 +30,7 @@ import java.util.*;
  * Uses a HashMap for efficient sparse storage (only stores non-empty slots)
  * Uses custom IItemHandler for hopper interaction with item validation
  */
-public class DeepDrawersBlockEntity extends BlockEntity {
+public class DeepDrawersBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     /**
      * Fixed Deep Drawer capacity. This is intentionally NOT configurable.
      * The only supported configuration for Deep Drawer is allowed/blacklist item rules.
@@ -82,6 +83,27 @@ public class DeepDrawersBlockEntity extends BlockEntity {
         super(ModBlockEntities.DEEP_DRAWERS_BE.get(), pos, state);
         // maxSlots is now read directly from config in real-time (no caching)
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     
     /**
      * Gets the item handler for capability registration

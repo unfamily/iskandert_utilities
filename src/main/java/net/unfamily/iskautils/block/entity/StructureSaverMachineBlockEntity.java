@@ -16,12 +16,13 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.minecraft.world.item.ItemStack;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * Block Entity per la macchina Structure Saver
  * Gestisce energia da config e compound tags per il salvataggio strutture
  */
-public class StructureSaverMachineBlockEntity extends BlockEntity implements MenuProvider {
+public class StructureSaverMachineBlockEntity extends BlockEntity implements MenuProvider, net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     
     private static final ModLogger LOGGER = ModLogger.of(StructureSaverMachineBlockEntity.class);
     
@@ -67,6 +68,27 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     public StructureSaverMachineBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.STRUCTURE_SAVER_MACHINE_BE.get(), pos, blockState);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     
     @Override
     public void setChanged() {
@@ -120,6 +142,7 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
         
         // Salva item handler
         tag.put("inventory", itemHandler.serializeNBT(registries));
@@ -155,6 +178,7 @@ public class StructureSaverMachineBlockEntity extends BlockEntity implements Men
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
         
         // Carica item handler
         if (tag.contains("inventory")) {

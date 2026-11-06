@@ -15,12 +15,13 @@ import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.block.RubberLogEmptyBlock;
 import net.unfamily.iskautils.block.RubberLogFilledBlock;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /** 
  * BlockEntity for the empty rubber log block.
  * Handles the timer for the sap refill.
  */
-public class RubberLogEmptyBlockEntity extends BlockEntity {
+public class RubberLogEmptyBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private int refillTimer;    // Timer for the sap refill, decremented at each tick
 
     public RubberLogEmptyBlockEntity(BlockPos pos, BlockState state) {
@@ -29,6 +30,27 @@ public class RubberLogEmptyBlockEntity extends BlockEntity {
         this.refillTimer = Config.MIN_SAP_REFILL_TIME.get() + 
                 random.nextInt(Config.MAX_SAP_REFILL_TIME.get() - Config.MIN_SAP_REFILL_TIME.get());
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     /**
      * Gets the current refill timer value.

@@ -16,6 +16,7 @@ import net.minecraft.network.chat.Component;
 import net.unfamily.iskautils.util.KeybindTooltipUtil;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.util.ClientPlayerAccess;
+import net.unfamily.iskautils.world.NullifierSpatialIndex;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -59,6 +60,9 @@ public class GauntletOfClimbingItem extends Item {
 
     public static void tickEquipped(Player player) {
         if (!isClimbingEnabled(player.getUUID())) {
+            return;
+        }
+        if (NullifierSpatialIndex.shouldBlockPlayerGauntletClimb(player.level().dimension(), player.position())) {
             return;
         }
         if (player.horizontalCollision) {

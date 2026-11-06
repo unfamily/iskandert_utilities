@@ -27,6 +27,7 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.data.load.FactoryLoader;
 import net.unfamily.iskautils.util.BlockCraftOwner;
+import net.unfamily.iskautils.util.RecipeStageGate;
 import org.jetbrains.annotations.Nullable;
 
 public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer, BlockCraftOwner.BlockCraftOwnerHolder {
@@ -96,7 +97,7 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer,
     }
 
     public List<FactoryLoader.Output> activeOutputs(FactoryLoader.Source source) {
-        return source.resolveOutputs(resolveOwnerPlayer());
+        return source.resolveOutputs(ownerPlayerUuid, level);
     }
 
     public int getSelectedColorIndex() {
@@ -270,6 +271,9 @@ public class FactoryBlockEntity extends BlockEntity implements WorldlyContainer,
         int selected = Math.min(Math.max(0, be.selectedColorIndex), activeOutputs.size() - 1);
 
         var outDef = activeOutputs.get(selected);
+        if (!RecipeStageGate.isAllowed(source.gateRecipeId(outDef), be.getOwnerPlayerUuid(), level)) {
+            return;
+        }
         var outStackOpt = FactoryLoader.resolveOutputStack(outDef);
         if (outStackOpt.isEmpty()) return;
         ItemStack producedPerOp = outStackOpt.get();

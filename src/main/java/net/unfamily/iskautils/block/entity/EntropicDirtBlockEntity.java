@@ -14,8 +14,9 @@ import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.block.ModBlocks;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.util.EntropicSoilUtil;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class EntropicDirtBlockEntity extends BlockEntity {
+public class EntropicDirtBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private static final String TAG_LIGHT_REVERT = "light_revert_ticks";
     private static final String TAG_LIGHT_REVERT_TARGET = "light_revert_target";
     private static final int LIGHT_REVERT_INTERVAL = 4;
@@ -26,6 +27,27 @@ public class EntropicDirtBlockEntity extends BlockEntity {
     public EntropicDirtBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ENTROPIC_DIRT_BE.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
 
     public static void tickServer(Level level, BlockPos pos, BlockState state, EntropicDirtBlockEntity blockEntity) {
         if (level.isClientSide() || !(level instanceof ServerLevel server)) {

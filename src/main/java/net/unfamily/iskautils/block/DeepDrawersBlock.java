@@ -172,6 +172,7 @@ public class DeepDrawersBlock extends BaseEntityBlock {
                 }
 
                 // Normal click: open GUI
+                deepDrawers.claimOwner(serverPlayer);
                 serverPlayer.openMenu(new net.minecraft.world.MenuProvider() {
                     @Override
                     public net.minecraft.network.chat.Component getDisplayName() {

@@ -25,13 +25,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * BlockEntity for Deep Drawer Extractor
  * Extracts items from adjacent Deep Drawer using the optimized API
  * Has 5 output slots
  */
-public class DeepDrawerExtractorBlockEntity extends BlockEntity implements WorldlyContainer {
+public class DeepDrawerExtractorBlockEntity extends BlockEntity implements WorldlyContainer, net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     
     private static final ModLogger LOGGER = ModLogger.of(DeepDrawerExtractorBlockEntity.class);
     
@@ -144,6 +145,27 @@ public class DeepDrawerExtractorBlockEntity extends BlockEntity implements World
             denyConcatChannels[i] = 0;
         }
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     
     /**
      * Gets the maximum number of filter slots (from config)

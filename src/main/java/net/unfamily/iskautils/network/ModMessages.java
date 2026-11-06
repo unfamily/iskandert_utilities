@@ -355,6 +355,12 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.SoundMufflerRangeC2SPacket::handle
         );
 
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.SoundMufflerOffsetC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.SoundMufflerOffsetC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.SoundMufflerOffsetC2SPacket::handle
+        );
+
         // Ethereal Frame filter update
         registrar.playToServer(
             net.unfamily.iskautils.network.packet.EtherealFrameFilterUpdateC2SPacket.TYPE,
@@ -488,6 +494,12 @@ public class ModMessages {
             net.unfamily.iskautils.network.packet.NullifierRangeC2SPacket.TYPE,
             net.unfamily.iskautils.network.packet.NullifierRangeC2SPacket.STREAM_CODEC,
             net.unfamily.iskautils.network.packet.NullifierRangeC2SPacket::handle
+        );
+
+        registrar.playToServer(
+            net.unfamily.iskautils.network.packet.NullifierAreaOffsetC2SPacket.TYPE,
+            net.unfamily.iskautils.network.packet.NullifierAreaOffsetC2SPacket.STREAM_CODEC,
+            net.unfamily.iskautils.network.packet.NullifierAreaOffsetC2SPacket::handle
         );
 
         registrar.playToServer(

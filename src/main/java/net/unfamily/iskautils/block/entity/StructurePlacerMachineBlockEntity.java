@@ -43,11 +43,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * Block Entity for the Structure Placer Machine
  */
-public class StructurePlacerMachineBlockEntity extends BlockEntity implements MenuProvider {
+public class StructurePlacerMachineBlockEntity extends BlockEntity implements MenuProvider, net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     
     private static final ModLogger LOGGER = ModLogger.of(StructurePlacerMachineBlockEntity.class);
     
@@ -117,6 +118,27 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
             ghostFilters.add(ItemStack.EMPTY);
         }
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     
     // Data access methods
     
@@ -150,6 +172,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
         tag.put("inventory", itemHandler.serializeNBT(registries));
         int currentEnergy = energyStorage.getEnergyStored();
         tag.putInt("energy", currentEnergy);
@@ -192,6 +215,7 @@ public class StructurePlacerMachineBlockEntity extends BlockEntity implements Me
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
         if (tag.contains("inventory")) {
             itemHandler.deserializeNBT(registries, tag.getCompound("inventory"));
         }

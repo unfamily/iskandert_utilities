@@ -25,12 +25,13 @@ import net.unfamily.iskautils.util.EntropyCharges;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * BlockEntity for the Temporal Overclocker
  * Accelerates ticks of linked blocks via chipset
  */
-public class TemporalOverclockerBlockEntity extends BlockEntity {
+public class TemporalOverclockerBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private static final String ENERGY_TAG = "Energy";
     private static final String LINKED_BLOCKS_TAG = "LinkedBlocks";
     private static final String UPGRADE_STACK_TAG = "UpgradeStack";
@@ -73,6 +74,27 @@ public class TemporalOverclockerBlockEntity extends BlockEntity {
         this.energyStorage = new EnergyStorageImpl(maxEnergy);
         // accelerationFactor is already initialized from the field with the value from config
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     
     /**
      * Adds a block to the list of linked blocks

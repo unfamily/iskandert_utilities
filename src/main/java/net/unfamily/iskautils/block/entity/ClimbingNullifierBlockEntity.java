@@ -4,7 +4,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -19,12 +18,14 @@ import net.unfamily.iskautils.block.ClimbingNullifierBlock;
 import net.unfamily.iskautils.client.gui.NullifierMenu;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.world.NullifierSpatialIndex;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
-public class ClimbingNullifierBlockEntity extends BlockEntity implements MenuProvider, INullifierBE {
+public class ClimbingNullifierBlockEntity extends BlockEntity implements MenuProvider, INullifierBE, net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private EnderNullifierRedstoneMode redstoneMode = EnderNullifierRedstoneMode.MANUAL;
     private boolean manualEnabled = true;
     private boolean previousRedstoneState = false;
     private int range = -1;
+    private int areaOffsetX = 0;
     private boolean showAreaEnabled = false;
     private NullifierTargetMode targetMode = NullifierTargetMode.ONLY_MOBS;
 
@@ -46,6 +47,27 @@ public class ClimbingNullifierBlockEntity extends BlockEntity implements MenuPro
         super(ModBlockEntities.CLIMBING_NULLIFIER_BE.get(), pos, state);
     }
 
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
+
     // --- INullifierBE ---
     @Override public NullifierType getNullifierType() { return NullifierType.CLIMBING; }
     @Override public ItemStackHandler getModuleHandler() { return moduleHandler; }
@@ -61,8 +83,11 @@ public class ClimbingNullifierBlockEntity extends BlockEntity implements MenuPro
     public void setTargetMode(NullifierTargetMode mode) {
         mode = getNullifierType().sanitizeTargetMode(mode);
         this.targetMode = mode;
-        if (level != null && !level.isClientSide) {
-            syncSpatialIndex(computeEffectiveActive(getBlockState().getValue(ClimbingNullifierBlock.POWERED)));
+        if (level != null) {
+            boolean active = level.isClientSide
+                    ? getBlockState().getValue(ClimbingNullifierBlock.ON)
+                    : computeEffectiveActive(getBlockState().getValue(ClimbingNullifierBlock.POWERED));
+            syncSpatialIndex(active);
         }
         setChanged();
     }
@@ -75,6 +100,7 @@ public class ClimbingNullifierBlockEntity extends BlockEntity implements MenuPro
     @Override
     public void setRange(int r) {
         this.range = Math.max(1, Math.min(r, getMaxRange()));
+        areaOffsetX = Math.max(-this.range, Math.min(this.range, areaOffsetX));
         setChanged();
         syncSpatialIndex(computeEffectiveActive(getBlockState().getValue(ClimbingNullifierBlock.POWERED)));
     }
@@ -94,6 +120,21 @@ public class ClimbingNullifierBlockEntity extends BlockEntity implements MenuPro
     public int getMaxRange() {
         int modules = moduleHandler.getStackInSlot(0).getCount();
         return Config.enderNullifierMaxRange + modules * Config.enderNullifierRangeModuleBonus;
+    }
+    @Override
+    public int getAreaOffsetX() {
+        return areaOffsetX;
+    }
+
+    @Override
+    public void setAreaOffsetX(int offset) {
+        int clamped = Math.max(-getRange(), Math.min(getRange(), offset));
+        if (areaOffsetX == clamped) {
+            return;
+        }
+        areaOffsetX = clamped;
+        setChanged();
+        syncSpatialIndex(computeEffectiveActive(getBlockState().getValue(ClimbingNullifierBlock.POWERED)));
     }
     @Override
     public int getRedstoneModeGui() {
@@ -125,6 +166,8 @@ public class ClimbingNullifierBlockEntity extends BlockEntity implements MenuPro
 
     public static void tick(Level level, BlockPos pos, BlockState state, ClimbingNullifierBlockEntity blockEntity) {
         if (level.isClientSide) {
+            // Client index needed so gauntlet / ladder prediction respects the nullifier.
+            blockEntity.syncSpatialIndex(state.getValue(ClimbingNullifierBlock.ON));
             return;
         }
 
@@ -203,21 +246,30 @@ public class ClimbingNullifierBlockEntity extends BlockEntity implements MenuPro
     }
 
     private void syncSpatialIndex(boolean active) {
-        if (level instanceof ServerLevel serverLevel) {
-            NullifierSpatialIndex.update(
-                    serverLevel.dimension(),
+        if (level == null) {
+            return;
+        }
+        NullifierSpatialIndex.update(
+                    level.dimension(),
                     worldPosition,
                     NullifierSpatialIndex.Kind.CLIMBING,
                     active,
                     getRange(),
-                    targetMode);
-        }
+                    targetMode,
+                    getAreaOffsetX());
     }
 
     public void clearSpatialIndex() {
-        if (level instanceof ServerLevel serverLevel) {
-            NullifierSpatialIndex.remove(serverLevel.dimension(), worldPosition);
+        if (level == null) {
+            return;
         }
+        NullifierSpatialIndex.remove(level.dimension(), worldPosition);
+    }
+
+    @Override
+    public void setRemoved() {
+        clearSpatialIndex();
+        super.setRemoved();
     }
 
     @Override
@@ -225,35 +277,51 @@ public class ClimbingNullifierBlockEntity extends BlockEntity implements MenuPro
         super.setLevel(level);
         if (!level.isClientSide) {
             reconcileEffectiveState();
+        } else {
+            BlockState state = getBlockState();
+            if (state.getBlock() instanceof ClimbingNullifierBlock) {
+                syncSpatialIndex(state.getValue(ClimbingNullifierBlock.ON));
+            }
         }
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
         int modeValue = tag.contains("RedstoneMode") ? tag.getInt("RedstoneMode") : 0;
         if (modeValue == 3) modeValue = 0;
         redstoneMode = EnderNullifierRedstoneMode.fromValue(modeValue);
         manualEnabled = !tag.contains("ManualEnabled") || tag.getBoolean("ManualEnabled");
         previousRedstoneState = tag.getBoolean("PreviousRedstoneState");
         range = tag.contains("Range") ? tag.getInt("Range") : -1;
+        areaOffsetX = tag.contains("AreaOffsetX") ? tag.getInt("AreaOffsetX") : 0;
         showAreaEnabled = tag.getBoolean("ShowArea");
         targetMode = NullifierTargetMode.fromId(tag.contains("TargetMode") ? tag.getInt("TargetMode") : 1);
         if (tag.contains("Modules")) {
             moduleHandler.deserializeNBT(registries, tag.getCompound("Modules"));
         }
-        if (level != null && !level.isClientSide) {
-            reconcileEffectiveState();
+        if (level != null) {
+            if (!level.isClientSide) {
+                reconcileEffectiveState();
+            } else {
+                BlockState state = getBlockState();
+                if (state.getBlock() instanceof ClimbingNullifierBlock) {
+                    syncSpatialIndex(state.getValue(ClimbingNullifierBlock.ON));
+                }
+            }
         }
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
         tag.putInt("RedstoneMode", redstoneMode.getValue());
         tag.putBoolean("ManualEnabled", manualEnabled);
         tag.putBoolean("PreviousRedstoneState", previousRedstoneState);
         tag.putInt("Range", getRange());
+        tag.putInt("AreaOffsetX", areaOffsetX);
         tag.putBoolean("ShowArea", showAreaEnabled);
         tag.putInt("TargetMode", targetMode.getId());
         tag.put("Modules", moduleHandler.serializeNBT(registries));

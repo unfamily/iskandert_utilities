@@ -48,7 +48,7 @@ Crea un **Pattern Crafter Improver** (ricetta sopra). **Shift+click destro** su 
 ## Pattern
 
 - La colonna sinistra mostra il **pattern corrente**: controlli modalità, browser pattern, griglia lettere 3×3, **Salva** / **Annulla** e **Segna input**.
-- Il **Migliorato** parte con **6** slot pattern (configurabile). Ogni **Logic Module** aggiunge **+1** pattern (fino al massimo configurato).
+- Il **Migliorato** parte con **6** slot pattern (variabile). Ogni **Logic Module** aggiunge **+1** pattern.
 - Ogni cella è una lettera (o vuota). Le lettere si collegano alle **variabili** nell'area filtri.
 - Cicla una cella con click sinistro/destro; **Shift+click** la svuota. Puoi anche piazzare un oggetto su una cella per assegnare la lettera corrispondente dalle tue variabili.
 - Passa tra i pattern memorizzati con le frecce / etichetta pattern. **Shift+click** sull'etichetta pattern azzera il pattern corrente.
@@ -59,7 +59,7 @@ Crea un **Pattern Crafter Improver** (ricetta sopra). **Shift+click destro** su 
 Sopra l'inventario macchina ci sono gli slot **variabile** (paginati quando sblocchi molte chiavi):
 
 - Il **Migliorato** parte con **una pagina** da **18** chiavi variabile.
-- Ogni **Logic Module** sblocca **una pagina extra** (+18 chiavi). Con il massimo predefinito di **4** Logic Module puoi arrivare a **5 pagine** (90 chiavi), limitato dalla config.
+- Ogni **Logic Module** sblocca **una pagina extra** (+18 chiavi). Con il massimo predefinito di **4** Logic Module puoi arrivare a **5 pagine** (90 chiavi).
 - Piccoli pulsanti **lettera** sopra/sotto ogni slot sbloccano e ciclano la lettera per quella variabile.
 - Bloccata (senza lettera), il pulsante grande è inattivo.
 - Sbloccata, clic sul pulsante grande apre l'**editor inline** per la stringa filtro di quella variabile.

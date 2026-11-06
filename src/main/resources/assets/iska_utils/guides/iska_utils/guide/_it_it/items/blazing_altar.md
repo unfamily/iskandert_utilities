@@ -27,8 +27,8 @@ Controllore d’area per il posizionamento di **Burning Flame** / **Cursed Burni
 
 - **Filtro spawn**: Off / All / Hostile / Passive — influisce solo sugli spawn mob `NATURAL` nell’area.
 - **Raggio in chunk** (Chebyshev): dimensione dell’area per fiamme e filtro spawn.
-- **Solo a terra**: le fiamme solo sopra terreno solido (predefinito attivo). Con “solo a terra” disattivo, le fiamme possono comparire in aria.
-- **Blocchi sensibili alla luce**: funghi, terreno entropico e dreadful dirt devono restare al buio sul blocco e nello spazio sopra — il posizionamento fiamme che li illuminerebbe viene rifiutato.
+- **Solo a terra**: le fiamme solo su terreno solido — in superficie **e** sui pavimenti sotterranei (grotte, ecc.) (predefinito attivo). Con “solo a terra” disattivo, le fiamme possono comparire in qualsiasi aria valida (anche sospese).
+- **Blocchi sensibili alla luce**: funghi, terreno entropico, entropic dirt e dreadful dirt devono restare al buio sul blocco e nello spazio sopra — il posizionamento fiamme che li illuminerebbe viene rifiutato.
 - **Flame Vision**: toggle client globale per vedere i blocchi fiamma della mod (anche con click sinistro in aria o su braciere/candela).
 - **Show**: pilastri agli angoli che segnano i chunk estremi dell’area coperta.
 - **Redstone**: predefinito **ignorata** (sempre attivo). Le altre modalità come le macchine Factory (niente impulso).

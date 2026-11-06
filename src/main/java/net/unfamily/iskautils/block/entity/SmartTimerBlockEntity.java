@@ -7,13 +7,14 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.iskautils.block.SmartTimerBlock;
+import net.unfamily.iskautils.util.BlockCraftOwner;
 
 /**
  * Smart Timer Block Entity
  * Timer that emits a redstone signal every X seconds for Y seconds duration.
  * Default: 5s cooldown, 3s signal duration.
  */
-public class SmartTimerBlockEntity extends BlockEntity {
+public class SmartTimerBlockEntity extends BlockEntity implements net.unfamily.iskautils.util.BlockCraftOwner.BlockCraftOwnerHolder {
     private static final int DEFAULT_COOLDOWN_TICKS = 5 * 20;
     private static final int DEFAULT_SIGNAL_DURATION_TICKS = 3 * 20;
     
@@ -28,6 +29,27 @@ public class SmartTimerBlockEntity extends BlockEntity {
     public SmartTimerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SMART_TIMER_BE.get(), pos, state);
     }
+
+    private java.util.UUID ownerPlayerUuid;
+
+    @Override
+    public @org.jetbrains.annotations.Nullable java.util.UUID getOwnerPlayerUuid() {
+        return ownerPlayerUuid;
+    }
+
+    @Override
+    public void setOwnerPlayerUuid(@org.jetbrains.annotations.Nullable java.util.UUID uuid) {
+        this.ownerPlayerUuid = uuid;
+    }
+
+    public void claimOwner(net.minecraft.server.level.ServerPlayer player) {
+        net.unfamily.iskautils.util.BlockCraftOwner.claimOnFirstOpen(this, player, ownerPlayerUuid);
+    }
+
+    public @org.jetbrains.annotations.Nullable net.minecraft.server.level.ServerPlayer resolveOwnerPlayer() {
+        return net.unfamily.iskautils.util.BlockCraftOwner.resolve(level, ownerPlayerUuid);
+    }
+
     
     public static void tick(Level level, BlockPos pos, BlockState state, SmartTimerBlockEntity blockEntity) {
         if (level.isClientSide) {
@@ -177,6 +199,7 @@ public class SmartTimerBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        BlockCraftOwner.write(tag, ownerPlayerUuid);
         tag.putInt("CooldownTicks", cooldownTicks);
         tag.putInt("SignalDurationTicks", signalDurationTicks);
         tag.putInt("CurrentTick", currentTick);
@@ -187,6 +210,7 @@ public class SmartTimerBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        ownerPlayerUuid = BlockCraftOwner.read(tag);
         if (tag.contains("CooldownTicks")) {
             cooldownTicks = tag.getInt("CooldownTicks");
         }

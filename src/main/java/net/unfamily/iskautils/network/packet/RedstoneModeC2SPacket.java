@@ -2,6 +2,7 @@ package net.unfamily.iskautils.network.packet;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -11,10 +12,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.block.entity.ImprovedPatternCrafterBlockEntity;
 
-/**
- * Client-to-Server packet: cycles redstone mode (ignore → low → high → disabled → ignore).
- */
-public record RedstoneModeC2SPacket(BlockPos pos) implements CustomPacketPayload {
+public record RedstoneModeC2SPacket(BlockPos pos, boolean backward) implements CustomPacketPayload {
 
     public static final Type<RedstoneModeC2SPacket> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(IskaUtils.MOD_ID, "pc_redstone_mode")
@@ -22,8 +20,14 @@ public record RedstoneModeC2SPacket(BlockPos pos) implements CustomPacketPayload
 
     public static final StreamCodec<FriendlyByteBuf, RedstoneModeC2SPacket> STREAM_CODEC = StreamCodec.composite(
             BlockPos.STREAM_CODEC, RedstoneModeC2SPacket::pos,
+            ByteBufCodecs.BOOL, RedstoneModeC2SPacket::backward,
             RedstoneModeC2SPacket::new
     );
+
+    /** Backward-compatible ctor: forward cycle. */
+    public RedstoneModeC2SPacket(BlockPos pos) {
+        this(pos, false);
+    }
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
@@ -33,9 +37,13 @@ public record RedstoneModeC2SPacket(BlockPos pos) implements CustomPacketPayload
     public static void handle(RedstoneModeC2SPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             ServerPlayer player = (ServerPlayer) context.player();
-            BlockEntity be = player.serverLevel().getBlockEntity(packet.pos());
+            BlockEntity be = ((net.minecraft.server.level.ServerLevel) player.level()).getBlockEntity(packet.pos());
             if (be instanceof ImprovedPatternCrafterBlockEntity pcbe) {
-                pcbe.cycleRedstoneMode();
+                if (packet.backward()) {
+                    pcbe.cycleRedstoneModeBackward();
+                } else {
+                    pcbe.cycleRedstoneMode();
+                }
             }
         });
     }

@@ -214,7 +214,9 @@ public class AncientTableScreen extends AbstractContainerScreen<AncientTableMenu
 
     private void onRedstoneModePressed(boolean backward) {
         ModMessages.sendAncientTableRedstoneMode(menu.getSyncedBlockPos(), backward);
-        playClick();
+        if (backward) {
+            playClick(); // LMB: widget click already plays
+        }
     }
 
     private int maxInputScroll() {

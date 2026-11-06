@@ -1,7 +1,7 @@
 ---
 navigation:
   title: Silverfish Larva
-  icon: iska_utils:drop_of_entropy
+  icon: iska_utils:silverfish_larva
   parent: hubs/entropy_materials.md
   position: 35
 item_ids:
@@ -13,7 +13,7 @@ categories:
 
 # Silverfish Larva
 
-This page applies only when **Silverfish Larva** is registered: load **Ex Deorum**, or set **`dev.030_force_silverfish_larva`** to **true** in the Iskandert's Utilities config.
+Requires the **Ex Deorum** integration path for this item.
 
 </iska_utils:UnlessSilverfishLarva>
 
@@ -22,10 +22,6 @@ This page applies only when **Silverfish Larva** is registered: load **Ex Deorum
 # Silverfish Larva
 
 <ItemImage id="iska_utils:silverfish_larva" />
-
-## Availability
-
-Registered when **Ex Deorum** is loaded, or when **`dev.030_force_silverfish_larva`** is enabled in config.
 
 ## Uses
 
@@ -36,15 +32,6 @@ Registered when **Ex Deorum** is loaded, or when **`dev.030_force_silverfish_lar
 **Ex Deorum barrel**
 
 - **Use** on an **Ex Deorum barrel** that currently holds **witch water** → consumes one larva and gives **1** <ItemImage id="iska_utils:drop_of_entropy" /> **Drop of Entropy** (added to your inventory).
-
-## Obtaining
-
-With **Ex Deorum**, sieve **dust** with an **iron mesh or higher** for a **5%** chance of **Silverfish Larva**.
-
-**Witch water → endermite**
-
-- With **Ex Deorum** loaded, a **silverfish** (for example from infested blocks) standing in **witch water** is replaced by an **endermite**.
-- Endermites drop **2–3** Drops of Entropy (see **Drop of Entropy**).
 
 ## Related pages
 
