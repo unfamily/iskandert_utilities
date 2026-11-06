@@ -32,12 +32,19 @@ public class BurningFlameBlock extends Block {
         super(properties);
     }
 
+    private static final int FLAME_LIGHT_EMISSION = 15;
+
+    @Override
+    public boolean hasDynamicLightEmission(BlockState state) {
+        return true;
+    }
+
     @Override
     public int getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {
         if (BlazingAltarFlamePlacement.isBrazierFlameLightSuppressed(level, pos)) {
             return 0;
         }
-        return state.getLightEmission();
+        return FLAME_LIGHT_EMISSION;
     }
 
     @Override
