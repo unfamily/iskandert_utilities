@@ -32,7 +32,7 @@ Controllore d’area per il posizionamento di **Burning Flame** / **Cursed Burni
 - **Flame Vision**: toggle client globale per vedere i blocchi fiamma della mod (anche con click sinistro in aria o su braciere/candela).
 - **Show**: pilastri agli angoli che segnano i chunk estremi dell’area coperta.
 - **Redstone**: predefinito **ignorata** (sempre attivo). Le altre modalità come le macchine Factory (niente impulso).
-- **Spegnimento / rottura**: rimuovere le fiamme scansiona l’area progressivamente così i raggi grandi non bloccano il server. Rompere l’altare programma anche la pulizia delle fiamme nel raggio. Spegnere può ripristinare la durabilità del braciere quando le fiamme vengono rimosse.
+- **Spegnimento / rottura**: rimuovere le fiamme scansiona l’area progressivamente. Rompere l’altare programma anche la pulizia delle fiamme nel raggio. Spegnere può ripristinare la durabilità del braciere quando le fiamme vengono rimosse.
 
 ## Moduli
 

@@ -32,7 +32,7 @@ Area controller for **Burning Flame** / **Cursed Burning Flame** placement and o
 - **Flame Vision**: global client toggle to see mod flame blocks (also toggled with left-click in air or on a brazier/candle).
 - **Show**: corner pillars marking the extreme chunks of the coverage area.
 - **Redstone**: default **ignored** (always active). Other modes match factory machines (no pulse).
-- **Extinguish / break**: removing flames scans the area progressively so large radii do not freeze the server. Breaking the altar also schedules cleanup of flames in range. Extinguish can restore Brazier durability when flames are removed.
+- **Extinguish / break**: removing flames scans the area progressively. Breaking the altar also schedules cleanup of flames in range. Extinguish can restore Brazier durability when flames are removed.
 
 ## Modules
 
