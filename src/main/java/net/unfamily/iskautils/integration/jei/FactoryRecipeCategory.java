@@ -88,7 +88,13 @@ public class FactoryRecipeCategory implements IRecipeCategory<FactoryJeiRecipe> 
     }
 
     @Override
-    public @Nullable Identifier getRegistryName(FactoryJeiRecipe recipe) {
+    public @Nullable Identifier getIdentifier(FactoryJeiRecipe recipe) {
         return recipe.recipeId();
+    }
+
+    @Override
+    @Deprecated
+    public @Nullable Identifier getRegistryName(FactoryJeiRecipe recipe) {
+        return getIdentifier(recipe);
     }
 }

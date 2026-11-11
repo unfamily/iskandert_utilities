@@ -11,12 +11,15 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeBookCategories;
@@ -24,6 +27,9 @@ import net.minecraft.world.item.crafting.RecipeBookCategory;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
+import net.minecraft.world.item.crafting.display.RecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
+import net.minecraft.world.item.crafting.display.StonecutterRecipeDisplay;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabIfVariant;
@@ -32,6 +38,7 @@ import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRequirement;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRequirementParser;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryStageHost;
 import net.unfamily.iskautils.script.LoadEntryIfParser;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Datapack-only Ancient Tablet mapping. One recipe = one entry (after Library bundle split).
@@ -153,6 +160,8 @@ public final class AncientTabRecipe implements Recipe<SingleRecipeInput> {
 
     private final List<EntryFields> entries;
     private final List<AncientTabletRecipeEntry> compiledEntries;
+    private final PlacementInfo placementInfo;
+    private final List<RecipeDisplay> recipeDisplays;
 
     public AncientTabRecipe(List<EntryFields> entries) {
         this.entries = List.copyOf(entries);
@@ -162,6 +171,8 @@ public final class AncientTabRecipe implements Recipe<SingleRecipeInput> {
             compileEntry(logId, entry).ifPresent(built::add);
         }
         this.compiledEntries = List.copyOf(built);
+        this.placementInfo = buildPlacementInfo(this.compiledEntries);
+        this.recipeDisplays = buildDisplays(this.compiledEntries);
     }
 
     public List<AncientTabletRecipeEntry> compiledEntries() {
@@ -229,20 +240,26 @@ public final class AncientTabRecipe implements Recipe<SingleRecipeInput> {
     }
 
 
-    /** Prefer KubeJS mirror {@code results} when present (replaceOutput). */
+    /**
+     * Prefer datapack {@code produce} when present; fall back to Kube mirror {@code results}
+     * only for Kube-only entries (Library auto-inject after bundle split must not replace counts).
+     */
     private static List<JsonElement> effectiveProduce(EntryFields entry) {
-        if (!entry.results().isEmpty()) {
-            return List.copyOf(entry.results());
+        if (!entry.produce().isEmpty()) {
+            return entry.produce();
         }
-        return entry.produce();
+        return List.copyOf(entry.results());
     }
 
-    /** Prefer KubeJS mirror {@code ingredients} when present (replaceInput). */
+    /**
+     * Prefer datapack {@code require} when present; fall back to Kube mirror {@code ingredients}
+     * only for Kube-only entries (Library auto-inject after bundle split must not drop tags/counts).
+     */
     private static List<JsonElement> effectiveRequire(EntryFields entry) {
-        if (!entry.ingredients().isEmpty()) {
-            return List.copyOf(entry.ingredients());
+        if (!entry.require().isEmpty()) {
+            return entry.require();
         }
-        return entry.require();
+        return List.copyOf(entry.ingredients());
     }
 
     private static List<AncientTabIfVariant> parseIfVariants(JsonObject e, String ctx, Identifier fileId) {
@@ -307,11 +324,96 @@ public final class AncientTabRecipe implements Recipe<SingleRecipeInput> {
 
     @Override
     public PlacementInfo placementInfo() {
-        return PlacementInfo.NOT_PLACEABLE;
+        return placementInfo;
+    }
+
+    @Override
+    public List<RecipeDisplay> display() {
+        return recipeDisplays;
     }
 
     @Override
     public RecipeBookCategory recipeBookCategory() {
         return RecipeBookCategories.CRAFTING_MISC;
+    }
+
+    private static PlacementInfo buildPlacementInfo(List<AncientTabletRecipeEntry> entries) {
+        List<Ingredient> ingredients = new ArrayList<>();
+        for (AncientTabletRecipeEntry entry : entries) {
+            addRequirementIngredients(ingredients, entry.require());
+            for (AncientTabIfVariant variant : entry.ifVariants()) {
+                addRequirementIngredients(ingredients, variant.require());
+            }
+        }
+        return ingredients.isEmpty() ? PlacementInfo.NOT_PLACEABLE : PlacementInfo.create(ingredients);
+    }
+
+    private static List<RecipeDisplay> buildDisplays(List<AncientTabletRecipeEntry> entries) {
+        List<RecipeDisplay> out = new ArrayList<>();
+        SlotDisplay station = SlotDisplay.Empty.INSTANCE;
+        for (AncientTabletRecipeEntry entry : entries) {
+            SlotDisplay input = firstRequirementDisplay(entry.require());
+            for (AncientTabletRequirement prod : entry.produce()) {
+                SlotDisplay result = requirementToSlotDisplay(prod);
+                if (result != SlotDisplay.Empty.INSTANCE) {
+                    out.add(new StonecutterRecipeDisplay(input, result, station));
+                }
+            }
+            for (AncientTabIfVariant variant : entry.ifVariants()) {
+                SlotDisplay vInput = firstRequirementDisplay(variant.require());
+                for (AncientTabletRequirement prod : variant.produce()) {
+                    SlotDisplay result = requirementToSlotDisplay(prod);
+                    if (result != SlotDisplay.Empty.INSTANCE) {
+                        out.add(new StonecutterRecipeDisplay(vInput, result, station));
+                    }
+                }
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static void addRequirementIngredients(
+            List<Ingredient> ingredients, List<AncientTabletRequirement> reqs) {
+        for (AncientTabletRequirement req : reqs) {
+            Ingredient ingredient = requirementToIngredient(req);
+            if (ingredient != null && !ingredient.isEmpty()) {
+                ingredients.add(ingredient);
+            }
+        }
+    }
+
+    private static SlotDisplay firstRequirementDisplay(List<AncientTabletRequirement> reqs) {
+        for (AncientTabletRequirement req : reqs) {
+            SlotDisplay display = requirementToSlotDisplay(req);
+            if (display != SlotDisplay.Empty.INSTANCE) {
+                return display;
+            }
+        }
+        return SlotDisplay.Empty.INSTANCE;
+    }
+
+    @Nullable
+    private static Ingredient requirementToIngredient(AncientTabletRequirement req) {
+        if (req instanceof AncientTabletRequirement.ItemRequirement item) {
+            return Ingredient.of(item.item());
+        }
+        if (req instanceof AncientTabletRequirement.TagRequirement tag) {
+            List<ItemLike> items = new ArrayList<>();
+            for (var holder : BuiltInRegistries.ITEM.getTagOrEmpty(tag.tag())) {
+                items.add(holder.value());
+            }
+            return items.isEmpty() ? null : Ingredient.of(items.stream());
+        }
+        return null;
+    }
+
+    private static SlotDisplay requirementToSlotDisplay(AncientTabletRequirement req) {
+        if (req instanceof AncientTabletRequirement.ItemRequirement item) {
+            return new SlotDisplay.ItemSlotDisplay(item.item());
+        }
+        if (req instanceof AncientTabletRequirement.TagRequirement tag) {
+            return new SlotDisplay.TagSlotDisplay(tag.tag());
+        }
+        return SlotDisplay.Empty.INSTANCE;
     }
 }

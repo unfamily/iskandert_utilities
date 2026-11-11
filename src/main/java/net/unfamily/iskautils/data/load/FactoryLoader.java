@@ -98,14 +98,14 @@ public final class FactoryLoader {
         }
 
         /**
-         * Recipe id used for stage / pack gates: source-level id, else per-output id (stonecutter).
+         * Recipe id used for stage / pack gates: per-output id when set (stonecutter), else source id.
          */
         @Nullable
         public Identifier gateRecipeId(@Nullable Output selected) {
-            if (recipeId != null) {
-                return recipeId;
+            if (selected != null && selected.recipeId() != null) {
+                return selected.recipeId();
             }
-            return selected != null ? selected.recipeId() : null;
+            return recipeId;
         }
 
         public List<Output> resolveOutputs(@Nullable ServerPlayer player) {
@@ -115,12 +115,12 @@ public final class FactoryLoader {
                 }
                 for (FactoryIfBranch branch : ifBranches) {
                     if (branch.matches(player, gateHost)) {
-                        return filterOutputGates(branch.outputs(), player);
+                        return filterOutputGates(branch.outputs(), player, recipeId);
                     }
                 }
                 return List.of();
             }
-            return filterOutputGates(flatOutputs, player);
+            return filterOutputGates(flatOutputs, player, recipeId);
         }
 
         /** Prefer this for machines: works with offline owners via UUID. */
@@ -136,49 +136,47 @@ public final class FactoryLoader {
                 }
                 for (FactoryIfBranch branch : ifBranches) {
                     if (branch.matchesOffline(ownerUuid, level, gateHost)) {
-                        return filterOutputGatesOffline(branch.outputs(), ownerUuid, level);
+                        return filterOutputGatesOffline(branch.outputs(), ownerUuid, level, recipeId);
                     }
                 }
                 return List.of();
             }
-            return filterOutputGatesOffline(flatOutputs, ownerUuid, level);
+            return filterOutputGatesOffline(flatOutputs, ownerUuid, level, recipeId);
         }
 
-        private static List<Output> filterOutputGates(List<Output> outputs, @Nullable ServerPlayer player) {
+        /**
+         * UI / selection list: gateHost + mods only.
+         * RecipeStageGate is applied on craft tick (accept slots, do not hide selection).
+         */
+        private static List<Output> filterOutputGates(
+                List<Output> outputs, @Nullable ServerPlayer player, @Nullable Identifier sourceRecipeId) {
             if (outputs == null || outputs.isEmpty()) {
                 return List.of();
             }
             if (player == null) {
-                List<Output> out = new ArrayList<>();
-                for (Output o : outputs) {
-                    if (o.gateHost().isEmpty()) {
-                        out.add(o);
-                    }
-                }
-                return List.copyOf(out);
+                return filterOutputGatesOffline(outputs, null, null, sourceRecipeId);
             }
             List<Output> eligible = new ArrayList<>();
             for (Output o : outputs) {
-                if (o.gateHost().isEmpty() || o.gateHost().isFullyEligible(player)) {
-                    eligible.add(o);
+                if (!o.gateHost().isEmpty() && !o.gateHost().isFullyEligible(player)) {
+                    continue;
                 }
+                eligible.add(o);
             }
             return List.copyOf(eligible);
         }
 
         private static List<Output> filterOutputGatesOffline(
-                List<Output> outputs, @Nullable UUID ownerUuid, @Nullable Level level) {
+                List<Output> outputs,
+                @Nullable UUID ownerUuid,
+                @Nullable Level level,
+                @Nullable Identifier sourceRecipeId) {
             if (outputs == null || outputs.isEmpty()) {
                 return List.of();
             }
             List<Output> eligible = new ArrayList<>();
             for (Output o : outputs) {
                 if (!o.gateHost().isEmpty() && !o.gateHost().isFullyEligibleOffline(ownerUuid, level)) {
-                    continue;
-                }
-                if (o.recipeId() != null
-                        && !net.unfamily.iskautils.util.RecipeStageGate.isAllowed(
-                                o.recipeId(), ownerUuid, level)) {
                     continue;
                 }
                 eligible.add(o);

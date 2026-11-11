@@ -11,12 +11,15 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeBookCategories;
@@ -24,12 +27,16 @@ import net.minecraft.world.item.crafting.RecipeBookCategory;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
+import net.minecraft.world.item.crafting.display.RecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
+import net.minecraft.world.item.crafting.display.StonecutterRecipeDisplay;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.data.load.FactoryIfBranch;
 import net.unfamily.iskautils.data.load.FactoryLoader;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryStageHost;
 import net.unfamily.iskautils.script.LoadEntryIfParser;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Datapack-only Factory mapping. One recipe = one input mapping (after Library bundle split).
@@ -143,6 +150,8 @@ public final class FactorySourcesRecipe implements Recipe<SingleRecipeInput> {
 
     private final List<EntryFields> entries;
     private final List<FactoryLoader.Source> compiledSources;
+    private final PlacementInfo placementInfo;
+    private final List<RecipeDisplay> recipeDisplays;
 
     public FactorySourcesRecipe(List<EntryFields> entries) {
         this.entries = List.copyOf(entries);
@@ -152,6 +161,8 @@ public final class FactorySourcesRecipe implements Recipe<SingleRecipeInput> {
             compileEntry(logId, entry).ifPresent(built::add);
         }
         this.compiledSources = List.copyOf(built);
+        this.placementInfo = buildPlacementInfo(this.compiledSources);
+        this.recipeDisplays = buildDisplays(this.compiledSources);
     }
 
     public List<FactoryLoader.Source> compiledSources() {
@@ -320,11 +331,76 @@ public final class FactorySourcesRecipe implements Recipe<SingleRecipeInput> {
 
     @Override
     public PlacementInfo placementInfo() {
-        return PlacementInfo.NOT_PLACEABLE;
+        return placementInfo;
+    }
+
+    @Override
+    public List<RecipeDisplay> display() {
+        return recipeDisplays;
     }
 
     @Override
     public RecipeBookCategory recipeBookCategory() {
         return RecipeBookCategories.CRAFTING_MISC;
+    }
+
+    private static PlacementInfo buildPlacementInfo(List<FactoryLoader.Source> sources) {
+        List<Ingredient> ingredients = new ArrayList<>();
+        for (FactoryLoader.Source source : sources) {
+            Ingredient ingredient = ingredientFromSelector(source.selector());
+            if (ingredient != null && !ingredient.isEmpty()) {
+                ingredients.add(ingredient);
+            }
+        }
+        return ingredients.isEmpty() ? PlacementInfo.NOT_PLACEABLE : PlacementInfo.create(ingredients);
+    }
+
+    private static List<RecipeDisplay> buildDisplays(List<FactoryLoader.Source> sources) {
+        List<RecipeDisplay> out = new ArrayList<>();
+        SlotDisplay station = SlotDisplay.Empty.INSTANCE;
+        for (FactoryLoader.Source source : sources) {
+            SlotDisplay inputDisplay = slotDisplayFromSelector(source.selector());
+            for (FactoryLoader.Output o : source.flatOutputs()) {
+                addOutputDisplay(out, inputDisplay, station, o);
+            }
+            for (FactoryIfBranch branch : source.ifBranches()) {
+                for (FactoryLoader.Output o : branch.outputs()) {
+                    addOutputDisplay(out, inputDisplay, station, o);
+                }
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static void addOutputDisplay(
+            List<RecipeDisplay> out, SlotDisplay inputDisplay, SlotDisplay station, FactoryLoader.Output o) {
+        FactoryLoader.resolveOutputStack(o).ifPresent(stack -> out.add(
+                new StonecutterRecipeDisplay(
+                        inputDisplay, new SlotDisplay.ItemSlotDisplay(stack.getItem()), station)));
+    }
+
+    @Nullable
+    private static Ingredient ingredientFromSelector(FactoryLoader.Selector selector) {
+        if (selector instanceof FactoryLoader.Selector.ItemSelector item) {
+            return Ingredient.of(item.item());
+        }
+        if (selector instanceof FactoryLoader.Selector.TagSelector tag) {
+            List<ItemLike> items = new ArrayList<>();
+            for (var holder : BuiltInRegistries.ITEM.getTagOrEmpty(tag.tag())) {
+                items.add(holder.value());
+            }
+            return items.isEmpty() ? null : Ingredient.of(items.stream());
+        }
+        return null;
+    }
+
+    private static SlotDisplay slotDisplayFromSelector(FactoryLoader.Selector selector) {
+        if (selector instanceof FactoryLoader.Selector.ItemSelector item) {
+            return new SlotDisplay.ItemSlotDisplay(item.item());
+        }
+        if (selector instanceof FactoryLoader.Selector.TagSelector tag) {
+            return new SlotDisplay.TagSlotDisplay(tag.tag());
+        }
+        return SlotDisplay.Empty.INSTANCE;
     }
 }

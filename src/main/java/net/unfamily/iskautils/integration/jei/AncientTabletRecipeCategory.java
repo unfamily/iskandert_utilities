@@ -123,7 +123,13 @@ public class AncientTabletRecipeCategory implements IRecipeCategory<AncientTable
     }
 
     @Override
-    public @Nullable Identifier getRegistryName(AncientTabletJeiRecipe recipe) {
+    public @Nullable Identifier getIdentifier(AncientTabletJeiRecipe recipe) {
         return recipe.recipeId();
+    }
+
+    @Override
+    @Deprecated
+    public @Nullable Identifier getRegistryName(AncientTabletJeiRecipe recipe) {
+        return getIdentifier(recipe);
     }
 }
