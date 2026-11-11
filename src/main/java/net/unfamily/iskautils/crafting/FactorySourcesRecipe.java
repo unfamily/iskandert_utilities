@@ -32,6 +32,7 @@ import net.unfamily.iskautils.data.load.FactoryIfBranch;
 import net.unfamily.iskautils.data.load.FactoryLoader;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryStageHost;
 import net.unfamily.iskautils.script.LoadEntryIfParser;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Datapack-only Factory mapping. One recipe = one input mapping (after Library bundle split).
@@ -148,8 +149,9 @@ public final class FactorySourcesRecipe extends CustomRecipe {
 
     private final List<EntryFields> entries;
     private final List<FactoryLoader.Source> compiledSources;
-    private final Ingredient inputIngredient;
     private final ItemStack resultPreview;
+    private final RecipePlacementInfo placementInfo;
+    private final List<RecipeCompiledDisplay> recipeDisplays;
 
     public FactorySourcesRecipe(List<EntryFields> entries) {
         super(CraftingBookCategory.MISC);
@@ -160,7 +162,8 @@ public final class FactorySourcesRecipe extends CustomRecipe {
             compileEntry(logId, entry).ifPresent(built::add);
         }
         this.compiledSources = List.copyOf(built);
-        this.inputIngredient = built.isEmpty() ? Ingredient.EMPTY : ingredientFromSource(built.getFirst());
+        this.placementInfo = buildPlacementInfo(this.compiledSources);
+        this.recipeDisplays = buildDisplays(this.compiledSources);
         this.resultPreview = built.isEmpty() ? ItemStack.EMPTY : firstOutputStack(built.getFirst());
     }
 
@@ -293,16 +296,6 @@ public final class FactorySourcesRecipe extends CustomRecipe {
         return obj;
     }
 
-    private static Ingredient ingredientFromSource(FactoryLoader.Source source) {
-        if (source.selector() instanceof FactoryLoader.Selector.ItemSelector is) {
-            return Ingredient.of(is.item());
-        }
-        if (source.selector() instanceof FactoryLoader.Selector.TagSelector ts) {
-            return Ingredient.of(ts.tag());
-        }
-        return Ingredient.EMPTY;
-    }
-
     private static ItemStack firstOutputStack(FactoryLoader.Source source) {
         List<FactoryLoader.Output> outs =
                 !source.flatOutputs().isEmpty()
@@ -316,9 +309,66 @@ public final class FactorySourcesRecipe extends CustomRecipe {
         return FactoryLoader.resolveOutputStack(outs.getFirst()).orElse(ItemStack.EMPTY);
     }
 
+    private static RecipePlacementInfo buildPlacementInfo(List<FactoryLoader.Source> sources) {
+        List<Ingredient> ingredients = new ArrayList<>();
+        for (FactoryLoader.Source source : sources) {
+            Ingredient ingredient = ingredientFromSelector(source.selector());
+            if (ingredient != null && !ingredient.isEmpty()) {
+                ingredients.add(ingredient);
+            }
+        }
+        return RecipePlacementInfo.create(ingredients);
+    }
+
+    private static List<RecipeCompiledDisplay> buildDisplays(List<FactoryLoader.Source> sources) {
+        List<RecipeCompiledDisplay> out = new ArrayList<>();
+        for (FactoryLoader.Source source : sources) {
+            Ingredient input = ingredientFromSelector(source.selector());
+            if (input == null || input.isEmpty()) {
+                continue;
+            }
+            for (FactoryLoader.Output o : source.flatOutputs()) {
+                addOutputDisplay(out, input, o);
+            }
+            for (FactoryIfBranch branch : source.ifBranches()) {
+                for (FactoryLoader.Output o : branch.outputs()) {
+                    addOutputDisplay(out, input, o);
+                }
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static void addOutputDisplay(
+            List<RecipeCompiledDisplay> out, Ingredient input, FactoryLoader.Output o) {
+        FactoryLoader.resolveOutputStack(o)
+                .ifPresent(stack -> out.add(new RecipeCompiledDisplay(input, stack)));
+    }
+
+    @Nullable
+    private static Ingredient ingredientFromSelector(FactoryLoader.Selector selector) {
+        if (selector instanceof FactoryLoader.Selector.ItemSelector item) {
+            return Ingredient.of(item.item());
+        }
+        if (selector instanceof FactoryLoader.Selector.TagSelector tag) {
+            return Ingredient.of(tag.tag());
+        }
+        return null;
+    }
+
+    public RecipePlacementInfo placementInfo() {
+        return placementInfo;
+    }
+
+    public List<RecipeCompiledDisplay> display() {
+        return recipeDisplays;
+    }
+
     @Override
     public NonNullList<Ingredient> getIngredients() {
-        return NonNullList.of(Ingredient.EMPTY, inputIngredient);
+        NonNullList<Ingredient> list = NonNullList.create();
+        list.addAll(placementInfo.ingredients());
+        return list;
     }
 
     @Override

@@ -52,7 +52,18 @@ public final class AncientTabletRequirementParser {
             return out;
         }
         JsonObject obj = e.getAsJsonObject();
-        String id = obj.has("id") ? obj.get("id").getAsString() : (obj.has("item") ? obj.get("item").getAsString() : "");
+        String id;
+        if (obj.has("id")) {
+            id = obj.get("id").getAsString();
+        } else if (obj.has("item")) {
+            id = obj.get("item").getAsString();
+        } else if (obj.has("tag")) {
+            // Kube/Library mirror uses { "tag": "ns:path" } without a leading '#'.
+            String tag = obj.get("tag").getAsString();
+            id = tag.startsWith("#") ? tag : "#" + tag;
+        } else {
+            id = "";
+        }
         int count = obj.has("count") ? Math.max(1, obj.get("count").getAsInt()) : 1;
         int minDamage = -1;
         for (int i = 0; i < count; i++) {

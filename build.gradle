@@ -323,6 +323,12 @@ dependencies {
     compileOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"
     localRuntime "org.appliedenergistics:appliedenergistics2:${ae2_version}"
 
+    // Mekanism core (optional; Creative Energy Cube / Factory smoke — Generators not required)
+    if (project.hasProperty('runtime_mekanism') && project.runtime_mekanism.toString() == 'true') {
+        compileOnly "curse.maven:mekanism-268560:${mekanism_file_id}"
+        localRuntime "curse.maven:mekanism-268560:${mekanism_file_id}"
+    }
+
     // Verify that the value of runtime_itemlist_mod is valid
     if (project.hasProperty('runtime_itemlist_mod') && 
         !(project.runtime_itemlist_mod in ["jei", "rei", "emi", "curios", "guideme", "none"])) {

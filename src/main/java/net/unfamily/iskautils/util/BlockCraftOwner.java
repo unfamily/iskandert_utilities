@@ -9,7 +9,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Persists the player who first opened a machine GUI; used for stage/mod gates on automated craft.
+ * Persists the player who first placed or opened a machine; used for stage/mod gates on automated craft.
  */
 public final class BlockCraftOwner {
     public static final String NBT_OWNER = "ownerPlayer";
@@ -32,6 +32,7 @@ public final class BlockCraftOwner {
         }
     }
 
+    /** Claim on first open only — never overwrites an existing owner. */
     public static void claimOnFirstOpen(BlockEntity be, @Nullable ServerPlayer player, @Nullable UUID currentOwner) {
         if (be == null || player == null || currentOwner != null) {
             return;
@@ -40,6 +41,21 @@ public final class BlockCraftOwner {
             holder.setOwnerPlayerUuid(player.getUUID());
             be.setChanged();
         }
+    }
+
+    /** Claim on place when the placer is a player and the BE has no owner yet. */
+    public static void claimOnPlace(BlockEntity be, @Nullable net.minecraft.world.entity.LivingEntity placer) {
+        if (be == null || !(placer instanceof ServerPlayer player)) {
+            return;
+        }
+        if (!(be instanceof BlockCraftOwnerHolder holder)) {
+            return;
+        }
+        if (holder.getOwnerPlayerUuid() != null) {
+            return;
+        }
+        holder.setOwnerPlayerUuid(player.getUUID());
+        be.setChanged();
     }
 
     public static void clear(BlockEntity be) {

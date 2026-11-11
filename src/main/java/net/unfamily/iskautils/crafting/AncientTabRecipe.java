@@ -30,10 +30,12 @@ import net.minecraft.world.level.Level;
 import net.unfamily.iskautils.IskaUtils;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabIfVariant;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeEntry;
+import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRecipeMatcher;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRequirement;
 import net.unfamily.iskautils.data.load.ancienttablet.AncientTabletRequirementParser;
 import net.unfamily.iskautils.obtaining.SuspiciousDeliveryStageHost;
 import net.unfamily.iskautils.script.LoadEntryIfParser;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Datapack-only Ancient Tablet mapping. One recipe = one entry (after Library bundle split).
@@ -153,8 +155,9 @@ public final class AncientTabRecipe extends CustomRecipe {
 
     private final List<EntryFields> entries;
     private final List<AncientTabletRecipeEntry> compiledEntries;
-    private final NonNullList<Ingredient> ingredients;
     private final ItemStack resultPreview;
+    private final RecipePlacementInfo placementInfo;
+    private final List<RecipeCompiledDisplay> recipeDisplays;
 
     public AncientTabRecipe(List<EntryFields> entries) {
         super(CraftingBookCategory.MISC);
@@ -165,7 +168,8 @@ public final class AncientTabRecipe extends CustomRecipe {
             compileEntry(logId, entry).ifPresent(built::add);
         }
         this.compiledEntries = List.copyOf(built);
-        this.ingredients = ingredientsFrom(built.isEmpty() ? null : built.getFirst());
+        this.placementInfo = buildPlacementInfo(this.compiledEntries);
+        this.recipeDisplays = buildDisplays(this.compiledEntries);
         this.resultPreview = resultFrom(built.isEmpty() ? null : built.getFirst());
     }
 
@@ -234,20 +238,26 @@ public final class AncientTabRecipe extends CustomRecipe {
     }
 
 
-    /** Prefer KubeJS mirror {@code results} when present (replaceOutput). */
+    /**
+     * Prefer datapack {@code produce} when present; fall back to Kube mirror {@code results}
+     * only for Kube-only entries (Library auto-inject after bundle split must not replace counts).
+     */
     private static List<JsonElement> effectiveProduce(EntryFields entry) {
-        if (!entry.results().isEmpty()) {
-            return List.copyOf(entry.results());
+        if (!entry.produce().isEmpty()) {
+            return entry.produce();
         }
-        return entry.produce();
+        return List.copyOf(entry.results());
     }
 
-    /** Prefer KubeJS mirror {@code ingredients} when present (replaceInput). */
+    /**
+     * Prefer datapack {@code require} when present; fall back to Kube mirror {@code ingredients}
+     * only for Kube-only entries (Library auto-inject after bundle split must not drop tags/counts).
+     */
     private static List<JsonElement> effectiveRequire(EntryFields entry) {
-        if (!entry.ingredients().isEmpty()) {
-            return List.copyOf(entry.ingredients());
+        if (!entry.require().isEmpty()) {
+            return entry.require();
         }
-        return entry.require();
+        return List.copyOf(entry.ingredients());
     }
 
     private static List<AncientTabIfVariant> parseIfVariants(JsonObject e, String ctx, ResourceLocation fileId) {
@@ -275,25 +285,6 @@ public final class AncientTabRecipe extends CustomRecipe {
         return List.copyOf(variants);
     }
 
-    private static NonNullList<Ingredient> ingredientsFrom(AncientTabletRecipeEntry entry) {
-        if (entry == null) {
-            return NonNullList.create();
-        }
-        List<AncientTabletRequirement> reqs =
-                entry.require().isEmpty() && entry.hasIfVariants()
-                        ? entry.ifVariants().getFirst().require()
-                        : entry.require();
-        NonNullList<Ingredient> out = NonNullList.create();
-        for (AncientTabletRequirement req : reqs) {
-            if (req instanceof AncientTabletRequirement.ItemRequirement item) {
-                out.add(Ingredient.of(item.item()));
-            } else if (req instanceof AncientTabletRequirement.TagRequirement tag) {
-                out.add(Ingredient.of(tag.tag()));
-            }
-        }
-        return out;
-    }
-
     private static ItemStack resultFrom(AncientTabletRecipeEntry entry) {
         if (entry == null) {
             return ItemStack.EMPTY;
@@ -310,9 +301,102 @@ public final class AncientTabRecipe extends CustomRecipe {
         return ItemStack.EMPTY;
     }
 
+    public RecipePlacementInfo placementInfo() {
+        return placementInfo;
+    }
+
+    public List<RecipeCompiledDisplay> display() {
+        return recipeDisplays;
+    }
+
+    private static RecipePlacementInfo buildPlacementInfo(List<AncientTabletRecipeEntry> entries) {
+        List<Ingredient> ingredients = new ArrayList<>();
+        for (AncientTabletRecipeEntry entry : entries) {
+            addRequirementIngredients(ingredients, entry.require());
+            for (AncientTabIfVariant variant : entry.ifVariants()) {
+                addRequirementIngredients(ingredients, variant.require());
+            }
+        }
+        return RecipePlacementInfo.create(ingredients);
+    }
+
+    private static List<RecipeCompiledDisplay> buildDisplays(List<AncientTabletRecipeEntry> entries) {
+        List<RecipeCompiledDisplay> out = new ArrayList<>();
+        for (AncientTabletRecipeEntry entry : entries) {
+            Ingredient input = firstRequirementIngredient(entry.require());
+            if (input != null && !input.isEmpty()) {
+                for (AncientTabletRequirement prod : entry.produce()) {
+                    addProduceDisplay(out, input, prod);
+                }
+            }
+            for (AncientTabIfVariant variant : entry.ifVariants()) {
+                Ingredient vInput = firstRequirementIngredient(variant.require());
+                if (vInput == null || vInput.isEmpty()) {
+                    continue;
+                }
+                for (AncientTabletRequirement prod : variant.produce()) {
+                    addProduceDisplay(out, vInput, prod);
+                }
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static void addProduceDisplay(
+            List<RecipeCompiledDisplay> out, Ingredient input, AncientTabletRequirement prod) {
+        ItemStack stack = requirementToStack(prod);
+        if (!stack.isEmpty()) {
+            out.add(new RecipeCompiledDisplay(input, stack));
+        }
+    }
+
+    private static void addRequirementIngredients(
+            List<Ingredient> ingredients, List<AncientTabletRequirement> reqs) {
+        for (AncientTabletRequirement req : reqs) {
+            Ingredient ingredient = requirementToIngredient(req);
+            if (ingredient != null && !ingredient.isEmpty()) {
+                ingredients.add(ingredient);
+            }
+        }
+    }
+
+    @Nullable
+    private static Ingredient firstRequirementIngredient(List<AncientTabletRequirement> reqs) {
+        for (AncientTabletRequirement req : reqs) {
+            Ingredient ingredient = requirementToIngredient(req);
+            if (ingredient != null && !ingredient.isEmpty()) {
+                return ingredient;
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    private static Ingredient requirementToIngredient(AncientTabletRequirement req) {
+        if (req instanceof AncientTabletRequirement.ItemRequirement item) {
+            return Ingredient.of(item.item());
+        }
+        if (req instanceof AncientTabletRequirement.TagRequirement tag) {
+            return Ingredient.of(tag.tag());
+        }
+        return null;
+    }
+
+    private static ItemStack requirementToStack(AncientTabletRequirement req) {
+        if (req instanceof AncientTabletRequirement.ItemRequirement item) {
+            return new ItemStack(item.item());
+        }
+        if (req instanceof AncientTabletRequirement.TagRequirement tag) {
+            return AncientTabletRecipeMatcher.exampleStackFromTag(tag);
+        }
+        return ItemStack.EMPTY;
+    }
+
     @Override
     public NonNullList<Ingredient> getIngredients() {
-        return ingredients;
+        NonNullList<Ingredient> list = NonNullList.create();
+        list.addAll(placementInfo.ingredients());
+        return list;
     }
 
     @Override
