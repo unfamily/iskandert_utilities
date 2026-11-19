@@ -17,6 +17,7 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ExtraCodecs;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -151,7 +152,8 @@ public final class FactorySourcesRecipe implements Recipe<SingleRecipeInput> {
     private final List<EntryFields> entries;
     private final List<FactoryLoader.Source> compiledSources;
     private final PlacementInfo placementInfo;
-    private final List<RecipeDisplay> recipeDisplays;
+    /** Filled on first {@link #display()}. Decode must not construct item stacks. */
+    private List<RecipeDisplay> recipeDisplays;
 
     public FactorySourcesRecipe(List<EntryFields> entries) {
         this.entries = List.copyOf(entries);
@@ -162,7 +164,6 @@ public final class FactorySourcesRecipe implements Recipe<SingleRecipeInput> {
         }
         this.compiledSources = List.copyOf(built);
         this.placementInfo = buildPlacementInfo(this.compiledSources);
-        this.recipeDisplays = buildDisplays(this.compiledSources);
     }
 
     public List<FactoryLoader.Source> compiledSources() {
@@ -336,7 +337,12 @@ public final class FactorySourcesRecipe implements Recipe<SingleRecipeInput> {
 
     @Override
     public List<RecipeDisplay> display() {
-        return recipeDisplays;
+        List<RecipeDisplay> cached = this.recipeDisplays;
+        if (cached == null) {
+            cached = buildDisplays(this.compiledSources);
+            this.recipeDisplays = cached;
+        }
+        return cached;
     }
 
     @Override
@@ -374,9 +380,12 @@ public final class FactorySourcesRecipe implements Recipe<SingleRecipeInput> {
 
     private static void addOutputDisplay(
             List<RecipeDisplay> out, SlotDisplay inputDisplay, SlotDisplay station, FactoryLoader.Output o) {
-        FactoryLoader.resolveOutputStack(o).ifPresent(stack -> out.add(
-                new StonecutterRecipeDisplay(
-                        inputDisplay, new SlotDisplay.ItemSlotDisplay(stack.getItem()), station)));
+        Item item = BuiltInRegistries.ITEM.getOptional(o.id()).orElse(null);
+        if (item == null) {
+            return;
+        }
+        out.add(new StonecutterRecipeDisplay(
+                inputDisplay, new SlotDisplay.ItemSlotDisplay(item), station));
     }
 
     @Nullable
