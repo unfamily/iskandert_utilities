@@ -149,9 +149,10 @@ public final class FactorySourcesRecipe extends CustomRecipe {
 
     private final List<EntryFields> entries;
     private final List<FactoryLoader.Source> compiledSources;
-    private final ItemStack resultPreview;
     private final RecipePlacementInfo placementInfo;
-    private final List<RecipeCompiledDisplay> recipeDisplays;
+    /** Filled on first result/display access. Decode must not construct item stacks. */
+    private ItemStack resultPreview;
+    private List<RecipeCompiledDisplay> recipeDisplays;
 
     public FactorySourcesRecipe(List<EntryFields> entries) {
         super(CraftingBookCategory.MISC);
@@ -163,8 +164,6 @@ public final class FactorySourcesRecipe extends CustomRecipe {
         }
         this.compiledSources = List.copyOf(built);
         this.placementInfo = buildPlacementInfo(this.compiledSources);
-        this.recipeDisplays = buildDisplays(this.compiledSources);
-        this.resultPreview = built.isEmpty() ? ItemStack.EMPTY : firstOutputStack(built.getFirst());
     }
 
     public List<FactoryLoader.Source> compiledSources() {
@@ -361,7 +360,12 @@ public final class FactorySourcesRecipe extends CustomRecipe {
     }
 
     public List<RecipeCompiledDisplay> display() {
-        return recipeDisplays;
+        List<RecipeCompiledDisplay> cached = this.recipeDisplays;
+        if (cached == null) {
+            cached = buildDisplays(this.compiledSources);
+            this.recipeDisplays = cached;
+        }
+        return cached;
     }
 
     @Override
@@ -373,7 +377,16 @@ public final class FactorySourcesRecipe extends CustomRecipe {
 
     @Override
     public ItemStack getResultItem(HolderLookup.Provider registries) {
-        return resultPreview.copy();
+        return resultPreview().copy();
+    }
+
+    private ItemStack resultPreview() {
+        ItemStack cached = this.resultPreview;
+        if (cached == null) {
+            cached = compiledSources.isEmpty() ? ItemStack.EMPTY : firstOutputStack(compiledSources.getFirst());
+            this.resultPreview = cached;
+        }
+        return cached;
     }
 
     @Override
