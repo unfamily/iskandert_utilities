@@ -204,7 +204,7 @@ public final class GhostBrazierController {
     private static void displayTimeBar(ServerPlayer player, int remainingTicks, float progress, boolean done) {
         float pct = Math.max(0.0F, Math.min(1.0F, progress));
         int filled = Math.round(pct * BAR_LENGTH);
-        String timeText = " " + ModUtils.formatTicksCompact(remainingTicks) + " ";
+        String timeText = " " + ModUtils.formatTicksHms(remainingTicks) + " ";
         var color = done ? ChatFormatting.GREEN : ChatFormatting.AQUA;
         MutableComponent message = Component.literal("");
         message.append(Component.literal(timeText).withStyle(color));

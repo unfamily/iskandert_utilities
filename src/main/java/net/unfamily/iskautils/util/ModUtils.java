@@ -122,6 +122,40 @@ public class ModUtils {
     }
 
     /**
+     * Compact duration as h/m/s only (no tick unit). Partial seconds round up.
+     * Examples: {@code 0s}, {@code 3s}, {@code 1m 30s}, {@code 2h 5m}.
+     */
+    public static String formatTicksHms(int ticks) {
+        if (ticks <= 0) {
+            return "0s";
+        }
+        // Round up so remaining fraction of a second still shows as 1s.
+        int totalSeconds = (ticks + 19) / 20;
+        int hours = totalSeconds / 3600;
+        totalSeconds %= 3600;
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+
+        StringBuilder sb = new StringBuilder();
+        if (hours > 0) {
+            sb.append(hours).append('h');
+        }
+        if (minutes > 0) {
+            if (!sb.isEmpty()) {
+                sb.append(' ');
+            }
+            sb.append(minutes).append('m');
+        }
+        if (seconds > 0 || sb.isEmpty()) {
+            if (!sb.isEmpty()) {
+                sb.append(' ');
+            }
+            sb.append(seconds).append('s');
+        }
+        return sb.toString();
+    }
+
+    /**
      * True if this stack reference sits in the player's main inventory (hotbar, storage, offhand slot list).
      * Curio-only stacks are not in this list.
      */
