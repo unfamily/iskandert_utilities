@@ -15,32 +15,27 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Class to manage persistent Ghost Brazier data.
- * Manages whether player has Ghost Brazier in inventory and previous game mode.
+ * Persistent Ghost Brazier state: item presence, previous game mode, cast, ethereal pool.
  */
 public class GhostBrazierData extends SavedData {
     private static final ModLogger LOGGER = ModLogger.of(GhostBrazierData.class);
     private static final String DATA_NAME = IskaUtils.MOD_ID + "_ghost_brazier_data";
 
-    // Map to store whether player has Ghost Brazier in inventory
-    final Map<UUID, Boolean> hasGhostBrazier = new HashMap<>();
-    
-    // Map to store previous game mode before switching to spectator
-    final Map<UUID, GameType> previousGameMode = new HashMap<>();
-
-    /**
-     * Private constructor for SavedData
-     */
-    public GhostBrazierData() {
-        // Private constructor
+    public enum CastState {
+        IDLE,
+        CAST_IN,
+        CAST_OUT,
+        ETHEREAL
     }
 
+    final Map<UUID, Boolean> hasGhostBrazier = new HashMap<>();
+    final Map<UUID, GameType> previousGameMode = new HashMap<>();
+    final Map<UUID, CastState> castState = new HashMap<>();
+    final Map<UUID, Long> castStartTick = new HashMap<>();
+    final Map<UUID, Double> remainingPoolTicks = new HashMap<>();
 
-    /**
-     * Gets the Ghost Brazier data from world storage
-     * @param level the server level
-     * @return the Ghost Brazier data
-     */
+    public GhostBrazierData() {}
+
     public static GhostBrazierData get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
             new Factory<>(GhostBrazierData::new, GhostBrazierData::load),
@@ -48,148 +43,229 @@ public class GhostBrazierData extends SavedData {
         );
     }
 
-    /**
-     * Sets whether player has Ghost Brazier using static method
-     * @param player the player
-     * @param hasItem true if player has the item, false otherwise
-     */
+    private static ServerLevel levelFor(Player player) {
+        if (player.level() instanceof ServerLevel sl) {
+            return sl;
+        }
+        if (player.getServer() != null && player.getServer().overworld() instanceof ServerLevel level) {
+            return level;
+        }
+        return null;
+    }
+
     public static void setHasGhostBrazier(Player player, boolean hasItem) {
-        if (player.getServer() != null && player.getServer().overworld() instanceof ServerLevel level) {
-            GhostBrazierData data = get(level);
-            UUID playerId = player.getUUID();
-            data.hasGhostBrazier.put(playerId, hasItem);
-            
-            // If player no longer has the item, clear previous game mode
-            if (!hasItem) {
-                data.previousGameMode.remove(playerId);
-            }
-            
-            data.setDirty();
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return;
         }
+        GhostBrazierData data = get(level);
+        UUID id = player.getUUID();
+        data.hasGhostBrazier.put(id, hasItem);
+        if (!hasItem) {
+            data.previousGameMode.remove(id);
+        }
+        data.setDirty();
     }
 
-    /**
-     * Gets whether player has Ghost Brazier using static method
-     * @param player the player
-     * @return true if player has the item (default: false)
-     */
     public static boolean getHasGhostBrazier(Player player) {
-        if (player.getServer() != null && player.getServer().overworld() instanceof ServerLevel level) {
-            UUID playerId = player.getUUID();
-            return get(level).hasGhostBrazier.getOrDefault(playerId, false);
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return false;
         }
-        return false; // Default if server is not available
+        return get(level).hasGhostBrazier.getOrDefault(player.getUUID(), false);
     }
 
-    /**
-     * Sets the previous game mode for a player using static method
-     * @param player the player
-     * @param gameMode the previous game mode
-     */
     public static void setPreviousGameMode(Player player, GameType gameMode) {
-        if (player.getServer() != null && player.getServer().overworld() instanceof ServerLevel level) {
-            GhostBrazierData data = get(level);
-            UUID playerId = player.getUUID();
-            data.previousGameMode.put(playerId, gameMode);
-            data.setDirty();
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return;
         }
+        GhostBrazierData data = get(level);
+        data.previousGameMode.put(player.getUUID(), gameMode);
+        data.setDirty();
     }
 
-    /**
-     * Gets the previous game mode for a player using static method
-     * @param player the player
-     * @return the previous game mode, or SURVIVAL if not set
-     */
     public static GameType getPreviousGameMode(Player player) {
-        if (player.getServer() != null && player.getServer().overworld() instanceof ServerLevel level) {
-            UUID playerId = player.getUUID();
-            return get(level).previousGameMode.getOrDefault(playerId, GameType.SURVIVAL);
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return GameType.SURVIVAL;
         }
-        return GameType.SURVIVAL; // Default if server is not available
+        return get(level).previousGameMode.getOrDefault(player.getUUID(), GameType.SURVIVAL);
     }
 
-    /**
-     * Clears the previous game mode for a player using static method
-     * @param player the player
-     */
     public static void clearPreviousGameMode(Player player) {
-        if (player.getServer() != null && player.getServer().overworld() instanceof ServerLevel level) {
-            GhostBrazierData data = get(level);
-            UUID playerId = player.getUUID();
-            data.previousGameMode.remove(playerId);
-            data.setDirty();
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return;
         }
+        GhostBrazierData data = get(level);
+        data.previousGameMode.remove(player.getUUID());
+        data.setDirty();
     }
 
-    /**
-     * Loads the data from NBT
-     * @param tag the compound tag containing the data
-     * @param provider the holder lookup provider
-     * @return the loaded GhostBrazierData
-     */
+    public static CastState getCastState(Player player) {
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return CastState.IDLE;
+        }
+        return get(level).castState.getOrDefault(player.getUUID(), CastState.IDLE);
+    }
+
+    public static void setCastState(Player player, CastState state) {
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return;
+        }
+        GhostBrazierData data = get(level);
+        UUID id = player.getUUID();
+        if (state == CastState.IDLE) {
+            data.castState.remove(id);
+            data.castStartTick.remove(id);
+        } else {
+            data.castState.put(id, state);
+        }
+        data.setDirty();
+    }
+
+    public static void setCastStartTick(Player player, long tick) {
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return;
+        }
+        GhostBrazierData data = get(level);
+        data.castStartTick.put(player.getUUID(), tick);
+        data.setDirty();
+    }
+
+    public static long getCastStartTick(Player player) {
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return 0L;
+        }
+        return get(level).castStartTick.getOrDefault(player.getUUID(), 0L);
+    }
+
+    public static void setRemainingPoolTicks(Player player, double ticks) {
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return;
+        }
+        GhostBrazierData data = get(level);
+        data.remainingPoolTicks.put(player.getUUID(), ticks);
+        data.setDirty();
+    }
+
+    public static double getRemainingPoolTicks(Player player) {
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return 0.0D;
+        }
+        return get(level).remainingPoolTicks.getOrDefault(player.getUUID(), 0.0D);
+    }
+
+    public static void clearEtherealSession(Player player) {
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return;
+        }
+        GhostBrazierData data = get(level);
+        UUID id = player.getUUID();
+        data.castState.remove(id);
+        data.castStartTick.remove(id);
+        data.remainingPoolTicks.remove(id);
+        data.previousGameMode.remove(id);
+        data.setDirty();
+    }
+
+    public static boolean isEthereal(Player player) {
+        return getCastState(player) == CastState.ETHEREAL;
+    }
+
+    public static boolean isCasting(Player player) {
+        return getCastState(player) == CastState.CAST_IN;
+    }
+
     public static GhostBrazierData load(CompoundTag tag, HolderLookup.Provider provider) {
         GhostBrazierData data = new GhostBrazierData();
 
-        // Load hasGhostBrazier states
         CompoundTag hasItemTag = tag.getCompound("hasGhostBrazier");
         for (String key : hasItemTag.getAllKeys()) {
             try {
-                UUID playerId = UUID.fromString(key);
-                boolean hasItem = hasItemTag.getBoolean(key);
-                data.hasGhostBrazier.put(playerId, hasItem);
+                data.hasGhostBrazier.put(UUID.fromString(key), hasItemTag.getBoolean(key));
             } catch (Exception e) {
                 LOGGER.warn("Failed to parse player UUID: {}", key, e);
             }
         }
 
-        // Load previous game modes
         CompoundTag gameModeTag = tag.getCompound("previousGameMode");
         for (String key : gameModeTag.getAllKeys()) {
             try {
-                UUID playerId = UUID.fromString(key);
-                int gameModeId = gameModeTag.getInt(key);
-                GameType gameMode = GameType.byId(gameModeId);
-                data.previousGameMode.put(playerId, gameMode);
+                data.previousGameMode.put(UUID.fromString(key), GameType.byId(gameModeTag.getInt(key)));
             } catch (Exception e) {
                 LOGGER.warn("Failed to parse game mode for player UUID: {}", key, e);
             }
         }
 
-        LOGGER.debug("Loaded Ghost Brazier data for {} players", data.hasGhostBrazier.size());
+        CompoundTag castTag = tag.getCompound("castState");
+        for (String key : castTag.getAllKeys()) {
+            try {
+                data.castState.put(UUID.fromString(key), CastState.valueOf(castTag.getString(key)));
+            } catch (Exception e) {
+                LOGGER.warn("Failed to parse cast state for player UUID: {}", key, e);
+            }
+        }
+
+        CompoundTag castStartTag = tag.getCompound("castStartTick");
+        for (String key : castStartTag.getAllKeys()) {
+            try {
+                data.castStartTick.put(UUID.fromString(key), castStartTag.getLong(key));
+            } catch (Exception ignored) {
+            }
+        }
+
+        CompoundTag poolTag = tag.getCompound("remainingPoolTicks");
+        for (String key : poolTag.getAllKeys()) {
+            try {
+                data.remainingPoolTicks.put(UUID.fromString(key), poolTag.getDouble(key));
+            } catch (Exception ignored) {
+            }
+        }
+
         return data;
     }
 
-    /**
-     * Saves the data to NBT
-     * @param tag the compound tag to save to
-     * @param provider the holder lookup provider
-     * @return the compound tag with the data
-     */
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
-        // Save hasGhostBrazier states
         CompoundTag hasItemTag = new CompoundTag();
         for (Map.Entry<UUID, Boolean> entry : hasGhostBrazier.entrySet()) {
             hasItemTag.putBoolean(entry.getKey().toString(), entry.getValue());
         }
         tag.put("hasGhostBrazier", hasItemTag);
 
-        // Save previous game modes
         CompoundTag gameModeTag = new CompoundTag();
         for (Map.Entry<UUID, GameType> entry : previousGameMode.entrySet()) {
             gameModeTag.putInt(entry.getKey().toString(), entry.getValue().getId());
         }
         tag.put("previousGameMode", gameModeTag);
 
-        LOGGER.debug("Saved Ghost Brazier data");
-        return tag;
-    }
+        CompoundTag castTag = new CompoundTag();
+        for (Map.Entry<UUID, CastState> entry : castState.entrySet()) {
+            castTag.putString(entry.getKey().toString(), entry.getValue().name());
+        }
+        tag.put("castState", castTag);
 
-    /**
-     * Gets the number of players with stored data
-     * @return the number of players
-     */
-    public int getStoredPlayerCount() {
-        return hasGhostBrazier.size();
+        CompoundTag castStartTag = new CompoundTag();
+        for (Map.Entry<UUID, Long> entry : castStartTick.entrySet()) {
+            castStartTag.putLong(entry.getKey().toString(), entry.getValue());
+        }
+        tag.put("castStartTick", castStartTag);
+
+        CompoundTag poolTag = new CompoundTag();
+        for (Map.Entry<UUID, Double> entry : remainingPoolTicks.entrySet()) {
+            poolTag.putDouble(entry.getKey().toString(), entry.getValue());
+        }
+        tag.put("remainingPoolTicks", poolTag);
+
+        return tag;
     }
 }

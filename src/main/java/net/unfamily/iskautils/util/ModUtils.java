@@ -82,6 +82,46 @@ public class ModUtils {
     }
 
     /**
+     * Compact duration for tooltips: contracts ticks into h/m/s (+ remaining t when needed).
+     * Examples: {@code 60t}, {@code 3s}, {@code 1m 30s}, {@code 2h 5m}.
+     */
+    public static String formatTicksCompact(int ticks) {
+        if (ticks <= 0) {
+            return "0t";
+        }
+        int hours = ticks / 72000;
+        ticks %= 72000;
+        int minutes = ticks / 1200;
+        ticks %= 1200;
+        int seconds = ticks / 20;
+        int remTicks = ticks % 20;
+
+        StringBuilder sb = new StringBuilder();
+        if (hours > 0) {
+            sb.append(hours).append('h');
+        }
+        if (minutes > 0) {
+            if (!sb.isEmpty()) {
+                sb.append(' ');
+            }
+            sb.append(minutes).append('m');
+        }
+        if (seconds > 0) {
+            if (!sb.isEmpty()) {
+                sb.append(' ');
+            }
+            sb.append(seconds).append('s');
+        }
+        if (remTicks > 0 || sb.isEmpty()) {
+            if (!sb.isEmpty()) {
+                sb.append(' ');
+            }
+            sb.append(remTicks).append('t');
+        }
+        return sb.toString();
+    }
+
+    /**
      * True if this stack reference sits in the player's vanilla inventory (hotbar/storage/offhand lists).
      * Curios-only stacks are not part of this list.
      */

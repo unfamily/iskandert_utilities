@@ -39,6 +39,7 @@ import net.unfamily.iskautils.item.custom.BlueprintItem;
 import net.unfamily.iskautils.item.custom.AutoShopItem;
 import net.unfamily.iskautils.item.custom.EntropicChampagneItem;
 import net.unfamily.iskautils.item.custom.LastingCandyItem;
+import net.unfamily.iskautils.item.custom.ChristmasBaubleItem;
 import net.unfamily.iskautils.item.custom.GiftItem;
 import net.unfamily.iskautils.item.custom.TemporalOverclockerChipsetItem;
 import net.unfamily.iskautils.item.custom.TemporalOverclockerBlockItem;
@@ -878,6 +879,14 @@ public class ModItems {
     // ===== LASTING CANDY (seasonal curio, Oct 26–Nov 5, not in creative tab) =====
     public static final DeferredItem<Item> LASTING_CANDY = ITEMS.register("lasting_candy",
             () -> new LastingCandyItem(new Item.Properties()));
+
+    // ===== CHRISTMAS BAUBLES (seasonal curios, not in creative tab) =====
+    public static final DeferredItem<Item> CLASSIC_CHRISTMAS_BAUBLE = ITEMS.register("classic_christmas_bauble",
+            () -> new ChristmasBaubleItem(new Item.Properties(), "classic_christmas_bauble"));
+    public static final DeferredItem<Item> GREEDY_CHRISTMAS_BAUBLE = ITEMS.register("greedy_christmas_bauble",
+            () -> new ChristmasBaubleItem(new Item.Properties(), "greedy_christmas_bauble"));
+    public static final DeferredItem<Item> ENTROPIC_CHRISTMAS_BAUBLE = ITEMS.register("entropic_christmas_bauble",
+            () -> new ChristmasBaubleItem(new Item.Properties(), "entropic_christmas_bauble"));
 
     // ===== HARD ICE BLOCK =====
     // Hidden block (not in creative tab) - indestructible, placed by gift

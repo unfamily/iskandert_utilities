@@ -1205,6 +1205,18 @@ public class Config
             .comment("Cooldown in seconds after invulnerability ends.")
             .defineInRange("553_lasting_candy_cooldown_seconds", 60, 1, 3600);
 
+    private static final ModConfigSpec.IntValue GHOST_BRAZIER_DURATION_TICKS = BUILDER
+            .comment("Ghost Brazier ethereal pool duration in ticks at standard spectator movement (20 ticks = 1s; no drain while still).")
+            .defineInRange("554_ghost_brazier_duration_ticks", 1200, 1, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue GHOST_BRAZIER_CAST_TICKS = BUILDER
+            .comment("Ghost Brazier enter-cast duration in ticks (20 ticks = 1s; 0 = instant). Exit is instant.")
+            .defineInRange("555_ghost_brazier_cast_ticks", 60, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue GHOST_BRAZIER_EXIT_SLOW_FALLING_TICKS = BUILDER
+            .comment("Ticks of ethereal_slow_falling when leaving Ghost Brazier ethereal form (0 = disabled).")
+            .defineInRange("556_ghost_brazier_exit_slow_falling_ticks", 600, 0, Integer.MAX_VALUE);
+
     private static final ModConfigSpec.DoubleValue ENTROPIC_RING_APOTHEOSIS_HAVEN_MULT = BUILDER
             .comment("Entropic Ring damage multiplier at Apotheosis WorldTier Haven.")
             .defineInRange("530_entropic_ring_apotheosis_haven_mult", 1.0D, 0.0D, 100.0D);
@@ -2434,6 +2446,9 @@ public class Config
     public static boolean lastingCandyEnabled;
     public static int lastingCandyInvulnSeconds;
     public static int lastingCandyCooldownSeconds;
+    public static int ghostBrazierDurationTicks;
+    public static int ghostBrazierCastTicks;
+    public static int ghostBrazierExitSlowFallingTicks;
     public static int essenceOfKnowledgeGrateXpPointsPerTick;
     public static int essenceOfKnowledgeGrateMaxXpPointsPerTick;
     public static int essenceOfKnowledgeGrateAccelerationTicks;
@@ -2855,6 +2870,9 @@ public class Config
         lastingCandyEnabled = LASTING_CANDY_ENABLED.get();
         lastingCandyInvulnSeconds = LASTING_CANDY_INVULN_SECONDS.get();
         lastingCandyCooldownSeconds = LASTING_CANDY_COOLDOWN_SECONDS.get();
+        ghostBrazierDurationTicks = GHOST_BRAZIER_DURATION_TICKS.get();
+        ghostBrazierCastTicks = GHOST_BRAZIER_CAST_TICKS.get();
+        ghostBrazierExitSlowFallingTicks = GHOST_BRAZIER_EXIT_SLOW_FALLING_TICKS.get();
         essenceOfKnowledgeGrateXpPointsPerTick = ESSENCE_OF_KNOWLEDGE_GRATE_XP_POINTS_PER_TICK.get();
         essenceOfKnowledgeGrateMaxXpPointsPerTick = ESSENCE_OF_KNOWLEDGE_GRATE_MAX_XP_POINTS_PER_TICK.get();
         essenceOfKnowledgeGrateAccelerationTicks = ESSENCE_OF_KNOWLEDGE_GRATE_ACCELERATION_TICKS.get();

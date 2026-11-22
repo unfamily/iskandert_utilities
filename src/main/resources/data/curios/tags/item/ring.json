@@ -1,6 +1,9 @@
 {
   "replace": false,
   "values": [
-    "iska_utils:entropic_ring"
+    "iska_utils:entropic_ring",
+    "iska_utils:classic_christmas_bauble",
+    "iska_utils:greedy_christmas_bauble",
+    "iska_utils:entropic_christmas_bauble"
   ]
 }
