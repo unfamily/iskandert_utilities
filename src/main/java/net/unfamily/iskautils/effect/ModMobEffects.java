@@ -26,6 +26,9 @@ public final class ModMobEffects {
     public static final DeferredHolder<MobEffect, MobEffect> ENTROPIC_DECAY =
             MOB_EFFECTS.register("entropic_decay", EntropicDecayMobEffect::new);
 
+    public static final DeferredHolder<MobEffect, MobEffect> ETHEREAL_SLOW_FALLING =
+            MOB_EFFECTS.register("ethereal_slow_falling", EtherealSlowFallingMobEffect::new);
+
     private ModMobEffects() {}
 
     public static void register(IEventBus bus) {

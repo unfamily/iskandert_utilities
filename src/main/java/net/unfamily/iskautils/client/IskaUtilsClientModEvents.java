@@ -15,6 +15,7 @@ import net.unfamily.iskautils.client.gui.*;
 import net.unfamily.iskautils.client.gui.EtherealFrameFilterScreen;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 import net.unfamily.iskautils.client.particle.EntropicFlameParticle;
+import net.unfamily.iskautils.client.particle.EtherealSculkSoulParticle;
 import net.unfamily.iskautils.particle.ModParticles;
 import net.unfamily.iskautils.block.entity.ModBlockEntities;
 import net.unfamily.iskautils.client.renderer.DeceptionSeatRenderer;
@@ -41,6 +42,7 @@ public final class IskaUtilsClientModEvents {
     @SubscribeEvent
     public static void registerParticleProviders(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ModParticles.ENTROPIC_FLAME.get(), EntropicFlameParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.ETHEREAL_SCULK_SOUL.get(), EtherealSculkSoulParticle.Provider::new);
     }
 
     @SubscribeEvent

@@ -32,6 +32,9 @@ public final class ArtifactEquipStages {
     public static final String RUNIC_DICE = "iska_utils_internal-runic_dice_equip";
     public static final String ENTROPIC_CHAMPAGNE = "iska_utils_internal-entropic_champagne_equip";
     public static final String LASTING_CANDY = "iska_utils_internal-lasting_candy_equip";
+    public static final String CLASSIC_CHRISTMAS_BAUBLE = "iska_utils_internal-classic_christmas_bauble_equip";
+    public static final String GREEDY_CHRISTMAS_BAUBLE = "iska_utils_internal-greedy_christmas_bauble_equip";
+    public static final String ENTROPIC_CHRISTMAS_BAUBLE = "iska_utils_internal-entropic_christmas_bauble_equip";
 
     private static final List<String> ALL_STAGES = List.of(
             OLD_BRICK,
@@ -49,7 +52,10 @@ public final class ArtifactEquipStages {
             MINIATURE_TENT,
             RUNIC_DICE,
             ENTROPIC_CHAMPAGNE,
-            LASTING_CANDY
+            LASTING_CANDY,
+            CLASSIC_CHRISTMAS_BAUBLE,
+            GREEDY_CHRISTMAS_BAUBLE,
+            ENTROPIC_CHRISTMAS_BAUBLE
     );
 
     private static final Map<Item, String> STAGE_BY_ITEM = buildStageMap();
@@ -89,6 +95,9 @@ public final class ArtifactEquipStages {
         map.put(ModItems.RUNIC_DICE.get(), RUNIC_DICE);
         map.put(ModItems.ENTROPIC_CHAMPAGNE.get(), ENTROPIC_CHAMPAGNE);
         map.put(ModItems.LASTING_CANDY.get(), LASTING_CANDY);
+        map.put(ModItems.CLASSIC_CHRISTMAS_BAUBLE.get(), CLASSIC_CHRISTMAS_BAUBLE);
+        map.put(ModItems.GREEDY_CHRISTMAS_BAUBLE.get(), GREEDY_CHRISTMAS_BAUBLE);
+        map.put(ModItems.ENTROPIC_CHRISTMAS_BAUBLE.get(), ENTROPIC_CHRISTMAS_BAUBLE);
         return Collections.unmodifiableMap(map);
     }
 }

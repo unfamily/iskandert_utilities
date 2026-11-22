@@ -25,6 +25,9 @@ public final class EntropicEffectParticleEvents {
                 || effect.is(ModMobEffects.ENTROPIC_DECAY)) {
             event.setVisible(true);
             event.setParticleOptions(ModParticles.ENTROPIC_FLAME.get());
+        } else if (effect.is(ModMobEffects.ETHEREAL_SLOW_FALLING)) {
+            event.setVisible(true);
+            event.setParticleOptions(ModParticles.ETHEREAL_SCULK_SOUL.get());
         }
     }
 }

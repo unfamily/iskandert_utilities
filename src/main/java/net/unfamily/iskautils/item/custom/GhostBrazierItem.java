@@ -4,30 +4,26 @@ import net.unfamily.iskautils.util.ModLogger;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.server.level.ServerLevel;
+import net.unfamily.iskautils.Config;
 import net.unfamily.iskautils.data.GhostBrazierData;
-import net.unfamily.iskautils.network.ModMessages;
 import net.unfamily.iskautils.item.ModItems;
 import net.unfamily.iskautils.util.CurioEquipUtil;
-import net.unfamily.iskautils.util.ModUtils;
 import net.unfamily.iskautils.util.ArtifactTooltipUtil;
 import net.unfamily.iskautils.util.KeybindTooltipUtil;
+import net.unfamily.iskautils.util.ModUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.component.TooltipDisplay;
 
-import java.lang.reflect.Method;
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Ghost Brazier Item - Allows player to toggle between Survival and Spectator mode
- * when held in inventory and keybind is pressed
+ * Ghost Brazier — cast into ethereal spectator form with a timed pool.
  */
 public class GhostBrazierItem extends Item {
     private static final ModLogger LOGGER = ModLogger.of(GhostBrazierItem.class);
@@ -36,11 +32,6 @@ public class GhostBrazierItem extends Item {
         super(properties);
     }
 
-    /**
-     * Checks if the player has a Ghost Brazier in inventory, hands, or Curios slots
-     * @param player The player to check
-     * @return true if the player has a Ghost Brazier
-     */
     public static boolean hasGhostBrazier(Player player) {
         if (player == null) {
             return false;
@@ -62,6 +53,12 @@ public class GhostBrazierItem extends Item {
         super.appendHoverText(stack, context, tooltipDisplay, tooltip, flag);
         Component keybindName = KeybindTooltipUtil.keybindOrTranslation(
                 "key.iska_utils.ghost_brazier_toggle", "GHOST_BRAZIER_TOGGLE_KEY");
-        ArtifactTooltipUtil.appendDescLines(tooltip, "ghost_brazier", 1, 1, keybindName);
+        ArtifactTooltipUtil.addLoreLine(tooltip, "tooltip.iska_utils.ghost_brazier.desc0");
+        ArtifactTooltipUtil.addTechLine(tooltip, "tooltip.iska_utils.ghost_brazier.desc1", keybindName);
+        ArtifactTooltipUtil.addTechLine(tooltip, "tooltip.iska_utils.ghost_brazier.desc2",
+                ModUtils.formatTicksCompact(Config.ghostBrazierCastTicks),
+                ModUtils.formatTicksCompact(Config.ghostBrazierDurationTicks));
+        ArtifactTooltipUtil.addTechLine(tooltip, "tooltip.iska_utils.ghost_brazier.desc3",
+                ModUtils.formatTicksCompact(Config.ghostBrazierExitSlowFallingTicks));
     }
 }

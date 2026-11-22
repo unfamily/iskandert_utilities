@@ -8,6 +8,9 @@
       "iska_utils:runic_dice",
       "iska_utils:calling_bell",
       "iska_utils:entropic_champagne",
-      "iska_utils:lasting_candy"
+      "iska_utils:lasting_candy",
+      "iska_utils:classic_christmas_bauble",
+      "iska_utils:greedy_christmas_bauble",
+      "iska_utils:entropic_christmas_bauble"
     ]
   }

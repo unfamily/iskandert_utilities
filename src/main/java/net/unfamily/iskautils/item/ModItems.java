@@ -43,6 +43,7 @@ import net.unfamily.iskautils.item.custom.AutoShopItem;
 import net.unfamily.iskautils.item.custom.EntropicChampagneItem;
 import net.unfamily.iskautils.item.custom.LastingCandyItem;
 import net.unfamily.iskautils.item.custom.SaboteurScrewdriverItem;
+import net.unfamily.iskautils.item.custom.ChristmasBaubleItem;
 import net.unfamily.iskautils.item.custom.GiftItem;
 import net.unfamily.iskautils.item.custom.TemporalOverclockerChipsetItem;
 import net.unfamily.iskautils.item.custom.TranslatedTooltipBlockItem;
@@ -645,6 +646,22 @@ public class ModItems {
 
     public static final DeferredItem<Item> GIFT = ITEMS.registerItem("gift",
             props -> new GiftItem(ModBlocks.GIFT.get(), props), Item.Properties::useBlockDescriptionPrefix);
+
+    // ===== CHRISTMAS BAUBLES (seasonal curios, not in creative tab) =====
+    public static final DeferredItem<Item> CLASSIC_CHRISTMAS_BAUBLE = ITEMS.registerItem(
+            "classic_christmas_bauble",
+            props -> new ChristmasBaubleItem(props, "classic_christmas_bauble"),
+            UnaryOperator.identity());
+
+    public static final DeferredItem<Item> GREEDY_CHRISTMAS_BAUBLE = ITEMS.registerItem(
+            "greedy_christmas_bauble",
+            props -> new ChristmasBaubleItem(props, "greedy_christmas_bauble"),
+            UnaryOperator.identity());
+
+    public static final DeferredItem<Item> ENTROPIC_CHRISTMAS_BAUBLE = ITEMS.registerItem(
+            "entropic_christmas_bauble",
+            props -> new ChristmasBaubleItem(props, "entropic_christmas_bauble"),
+            UnaryOperator.identity());
 
     // ===== ENTROPIC CHAMPAGNE (seasonal curio, Jan 1–10, not in creative tab) =====
     public static final DeferredItem<Item> ENTROPIC_CHAMPAGNE = ITEMS.registerItem(

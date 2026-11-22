@@ -5,10 +5,9 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.GameType;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.unfamily.iskautils.IskaUtils;
-import net.unfamily.iskautils.data.GhostBrazierData;
+import net.unfamily.iskautils.item.custom.GhostBrazierController;
 import net.unfamily.iskautils.item.custom.GhostBrazierItem;
 
 public record GhostBrazierToggleC2SPacket() implements CustomPacketPayload {
@@ -29,19 +28,7 @@ public record GhostBrazierToggleC2SPacket() implements CustomPacketPayload {
             if (!GhostBrazierItem.hasGhostBrazier(player)) {
                 return;
             }
-            GameType current = player.gameMode.getGameModeForPlayer();
-            if (current == GameType.SPECTATOR) {
-                GameType previous = GhostBrazierData.getPreviousGameMode(player);
-                player.setGameMode(previous);
-                GhostBrazierData.clearPreviousGameMode(player);
-                player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
-                        "message.iska_utils.ghost_brazier.became_physical"));
-            } else {
-                GhostBrazierData.setPreviousGameMode(player, current);
-                player.setGameMode(GameType.SPECTATOR);
-                player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
-                        "message.iska_utils.ghost_brazier.became_ethereal"));
-            }
+            GhostBrazierController.requestToggle(player);
         });
     }
 }

@@ -15,6 +15,10 @@ public final class ModParticles {
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> ENTROPIC_FLAME =
             PARTICLE_TYPES.register("entropic_flame", () -> new SimpleParticleType(false));
 
+    /** Sparse ethereal effect particle; client provider clamps status-effect fling velocity. */
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> ETHEREAL_SCULK_SOUL =
+            PARTICLE_TYPES.register("ethereal_sculk_soul", () -> new SimpleParticleType(false));
+
     private ModParticles() {}
 
     public static void register(IEventBus bus) {
