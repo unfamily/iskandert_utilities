@@ -1555,6 +1555,8 @@
   "tooltip.iska_utils.entropic_christmas_bauble.desc0": "Chaotic sparkles dance inside the glass.",
   "tooltip.iska_utils.entropic_christmas_bauble.desc1": "Deals 1 to 5 extra damage on each attack.",
   "effect.iska_utils.ethereal_slow_falling": "Ethereal Slow Falling",
+  "effect.iska_utils.ethereal_slow_falling.desc": "Slows falling like Slow Falling and prevents fall damage. Clears after 3s of continuous ground contact.",
+  "effect.iska_utils.ethereal_slow_falling.description": "Slows falling like Slow Falling and prevents fall damage. Clears after 3s of continuous ground contact.",
   "block.iska_utils.essence_of_knoledge_grate": "Essence of Knowledge Grate",
   "block.iska_utils.essence_of_knowledge_grate": "Essence of Knowledge Grate",
   "item.iska_utils.essence_of_knoledge_grate": "Essence of Knowledge Grate",

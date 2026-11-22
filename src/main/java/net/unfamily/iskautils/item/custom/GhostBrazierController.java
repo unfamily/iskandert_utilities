@@ -19,6 +19,7 @@ import net.unfamily.iskautils.data.GhostBrazierData;
 import net.unfamily.iskautils.data.GhostBrazierData.CastState;
 import net.unfamily.iskautils.effect.ModMobEffects;
 import net.unfamily.iskautils.util.GhostBrazierFx;
+import net.unfamily.iskautils.util.ModUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -93,8 +94,10 @@ public final class GhostBrazierController {
             long start = GhostBrazierData.getCastStartTick(sp);
             int elapsed = (int) Math.max(0L, now - start);
             float progress = castTicks <= 0 ? 1.0F : Math.min(1.0F, elapsed / (float) castTicks);
+            int remainingTicks = Math.max(0, castTicks - elapsed);
             GhostBrazierFx.playCastTick(sp, progress);
-            displayPercentBar(sp, 1.0F - progress, progress >= 1.0F);
+            // Activation overlay: remaining time (s/m/h) + fill bar.
+            displayTimeBar(sp, remainingTicks, progress, progress >= 1.0F);
             if (elapsed >= castTicks) {
                 enterEthereal(sp);
             }
@@ -111,7 +114,8 @@ public final class GhostBrazierController {
                 GhostBrazierData.setRemainingPoolTicks(sp, remaining);
             }
             int poolMax = Math.max(1, Config.ghostBrazierDurationTicks);
-            float pct = poolMax <= 0 ? 0.0F : (float) Math.max(0.0D, remaining) / (float) poolMax;
+            float pct = (float) Math.max(0.0D, remaining) / (float) poolMax;
+            // Decay overlay: remaining pool as percent.
             displayPercentBar(sp, pct, remaining <= 0.0D);
             if (remaining <= 0.0D) {
                 revertToPhysical(sp, true);
@@ -196,6 +200,18 @@ public final class GhostBrazierController {
         player.displayClientMessage(Component.translatable("message.iska_utils.ghost_brazier.cast_interrupted"), true);
     }
 
+    private static void displayTimeBar(ServerPlayer player, int remainingTicks, float progress, boolean done) {
+        float pct = Math.max(0.0F, Math.min(1.0F, progress));
+        int filled = Math.round(pct * BAR_LENGTH);
+        String timeText = " " + ModUtils.formatTicksCompact(remainingTicks) + " ";
+        var color = done ? ChatFormatting.GREEN : ChatFormatting.AQUA;
+        MutableComponent message = Component.literal("");
+        message.append(Component.literal(timeText).withStyle(color));
+        appendBar(message, filled, color);
+        message.append(Component.literal(timeText).withStyle(color));
+        player.displayClientMessage(message, true);
+    }
+
     private static void displayPercentBar(ServerPlayer player, float percentage, boolean done) {
         float pct = Math.max(0.0F, Math.min(1.0F, percentage));
         int filled = Math.round(pct * BAR_LENGTH);
@@ -203,13 +219,17 @@ public final class GhostBrazierController {
         var color = done ? ChatFormatting.GREEN : ChatFormatting.AQUA;
         MutableComponent message = Component.literal("");
         message.append(Component.literal(percentText).withStyle(color));
+        appendBar(message, filled, color);
+        message.append(Component.literal(percentText).withStyle(color));
+        player.displayClientMessage(message, true);
+    }
+
+    private static void appendBar(MutableComponent message, int filled, ChatFormatting color) {
         for (int i = 0; i < filled; i++) {
             message.append(Component.literal("█").withStyle(color));
         }
         for (int i = filled; i < BAR_LENGTH; i++) {
             message.append(Component.literal("█").withStyle(ChatFormatting.DARK_GRAY));
         }
-        message.append(Component.literal(percentText).withStyle(color));
-        player.displayClientMessage(message, true);
     }
 }
