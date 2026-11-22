@@ -1764,6 +1764,8 @@
   "tooltip.iska_utils.entropic_christmas_bauble.desc0": "Scintille caotiche danzano nel vetro.",
   "tooltip.iska_utils.entropic_christmas_bauble.desc1": "Infligge da 1 a 5 di danno extra a ogni attacco.",
   "effect.iska_utils.ethereal_slow_falling": "Caduta Eterea Lenta",
+  "effect.iska_utils.ethereal_slow_falling.desc": "Rallenta la caduta come Caduta lenta e previene i danni da caduta. Svanisce dopo 3s di contatto continuo col suolo.",
+  "effect.iska_utils.ethereal_slow_falling.description": "Rallenta la caduta come Caduta lenta e previene i danni da caduta. Svanisce dopo 3s di contatto continuo col suolo.",
   "message.iska_utils.ghost_brazier.cast_interrupted": "§cCast del Braciere Fantasma interrotto",
   "message.iska_utils.ghost_brazier.teleport_blocked": "§cNon puoi teletrasportarti mentre sei etereo"
 }
