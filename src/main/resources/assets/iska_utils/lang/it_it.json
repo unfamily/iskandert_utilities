@@ -940,7 +940,7 @@
   "tooltip.iska_utils.greedy_shield.desc1": "Ha una probabilità del %d%% di bloccare completamente i danni subiti,",
   "tooltip.iska_utils.greedy_shield.desc2": "se il blocco fallisce, ha una probabilità del %d%% di ridurre il danno",
   "tooltip.iska_utils.greedy_shield.desc3": "Quando il danno viene ridotto, blocca il %d%% del danno (rimane l'%d%% del danno originale)",
-  "tooltip.iska_utils.greedy_shield.info": "§6Ottenuto dal regalo",
+  "tooltip.iska_utils.greedy_shield.info": "§6Si otteneva dal regalo (20–30 dicembre 2025)",
   "tooltip.iska_utils.gift.availability": "§7Ottenibile dal 20 al 30 dicembre",
   "tooltip.iska_utils.gift.place": "Piazzalo a terra e clicca con il tasto destro!",
   "block.iska_utils.gift": "Regalo",
@@ -1764,8 +1764,11 @@
   "tooltip.iska_utils.entropic_christmas_bauble.desc0": "Scintille caotiche danzano nel vetro.",
   "tooltip.iska_utils.entropic_christmas_bauble.desc1": "Infligge da 1 a 5 di danno extra a ogni attacco.",
   "effect.iska_utils.ethereal_slow_falling": "Caduta Eterea Lenta",
-  "effect.iska_utils.ethereal_slow_falling.desc": "Rallenta la caduta come Caduta lenta e previene i danni da caduta. Svanisce dopo 3s di contatto continuo col suolo.",
-  "effect.iska_utils.ethereal_slow_falling.description": "Rallenta la caduta come Caduta lenta e previene i danni da caduta. Svanisce dopo 3s di contatto continuo col suolo.",
+  "effect.iska_utils.ethereal_slow_falling.desc": "Rallenta la caduta come Caduta lenta e previene i danni da caduta. Svanisce dopo ~1s di contatto continuo col suolo.",
+  "effect.iska_utils.ethereal_slow_falling.description": "Rallenta la caduta come Caduta lenta e previene i danni da caduta. Svanisce dopo ~1s di contatto continuo col suolo.",
   "message.iska_utils.ghost_brazier.cast_interrupted": "§cCast del Braciere Fantasma interrotto",
-  "message.iska_utils.ghost_brazier.teleport_blocked": "§cNon puoi teletrasportarti mentre sei etereo"
+  "message.iska_utils.ghost_brazier.teleport_blocked": "§cNon puoi teletrasportarti mentre sei etereo",
+  "message.iska_utils.ghost_brazier.stuck_teleport": "§cTeletrasporto automatico: bloccato in un blocco",
+  "message.iska_utils.ghost_brazier.manual_stuck_warning": "§cAttenzione: sei dentro un blocco!",
+  "message.iska_utils.ghost_brazier.cooldown_remaining": "§cCooldown: %s secondi rimanenti"
 }
