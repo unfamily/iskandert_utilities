@@ -1,12 +1,16 @@
 package net.unfamily.iskautils.item.custom;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -35,8 +39,12 @@ public final class GhostBrazierController {
     /** Blocks per tick at "standard" spectator cruise ≈ 1× pool drain. */
     private static final double STANDARD_SPECTATOR_SPEED = 0.35D;
     private static final double STILL_THRESHOLD = 0.02D;
+    /** Action-bar cooldown hint visibility (~2.5s). */
+    private static final int COOLDOWN_OVERLAY_TICKS = 50;
 
     private static final Map<UUID, Vec3> LAST_POS = new HashMap<>();
+    /** Game time when cooldown overlay should clear (empty action bar). */
+    private static final Map<UUID, Long> COOLDOWN_OVERLAY_CLEAR_AT = new HashMap<>();
 
     private GhostBrazierController() {}
 
@@ -45,13 +53,32 @@ public final class GhostBrazierController {
             return;
         }
         CastState state = GhostBrazierData.getCastState(player);
+
         if (state == CastState.CAST_IN) {
+            interruptCast(player);
             return;
         }
+
         if (state == CastState.ETHEREAL || player.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
+            if (isInsideSolid(player)) {
+                player.displayClientMessage(Component.translatable("message.iska_utils.ghost_brazier.manual_stuck_warning"), true);
+                return;
+            }
             revertToPhysical(player, true);
             return;
         }
+
+        // IDLE — gate activation on per-player cooldown
+        long now = player.level().getGameTime();
+        long cooldownEnd = GhostBrazierData.getLastGlobalEtherealEndTick(player);
+        if (now < cooldownEnd) {
+            int cooldownSeconds = (int) Math.ceil((cooldownEnd - now) / 20.0);
+            if (cooldownSeconds > 0) {
+                sendTimedCooldownMessage(player, cooldownSeconds);
+            }
+            return;
+        }
+
         int castTicks = Math.max(0, Config.ghostBrazierCastTicks);
         if (castTicks <= 0) {
             enterEthereal(player);
@@ -69,6 +96,8 @@ public final class GhostBrazierController {
             return;
         }
 
+        clearCooldownOverlayIfDue(sp);
+
         boolean hasItem = GhostBrazierItem.hasGhostBrazier(sp);
         GhostBrazierData.setHasGhostBrazier(sp, hasItem);
 
@@ -80,7 +109,7 @@ public final class GhostBrazierController {
 
         if (!hasItem && (state == CastState.ETHEREAL || state == CastState.CAST_IN)) {
             if (state == CastState.ETHEREAL || sp.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
-                revertToPhysical(sp, true);
+                finishEthereal(sp, true);
             } else {
                 interruptCast(sp);
             }
@@ -96,7 +125,6 @@ public final class GhostBrazierController {
             float progress = castTicks <= 0 ? 1.0F : Math.min(1.0F, elapsed / (float) castTicks);
             int remainingTicks = Math.max(0, castTicks - elapsed);
             GhostBrazierFx.playCastTick(sp, progress);
-            // Activation overlay: remaining time (s/m/h) + fill bar.
             displayTimeBar(sp, remainingTicks, progress, progress >= 1.0F);
             if (elapsed >= castTicks) {
                 enterEthereal(sp);
@@ -113,14 +141,71 @@ public final class GhostBrazierController {
                 remaining -= factor;
                 GhostBrazierData.setRemainingPoolTicks(sp, remaining);
             }
+
+            // Refresh last free position often so decay/stuck TP does not send the player far back.
+            if (!isInsideSolid(sp)) {
+                GhostBrazierData.setSafePosition(sp, sp.blockPosition());
+            }
+
             int poolMax = Math.max(1, Config.ghostBrazierDurationTicks);
             float pct = (float) Math.max(0.0D, remaining) / (float) poolMax;
-            // Decay overlay: remaining pool as percent.
             displayPercentBar(sp, pct, remaining <= 0.0D);
             if (remaining <= 0.0D) {
-                revertToPhysical(sp, true);
+                finishEthereal(sp, true);
             }
         }
+    }
+
+    /**
+     * End ethereal: if still inside solids, teleport to the saved safe position first.
+     */
+    private static void finishEthereal(ServerPlayer player, boolean applySlowFalling) {
+        if (isInsideSolid(player)) {
+            BlockPos safePos = GhostBrazierData.getSafePosition(player);
+            if (safePos != null) {
+                player.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
+                player.displayClientMessage(Component.translatable("message.iska_utils.ghost_brazier.stuck_teleport"), true);
+            }
+        }
+        revertToPhysical(player, applySlowFalling);
+    }
+
+    /**
+     * True if any solid (non-replaceable, non-air) block intersects the player's scaled bounding box.
+     */
+    private static boolean isInsideSolid(Player player) {
+        AABB box = player.getBoundingBox();
+        double scale = player.getAttributeValue(Attributes.SCALE);
+        if (box.getXsize() < 0.05D || box.getYsize() < 0.05D) {
+            double w = 0.6D * scale;
+            double h = 1.8D * scale;
+            Vec3 pos = player.position();
+            box = new AABB(pos.x - w / 2.0, pos.y, pos.z - w / 2.0, pos.x + w / 2.0, pos.y + h, pos.z + w / 2.0);
+        }
+
+        int minX = (int) Math.floor(box.minX);
+        int maxX = (int) Math.floor(box.maxX - 1.0E-4);
+        int minY = (int) Math.floor(box.minY);
+        int maxY = (int) Math.floor(box.maxY - 1.0E-4);
+        int minZ = (int) Math.floor(box.minZ);
+        int maxZ = (int) Math.floor(box.maxZ - 1.0E-4);
+
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    cursor.set(x, y, z);
+                    BlockState state = player.level().getBlockState(cursor);
+                    if (state.isAir() || state.canBeReplaced()) {
+                        continue;
+                    }
+                    if (!state.getCollisionShape(player.level(), cursor).isEmpty()) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private static double spectatorSpeed(ServerPlayer player) {
@@ -148,6 +233,16 @@ public final class GhostBrazierController {
     }
 
     @SubscribeEvent
+    public static void onAnyDamage(LivingIncomingDamageEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer victim)) {
+            return;
+        }
+        if (GhostBrazierData.getCastState(victim) == CastState.CAST_IN) {
+            interruptCast(victim);
+        }
+    }
+
+    @SubscribeEvent
     public static void onTeleport(EntityTeleportEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
@@ -165,6 +260,9 @@ public final class GhostBrazierController {
             GhostBrazierData.setPreviousGameMode(player, current);
             player.setGameMode(GameType.SPECTATOR);
         }
+        GhostBrazierData.setSafePosition(player, player.blockPosition());
+        GhostBrazierData.resetConsecutiveBlockTicks(player);
+
         double pool = Math.max(1, Config.ghostBrazierDurationTicks);
         GhostBrazierData.setRemainingPoolTicks(player, pool);
         GhostBrazierData.setCastState(player, CastState.ETHEREAL);
@@ -179,6 +277,14 @@ public final class GhostBrazierController {
             player.setGameMode(previous);
         }
         GhostBrazierFx.playExit(player);
+
+        long now = player.level().getGameTime();
+        double remaining = Math.max(0.0D, GhostBrazierData.getRemainingPoolTicks(player));
+        double poolMax = Math.max(1, Config.ghostBrazierDurationTicks);
+        double consumed = Math.max(0.0D, poolMax - remaining);
+        long cooldownTicks = (long) (consumed / 2.0);
+        GhostBrazierData.setLastGlobalEtherealEndTick(player, now + cooldownTicks);
+
         GhostBrazierData.clearEtherealSession(player);
         LAST_POS.remove(player.getUUID());
         player.displayClientMessage(Component.translatable("message.iska_utils.ghost_brazier.became_physical"), true);
@@ -230,6 +336,25 @@ public final class GhostBrazierController {
         }
         for (int i = filled; i < BAR_LENGTH; i++) {
             message.append(Component.literal("█").withStyle(ChatFormatting.DARK_GRAY));
+        }
+    }
+
+    private static void sendTimedCooldownMessage(ServerPlayer player, int cooldownSeconds) {
+        player.displayClientMessage(Component.translatable(
+                "message.iska_utils.ghost_brazier.cooldown_remaining", cooldownSeconds), true);
+        COOLDOWN_OVERLAY_CLEAR_AT.put(player.getUUID(), player.level().getGameTime() + COOLDOWN_OVERLAY_TICKS);
+    }
+
+    private static void clearCooldownOverlayIfDue(ServerPlayer player) {
+        Long clearAt = COOLDOWN_OVERLAY_CLEAR_AT.get(player.getUUID());
+        if (clearAt == null) {
+            return;
+        }
+        if (player.level().getGameTime() >= clearAt) {
+            COOLDOWN_OVERLAY_CLEAR_AT.remove(player.getUUID());
+            if (GhostBrazierData.getCastState(player) == CastState.IDLE) {
+                player.displayClientMessage(Component.empty(), true);
+            }
         }
     }
 }

@@ -1253,7 +1253,7 @@ public class Config
             .defineInRange("002_greedy_shield_reduce_amount", 0.8D, 0.0D, 1.0D);
 
     private static final ModConfigSpec.BooleanValue GREEDY_SHIELD_INFO = BUILDER
-            .comment("If false, hide where to obtain the Greedy Shield (only for lootable artifacts)")
+            .comment("If false, hide the Greedy Shield historical obtainment tooltip (gift, Dec 20–30 2025)")
             .define("003_greedy_shield_info", true);
 
     private static final ModConfigSpec.DoubleValue GAUNTLET_CLIMBING_SPEED = BUILDER

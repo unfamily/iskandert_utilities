@@ -2,6 +2,7 @@ package net.unfamily.iskautils.data;
 
 import net.unfamily.iskautils.util.ModLogger;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -33,6 +34,12 @@ public class GhostBrazierData extends SavedData {
     final Map<UUID, CastState> castState = new HashMap<>();
     final Map<UUID, Long> castStartTick = new HashMap<>();
     final Map<UUID, Double> remainingPoolTicks = new HashMap<>();
+    
+    // Anti-stuck: track safe position and block collision count
+    final Map<UUID, BlockPos> safePosition = new HashMap<>();
+    final Map<UUID, Integer> consecutiveBlockTicks = new HashMap<>();
+    // Cooldown tracking
+    final Map<UUID, Long> lastGlobalEtherealEndTick = new HashMap<>();
 
     public GhostBrazierData() {}
 
@@ -174,7 +181,74 @@ public class GhostBrazierData extends SavedData {
         data.castStartTick.remove(id);
         data.remainingPoolTicks.remove(id);
         data.previousGameMode.remove(id);
+        data.safePosition.remove(id);
+        data.consecutiveBlockTicks.remove(id);
         data.setDirty();
+    }
+    
+    public static void setSafePosition(Player player, BlockPos pos) {
+        ServerLevel level = levelFor(player);
+        if (level == null || pos == null) {
+            return;
+        }
+        GhostBrazierData data = get(level);
+        BlockPos previous = data.safePosition.put(player.getUUID(), pos.immutable());
+        if (previous == null || !previous.equals(pos)) {
+            data.setDirty();
+        }
+    }
+    
+    public static BlockPos getSafePosition(Player player) {
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return null;
+        }
+        return get(level).safePosition.getOrDefault(player.getUUID(), null);
+    }
+    
+    public static void setConsecutiveBlockTicks(Player player, int ticks) {
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return;
+        }
+        GhostBrazierData data = get(level);
+        data.consecutiveBlockTicks.put(player.getUUID(), ticks);
+        data.setDirty();
+    }
+    
+    public static int getConsecutiveBlockTicks(Player player) {
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return 0;
+        }
+        return get(level).consecutiveBlockTicks.getOrDefault(player.getUUID(), 0);
+    }
+    
+    public static void incrementConsecutiveBlockTicks(Player player) {
+        int current = getConsecutiveBlockTicks(player);
+        setConsecutiveBlockTicks(player, current + 1);
+    }
+    
+    public static void resetConsecutiveBlockTicks(Player player) {
+        setConsecutiveBlockTicks(player, 0);
+    }
+    
+    public static void setLastGlobalEtherealEndTick(Player player, long tick) {
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return;
+        }
+        GhostBrazierData data = get(level);
+        data.lastGlobalEtherealEndTick.put(player.getUUID(), tick);
+        data.setDirty();
+    }
+    
+    public static long getLastGlobalEtherealEndTick(Player player) {
+        ServerLevel level = levelFor(player);
+        if (level == null) {
+            return 0L;
+        }
+        return get(level).lastGlobalEtherealEndTick.getOrDefault(player.getUUID(), 0L);
     }
 
     public static boolean isEthereal(Player player) {
@@ -231,6 +305,31 @@ public class GhostBrazierData extends SavedData {
             }
         }
 
+        CompoundTag safePosTag = tag.getCompound("safePosition");
+        for (String key : safePosTag.getAllKeys()) {
+            try {
+                BlockPos pos = BlockPos.of(safePosTag.getLong(key));
+                data.safePosition.put(UUID.fromString(key), pos);
+            } catch (Exception ignored) {
+            }
+        }
+
+        CompoundTag consecutiveTag = tag.getCompound("consecutiveBlockTicks");
+        for (String key : consecutiveTag.getAllKeys()) {
+            try {
+                data.consecutiveBlockTicks.put(UUID.fromString(key), consecutiveTag.getInt(key));
+            } catch (Exception ignored) {
+            }
+        }
+
+        CompoundTag cooldownTag = tag.getCompound("lastGlobalEtherealEndTick");
+        for (String key : cooldownTag.getAllKeys()) {
+            try {
+                data.lastGlobalEtherealEndTick.put(UUID.fromString(key), cooldownTag.getLong(key));
+            } catch (Exception ignored) {
+            }
+        }
+
         return data;
     }
 
@@ -265,6 +364,24 @@ public class GhostBrazierData extends SavedData {
             poolTag.putDouble(entry.getKey().toString(), entry.getValue());
         }
         tag.put("remainingPoolTicks", poolTag);
+
+        CompoundTag safePosTag = new CompoundTag();
+        for (Map.Entry<UUID, BlockPos> entry : safePosition.entrySet()) {
+            safePosTag.putLong(entry.getKey().toString(), entry.getValue().asLong());
+        }
+        tag.put("safePosition", safePosTag);
+
+        CompoundTag consecutiveTag = new CompoundTag();
+        for (Map.Entry<UUID, Integer> entry : consecutiveBlockTicks.entrySet()) {
+            consecutiveTag.putInt(entry.getKey().toString(), entry.getValue());
+        }
+        tag.put("consecutiveBlockTicks", consecutiveTag);
+
+        CompoundTag cooldownTag = new CompoundTag();
+        for (Map.Entry<UUID, Long> entry : lastGlobalEtherealEndTick.entrySet()) {
+            cooldownTag.putLong(entry.getKey().toString(), entry.getValue());
+        }
+        tag.put("lastGlobalEtherealEndTick", cooldownTag);
 
         return tag;
     }

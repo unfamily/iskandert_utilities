@@ -574,7 +574,7 @@ public class PortableDislocatorItem extends Item {
                         
                         if (data.usingAngelBlock) {
                             // In attempts with Angel Block, use the special method for Angel Block placement
-                            safeY = findYForAngelBlock(level, data.targetX, data.targetZ);
+                            safeY = findYForAngelBlock(level, player, data.targetX, data.targetZ);
                             
                             // If we couldn't find a safe position, try another location
                             if (safeY == -1) {
@@ -624,7 +624,7 @@ public class PortableDislocatorItem extends Item {
                             }
                         } else {
                             // Use the standard method for normal teleportation
-                            safeY = findSafeY(level, data.targetX, data.targetZ);
+                            safeY = findSafeY(level, player, data.targetX, data.targetZ);
                             
                             // If we couldn't find a safe position, try another location
                             if (safeY == -1) {
@@ -808,11 +808,20 @@ public class PortableDislocatorItem extends Item {
             true);
     }
     
+    private static double getPlayerHeight(Player player) {
+        return 1.8D * player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.SCALE);
+    }
+
+    private static double getPlayerWidth(Player player) {
+        return 0.6D * player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.SCALE);
+    }
+
     /**
      * Finds a safe Y coordinate using an intelligent algorithm, returns -1 if no safe position found
      */
-    private static int findSafeY(Level level, int x, int z) {
-        
+    private static int findSafeY(Level level, Player player, int x, int z) {
+        double playerHeight = getPlayerHeight(player);
+
         // Get dimension limits with safety margins
         int absoluteMinY = level.getMinBuildHeight();
         int absoluteMaxY = level.getMaxBuildHeight();
@@ -823,21 +832,22 @@ public class PortableDislocatorItem extends Item {
         
         // Ensure we don't exceed bedrock boundaries
         minY = Math.max(minY, getBedrockFloorY(level) + 1);
-        maxY = Math.min(maxY, getBedrockCeilingY(level) - 3); // -3 for player height + safety
+        maxY = (int) Math.min(maxY, getBedrockCeilingY(level) - playerHeight);
         
         int startY = Math.max(50, minY);
         
         // Phase 1: Search upward from Y=50, looking for spaces and prioritizing sky access
         int firstValidPosition = -1;
         int skyAccessPosition = -1;
-        
-        for (int y = startY; y <= maxY - 2; y++) {
+        int maxYWithHeight = (int) (maxY - playerHeight);
+
+        for (int y = startY; y <= maxYWithHeight; y++) {
             // Check for bedrock ceiling to prevent spawning in bedrock
             if (isNearBedrockCeiling(level, y)) {
                 continue; // Skip positions near bedrock ceiling
             }
             
-            if (isSpaceFree(level, x, y, z)) {
+            if (isSpaceFree(level, player, x, y, z)) {
                 // Found a free space, check if we have solid ground
                 if (hasValidGround(level, x, y, z)) {
                     if (firstValidPosition == -1) {
@@ -870,7 +880,7 @@ public class PortableDislocatorItem extends Item {
                     continue; // Skip positions near bedrock ceiling
                 }
                 
-                if (isSpaceFree(level, x, y, z)) {
+                if (isSpaceFree(level, player, x, y, z)) {
                     if (hasValidGround(level, x, y, z)) {
                         downwardPosition = y;
                         break;
@@ -992,34 +1002,36 @@ public class PortableDislocatorItem extends Item {
     }
     
     /**
-     * Checks if the space at the given position is free (2 blocks high for player)
+     * Checks if the space at the given position is free for the player's scaled bounding box.
      */
-    private static boolean isSpaceFree(Level level, int x, int y, int z) {
-        BlockPos feetPos = new BlockPos(x, y, z);
-        BlockPos headPos = new BlockPos(x, y + 1, z);
-        
-        BlockState feetState = level.getBlockState(feetPos);
-        BlockState headState = level.getBlockState(headPos);
-        
-        // CRITICAL: Never allow teleportation into bedrock
-        if (feetState.is(net.minecraft.world.level.block.Blocks.BEDROCK) || 
-            headState.is(net.minecraft.world.level.block.Blocks.BEDROCK)) {
-            return false;
+    private static boolean isSpaceFree(Level level, Player player, int x, int y, int z) {
+        double playerHeight = getPlayerHeight(player);
+        double playerWidth = getPlayerWidth(player);
+        int heightBlocks = Math.max(1, (int) Math.ceil(playerHeight));
+        int halfWidth = Math.max(0, (int) Math.ceil(playerWidth / 2.0) - 1);
+
+        for (int checkY = y; checkY < y + heightBlocks; checkY++) {
+            for (int checkX = x - halfWidth; checkX <= x + halfWidth; checkX++) {
+                for (int checkZ = z - halfWidth; checkZ <= z + halfWidth; checkZ++) {
+                    BlockPos pos = new BlockPos(checkX, checkY, checkZ);
+                    BlockState state = level.getBlockState(pos);
+
+                    if (state.is(net.minecraft.world.level.block.Blocks.BEDROCK)) {
+                        return false;
+                    }
+
+                    boolean isLiquid = !state.getFluidState().isEmpty();
+                    boolean isFree = state.isAir()
+                            || (!isLiquid && state.is(net.minecraft.tags.BlockTags.REPLACEABLE))
+                            || (!isLiquid && state.is(net.minecraft.tags.BlockTags.FLOWERS));
+
+                    if (!isFree) {
+                        return false;
+                    }
+                }
+            }
         }
-        
-        // Check if blocks are liquids (water, lava, etc.)
-        boolean feetIsLiquid = !feetState.getFluidState().isEmpty();
-        boolean headIsLiquid = !headState.getFluidState().isEmpty();
-        
-        // Allow air, replaceable blocks (like grass, flowers), and flowers - BUT NOT LIQUIDS
-        boolean feetFree = feetState.isAir() || 
-                          (!feetIsLiquid && feetState.is(net.minecraft.tags.BlockTags.REPLACEABLE)) ||
-                          (!feetIsLiquid && feetState.is(net.minecraft.tags.BlockTags.FLOWERS));
-        boolean headFree = headState.isAir() || 
-                          (!headIsLiquid && headState.is(net.minecraft.tags.BlockTags.REPLACEABLE)) ||
-                          (!headIsLiquid && headState.is(net.minecraft.tags.BlockTags.FLOWERS));
-        
-        return feetFree && headFree;
+        return true;
     }
     
     /**
@@ -1105,8 +1117,8 @@ public class PortableDislocatorItem extends Item {
      * @deprecated Use the new intelligent algorithm instead
      */
     @Deprecated
-    private static boolean isSafePosition(Level level, int x, int y, int z) {
-        return isSpaceFree(level, x, y, z) && hasValidGround(level, x, y, z);
+    private static boolean isSafePosition(Level level, Player player, int x, int y, int z) {
+        return isSpaceFree(level, player, x, y, z) && hasValidGround(level, x, y, z);
     }
     
     /**
@@ -1785,7 +1797,9 @@ public class PortableDislocatorItem extends Item {
     /**
      * find a suitable Y to place the Angel Block
      */
-    private static int findYForAngelBlock(Level level, int x, int z) {
+    private static int findYForAngelBlock(Level level, Player player, int x, int z) {
+        double playerHeight = getPlayerHeight(player);
+
         // Get dimension limits with safety margins
         int absoluteMinY = level.getMinBuildHeight();
         int absoluteMaxY = level.getMaxBuildHeight();
@@ -1796,7 +1810,7 @@ public class PortableDislocatorItem extends Item {
         
         // Ensure we don't exceed bedrock boundaries
         minY = Math.max(minY, getBedrockFloorY(level) + 1);
-        maxY = Math.min(maxY, getBedrockCeilingY(level) - 3); // -3 for player height + safety
+        maxY = (int) Math.min(maxY, getBedrockCeilingY(level) - playerHeight);
         
         // find a reasonable Y for the specific world
         String dimensionKey = level.dimension().location().toString();
@@ -1820,19 +1834,17 @@ public class PortableDislocatorItem extends Item {
         
         // check if the Y is within limits
         targetY = Math.max(minY, Math.min(maxY, targetY));
-        
-        // check if there is space for the player (2 blocks high) and a valid position for the Angel Block
-        for (int y = targetY; y <= maxY - 2; y++) {
-            // Check if there's space for the player (2 blocks) and a valid position for the Angel Block
-            if (isSpaceAvailableForAngelBlock(level, x, y, z)) {
+        int maxYWithHeight = (int) (maxY - playerHeight);
+
+        for (int y = targetY; y <= maxYWithHeight; y++) {
+            if (isSpaceAvailableForAngelBlock(level, player, x, y, z)) {
                 return y;
             }
         }
         
         // if we don't find space above, try below
         for (int y = targetY - 1; y >= minY; y--) {
-            // Check if there's space for the player (2 blocks) and a valid position for the Angel Block
-            if (isSpaceAvailableForAngelBlock(level, x, y, z)) {
+            if (isSpaceAvailableForAngelBlock(level, player, x, y, z)) {
                 return y;
             }
         }
@@ -1842,15 +1854,25 @@ public class PortableDislocatorItem extends Item {
     }
     
     /**
-     * check if there is space for the player (2 blocks of height) and a valid position for the Angel Block
+     * check if there is space for the player and a valid position for the Angel Block
      */
-    private static boolean isSpaceAvailableForAngelBlock(Level level, int x, int y, int z) {
-        BlockPos playerPos1 = new BlockPos(x, y, z);
-        BlockPos playerPos2 = new BlockPos(x, y + 1, z);
+    private static boolean isSpaceAvailableForAngelBlock(Level level, Player player, int x, int y, int z) {
+        double playerHeight = getPlayerHeight(player);
+        double playerWidth = getPlayerWidth(player);
+        int heightBlocks = Math.max(1, (int) Math.ceil(playerHeight));
+        int halfWidth = Math.max(0, (int) Math.ceil(playerWidth / 2.0) - 1);
+
+        for (int checkY = y; checkY < y + heightBlocks; checkY++) {
+            for (int checkX = x - halfWidth; checkX <= x + halfWidth; checkX++) {
+                for (int checkZ = z - halfWidth; checkZ <= z + halfWidth; checkZ++) {
+                    if (!isBlockSafeForPlayer(level, new BlockPos(checkX, checkY, checkZ))) {
+                        return false;
+                    }
+                }
+            }
+        }
+
         BlockPos angelBlockPos = new BlockPos(x, y - 1, z);
-        
-        // Check if both blocks for the player are air or replaceable (not liquid)
-        boolean playerSpace = isBlockSafeForPlayer(level, playerPos1) && isBlockSafeForPlayer(level, playerPos2);
         
         // Check if the position for the Angel Block is valid (solo aria o blocchi rimpiazzabili non liquidi)
         boolean angelBlockSpace = isBlockValidForAngelBlock(level, angelBlockPos);
@@ -1870,10 +1892,10 @@ public class PortableDislocatorItem extends Item {
             }
             
             // In this case, we'll place a raft instead of the Angel Block
-            return playerSpace && notNearBedrockCeiling;
+            return notNearBedrockCeiling;
         }
         
-        return playerSpace && angelBlockSpace && notNearBedrockCeiling;
+        return angelBlockSpace && notNearBedrockCeiling;
     }
     
     /**

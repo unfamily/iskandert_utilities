@@ -399,6 +399,9 @@ tasks.named('jar', Jar).configure {
         rename { "${mid}.refmap.json" }
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveBaseName = mod_id
+    archiveVersion = mod_version
+    archiveClassifier = "neoforge-" + minecraft_version
 }
 
 // IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
